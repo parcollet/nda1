@@ -25,9 +25,9 @@ namespace nda::lapack {
 
   int gesvd1(A &a, array_view<double, 1> c, U &u, V &v) {
 
-    static_assert(A::layout_t::is_stride_order_Fortran(), "C order not implemented");
-    static_assert(U::layout_t::is_stride_order_Fortran(), "C order not implemented");
-    static_assert(V::layout_t::is_stride_order_Fortran(), "C order not implemented");
+    static_assert(A::layout_t::guarantees_stride_order_Fortran(), "C order not implemented");
+    static_assert(U::layout_t::guarantees_stride_order_Fortran(), "C order not implemented");
+    static_assert(V::layout_t::guarantees_stride_order_Fortran(), "C order not implemented");
 
     int info = 0;
 

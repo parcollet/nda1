@@ -53,7 +53,7 @@ TEST(Fortran, ScalarAssign) { //NOLINT
 }
 // ===============================================================
 
-TEST(Fortran, is_stride_order_Fortran) { //NOLINT
+TEST(Fortran, guarantees_stride_order_Fortran) { //NOLINT
 
   int N = 5;
   nda::matrix<int> a(N, N);
@@ -61,13 +61,13 @@ TEST(Fortran, is_stride_order_Fortran) { //NOLINT
   nda::array<int, 1> v(N);
   nda::array<int, 1, F_layout> vf(N);
 
-  EXPECT_FALSE(a.indexmap().is_stride_order_Fortran());
-  EXPECT_TRUE(af.indexmap().is_stride_order_Fortran());
-  EXPECT_TRUE(v.indexmap().is_stride_order_Fortran());
-  EXPECT_TRUE(vf.indexmap().is_stride_order_Fortran());
+  EXPECT_FALSE(a.indexmap().guarantees_stride_order_Fortran());
+  EXPECT_TRUE(af.indexmap().guarantees_stride_order_Fortran());
+  EXPECT_TRUE(v.indexmap().guarantees_stride_order_Fortran());
+  EXPECT_TRUE(vf.indexmap().guarantees_stride_order_Fortran());
 
-  EXPECT_TRUE(a.indexmap().is_stride_order_C());
-  EXPECT_FALSE(af.indexmap().is_stride_order_C());
-  EXPECT_TRUE(v.indexmap().is_stride_order_C());
-  EXPECT_TRUE(vf.indexmap().is_stride_order_C());
+  EXPECT_TRUE(a.indexmap().guarantees_stride_order_C());
+  EXPECT_FALSE(af.indexmap().guarantees_stride_order_C());
+  EXPECT_TRUE(v.indexmap().guarantees_stride_order_C());
+  EXPECT_TRUE(vf.indexmap().guarantees_stride_order_C());
 }

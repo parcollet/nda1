@@ -38,42 +38,42 @@ namespace nda {
 
   // ---------------------- User aliases  --------------------------------
 
-  template <typename ValueType, int Rank, typename Layout = C_layout, typename ContainerPolicy = heap>
+  template <typename ValueType, int Rank, typename Layout = Dynamic_layout, typename ContainerPolicy = heap>
   using array = basic_array<ValueType, Rank, Layout, 'A', ContainerPolicy>;
 
-  template <typename ValueType, int Rank, typename Layout = C_stride_layout>
+  template <typename ValueType, int Rank, typename Layout = Dynamic_stride_layout>
   using array_view = basic_array_view<ValueType, Rank, Layout, 'A', default_accessor, borrowed>;
 
-  template <typename ValueType, int Rank, typename Layout = C_stride_layout>
+  template <typename ValueType, int Rank, typename Layout = Dynamic_stride_layout>
   using array_const_view = basic_array_view<ValueType const, Rank, Layout, 'A', default_accessor, borrowed>;
 
   template <typename ValueType, int Rank>
-  using array_contiguous_view = basic_array_view<ValueType, Rank, C_layout, 'A', default_accessor, borrowed>;
+  using array_contiguous_view = basic_array_view<ValueType, Rank, Dynamic_layout, 'A', default_accessor, borrowed>;
 
   template <typename ValueType, int Rank>
-  using array_contiguous_const_view = basic_array_view<ValueType const, Rank, C_layout, 'A', default_accessor, borrowed>;
+  using array_contiguous_const_view = basic_array_view<ValueType const, Rank, Dynamic_layout, 'A', default_accessor, borrowed>;
 
-  template <typename ValueType, typename Layout = C_layout, typename ContainerPolicy = heap>
+  template <typename ValueType, typename Layout = Dynamic_layout, typename ContainerPolicy = heap>
   using matrix = basic_array<ValueType, 2, Layout, 'M', ContainerPolicy>;
 
-  template <typename ValueType, typename Layout = C_stride_layout>
+  template <typename ValueType, typename Layout = Dynamic_stride_layout>
   using matrix_view = basic_array_view<ValueType, 2, Layout, 'M', default_accessor, borrowed>;
 
-  template <typename ValueType, typename Layout = C_stride_layout>
+  template <typename ValueType, typename Layout = Dynamic_stride_layout>
   using matrix_const_view = basic_array_view<ValueType const, 2, Layout, 'M', default_accessor, borrowed>;
 
   template <typename ValueType, typename ContainerPolicy = heap>
-  using vector = basic_array<ValueType, 1, C_layout, 'V', ContainerPolicy>;
+  using vector = basic_array<ValueType, 1, Dynamic_layout, 'V', ContainerPolicy>;
 
-  template <typename ValueType, typename Layout = C_stride_layout>
+  template <typename ValueType, typename Layout = Dynamic_stride_layout>
   using vector_view = basic_array_view<ValueType, 1, Layout, 'V', default_accessor, borrowed>;
 
-  template <typename ValueType, typename Layout = C_stride_layout>
+  template <typename ValueType, typename Layout = Dynamic_stride_layout>
   using vector_const_view = basic_array_view<ValueType const, 1, Layout, 'V', default_accessor, borrowed>;
 
   template <typename ValueType, int Rank, uint64_t StaticExtents>
   using stack_array =
-     nda::basic_array<ValueType, Rank, nda::basic_layout<StaticExtents, nda::C_stride_order<Rank>, nda::layout_prop_e::contiguous>, 'A', nda::stack>;
+     nda::basic_array<ValueType, Rank, nda::basic_layout<StaticExtents, Dynamic_stride_order, nda::layout_prop_e::contiguous>, 'A', nda::stack>;
 
   template <typename... Is>
   constexpr uint64_t static_extents(int i0, Is... is) {

@@ -66,25 +66,25 @@ namespace nda::blas {
   // FIXME : move to impl NS
   template <typename MatrixType>
   char get_trans(MatrixType const &A, bool transpose) {
-    return (A.indexmap().is_stride_order_Fortran() ? (transpose ? 'T' : 'N') : (transpose ? 'N' : 'T'));
+    return (A.indexmap().guarantees_stride_order_Fortran() ? (transpose ? 'T' : 'N') : (transpose ? 'N' : 'T'));
   }
 
   // returns the # of rows of the matrix *seen* as fortran matrix
   template <typename MatrixType>
   size_t get_n_rows(MatrixType const &A) {
-    return (A.indexmap().is_stride_order_Fortran() ? A.extent(0) : A.extent(1));
+    return (A.indexmap().guarantees_stride_order_Fortran() ? A.extent(0) : A.extent(1));
   }
 
   // returns the # of cols of the matrix *seen* as fortran matrix
   template <typename MatrixType>
   size_t get_n_cols(MatrixType const &A) {
-    return (A.indexmap().is_stride_order_Fortran() ? A.extent(1) : A.extent(0));
+    return (A.indexmap().guarantees_stride_order_Fortran() ? A.extent(1) : A.extent(0));
   }
 
   // LDA in lapack jargon
   template <typename MatrixType>
   int get_ld(MatrixType const &A) {
-    return A.indexmap().strides()[A.indexmap().is_stride_order_Fortran() ? 1 : 0];
+    return A.indexmap().strides()[A.indexmap().guarantees_stride_order_Fortran() ? 1 : 0];
   }
 
   //template <typename M>

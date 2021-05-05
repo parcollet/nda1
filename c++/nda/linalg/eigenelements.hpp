@@ -64,7 +64,7 @@ namespace nda::linalg {
     auto m_copy = make_regular(m);
     auto ev     = _eigen_element_impl(m_copy, 'V');
     if constexpr (is_complex_v<typename M::value_type>) {
-      if constexpr (M::is_stride_order_C()) {
+      if constexpr (M::guarantees_stride_order_C()) {
         return {ev, conj(m_copy)};
       } else {
         return {ev, m_copy.transpose()}; // the matrix mat is understood as a fortran matrix. After the lapack, in memory, it contains the

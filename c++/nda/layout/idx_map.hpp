@@ -31,11 +31,21 @@ namespace nda {
   template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp>
   class idx_map;
 
+  template <int Rank>
+  std::array<long, Rank> get_dynamic_stride_order(std::array<long, Rank> const &str) {
+    std::array<long, Rank> order;
+    std::iota(begin(order), end(order), 0);
+    std::sort(begin(order), end(order), [&str](long i, long j) { str[i] > str[j]; });
+    return order;
+  }
+
   namespace slice_static {
     template <int R, uint64_t SE, uint64_t SO, layout_prop_e LP, typename... T>
     FORCEINLINE decltype(auto) slice_stride_order(idx_map<R, SE, SO, LP> const &idxm, T const &...x);
   }
   // end forward
+
+  constexpr uint64_t Dynamic_stride_order = 0;
 
   template <int Rank>
   constexpr uint64_t Fortran_stride_order = nda::encode(nda::permutations::reverse_identity<Rank>());
@@ -56,18 +66,21 @@ namespace nda {
    *   where d1, d3 are static dimensions for index 1,3
    *         NB Limitation : d1, d3 < 16 (until C++20)
    *         0 mean dynamic dimension
-   *   NB : if StaticExtents ==0, it means all dimensions are static
+   *   NB : if StaticExtents == 0, it means all dimensions are dynamic
    *
-   * @tparam StrideOrder : a permutation for the memory stride_order of the array
+   * @tparam StrideOrder : An integer encoding of the array containing the indices
+   *                       ordered (decresingly) w.r.t. their strides in memory
    *    
-   *    StrideOrder[0] : the slowest index,
-   *    StrideOrder[Rank-1] : the fastest index
+   *    decode(StrideOrder)[0] : the slowest index,
+   *    decode(StrideOrder)[Rank-1] : the fastest index
    *    Example :
    *        012 : C the last index is the fastest
    *        210 : Fortran, the first index is the fastest
    *        120 : storage (i,j,k) is : index j is slowest, then k, then i
    *    
-   *    NB : StrideOrder = 0 is the default and it is means 0 order
+   *    NB : StrideOrder == 0 is the default and corresponds to
+   *         the dynamic case (i.e. order not known at compile-time)
+   *         For Rank == 0 the order is of course always known
    * 
    * @tparam LayoutProp : A flags of compile time guarantees for the layout
    *
@@ -82,12 +95,13 @@ namespace nda {
     static constexpr uint64_t static_extents_encoded      = StaticExtents;
     static constexpr std::array<int, Rank> static_extents = decode<Rank>(StaticExtents);
 
-    static constexpr std::array<int, Rank> stride_order =
-       (StrideOrder == 0 ? permutations::identity<Rank>() : decode<Rank>(StrideOrder)); // 0 is C stride_order
-    static constexpr uint64_t stride_order_encoded = encode(stride_order);
+    static constexpr bool has_dynamic_stride_order      = (Rank > 1) && (StrideOrder == Dynamic_stride_order);
+    static constexpr uint64_t stride_order_encoded      = StrideOrder;
+    static constexpr std::array<int, Rank> stride_order = decode<Rank>(StrideOrder);
+    static_assert(StrideOrder == encode(stride_order), "Internal check");
 
     static constexpr layout_prop_e layout_prop = LayoutProp;
-    static constexpr layout_info_t layout_info = layout_info_t{stride_order_encoded, layout_prop};
+    static constexpr layout_info_t layout_info = layout_info_t{has_dynamic_stride_order, StrideOrder, layout_prop};
 
     template <typename T>
     static constexpr int argument_is_allowed_for_call = std::is_constructible_v<long, T>;
@@ -131,7 +145,10 @@ namespace nda {
     [[nodiscard]] std::array<long, Rank> const &strides() const noexcept { return str; }
 
     /// Value of the minimum stride (i.e the fastest one)
-    [[nodiscard]] long min_stride() const noexcept { return str[stride_order[Rank - 1]]; }
+    [[nodiscard]] long min_stride() const noexcept {
+      if constexpr (has_dynamic_stride_order) { return *std::min(cbegin(str), cend(str)); }
+      return str[stride_order[Rank - 1]];
+    }
 
     /// Is the data contiguous in memory ? [NB recomputed at each call]
     [[nodiscard]] bool is_contiguous() const noexcept {
@@ -146,21 +163,21 @@ namespace nda {
     }
 
     /// Is the order in memory C ?
-    static constexpr bool is_stride_order_C() {
+    static constexpr bool guarantees_stride_order_C() {
       // operator == of std:array is constexpr only since C++20
       //#if __cplusplus > 201703L
       //      return (stride_order == permutations::identity<Rank>());
       //#else
-      return (encode(stride_order) == encode(permutations::identity<Rank>()));
+      return (StrideOrder == C_stride_order<Rank>);
       //#endif
     }
 
     /// Is the order in memory Fortran ?
-    static constexpr bool is_stride_order_Fortran() {
+    static constexpr bool guarantees_stride_order_Fortran() {
       //#if __cplusplus > 201703L
       //      return (stride_order == permutations::reverse_identity<Rank>());
       //#else
-      return (encode(stride_order) == encode(permutations::reverse_identity<Rank>()));
+      return (StrideOrder == Fortran_stride_order<Rank>);
       //#endif
     }
 
@@ -171,7 +188,7 @@ namespace nda {
     void compute_strides_contiguous() {
       long s = 1;
       for (int v = rank() - 1; v >= 0; --v) { // rank() is constexpr, allowing compiler to transform loop...
-        int u  = stride_order[v];
+        int u  = (has_dynamic_stride_order) ? v : stride_order[v];
         str[u] = s;
         s *= len[u];
       }
@@ -231,6 +248,7 @@ namespace nda {
     }
 
     void check_stride_order() const {
+      if constexpr (has_dynamic_stride_order) return;
       for (int u = 0; u < Rank - 1; ++u)
         if (str[stride_order[u]] < str[stride_order[u + 1]]) throw std::runtime_error("ERROR: strides of idx_map do not match stride order\n");
     }
@@ -301,7 +319,7 @@ namespace nda {
 
     template <bool skip_stride, auto Is>
     [[nodiscard]] FORCEINLINE long myget(long arg) const noexcept {
-      if constexpr (skip_stride and (Is == stride_order[Rank - 1])) // this is the slowest stride
+      if constexpr (not has_dynamic_stride_order and skip_stride and (Is == stride_order[Rank - 1])) // this is the slowest stride
         return arg;
       else
         return arg * std::get<Is>(str);

@@ -177,8 +177,9 @@ namespace nda {
 
   // FIXME : I need a NONE for stride_order. For the scalars ...
   struct layout_info_t {
-    uint64_t stride_order = 0;
-    layout_prop_e prop    = layout_prop_e::none;
+    bool has_dynamic_stride_order = true;
+    uint64_t stride_order         = 0;
+    layout_prop_e prop            = layout_prop_e::none;
   };
 
   // Combining layout_info

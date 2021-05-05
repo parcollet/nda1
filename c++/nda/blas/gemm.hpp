@@ -72,7 +72,7 @@ namespace nda::blas {
     EXPECTS(c.indexmap().min_stride() == 1);
 
     // We need to see if C is in Fortran order or C order
-    if constexpr (C_t::is_stride_order_C()) {
+    if constexpr (C_t::guarantees_stride_order_C()) {
       // C order. We compute the transpose of the product in this case
       // since BLAS is in Fortran order
       char trans_a = get_trans(b, true);

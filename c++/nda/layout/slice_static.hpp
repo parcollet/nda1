@@ -264,19 +264,23 @@ namespace nda::slice_static {
 
     // Compute the new static_extents
     static constexpr std::array<int, P> new_static_extents{(args_is_range_all[q_of_p[Ps]] ? IdxMap::static_extents[n_of_p[Ps]] : 0)...};
-
-    // The new Stride Order
-    static constexpr std::array<int, P> mem_stride_order = sliced_mem_stride_order(IdxMap::stride_order, n_of_p);
-
-    // Compute the new layout_prop
-    static constexpr bool has_only_rangeall_and_long = ((std::is_constructible_v<long, Args> or std::is_base_of_v<range::all_t, Args>)and...);
-
-    static constexpr layout_prop_e li =
-       slice_layout_prop(P, has_only_rangeall_and_long, args_is_range_all, IdxMap::stride_order, IdxMap::layout_prop, e_pos, e_len);
-
     static constexpr uint64_t new_static_extents_encoded = encode(new_static_extents);
-    static constexpr uint64_t mem_stride_order_encoded   = encode(mem_stride_order);
-    return std::make_pair(offset, idx_map<P, new_static_extents_encoded, mem_stride_order_encoded, li>{len, str});
+
+    if constexpr (IdxMap::has_dynamic_stride_order)
+      return std::make_pair(offset, idx_map<P, new_static_extents_encoded, Dynamic_stride_order, layout_prop_e::none>{len, str});
+    else {
+
+      // Compute the new layout_prop
+      static constexpr bool has_only_rangeall_and_long = ((std::is_constructible_v<long, Args> or std::is_base_of_v<range::all_t, Args>)and...);
+      static constexpr layout_prop_e li =
+         slice_layout_prop(P, has_only_rangeall_and_long, args_is_range_all, IdxMap::stride_order, IdxMap::layout_prop, e_pos, e_len);
+
+      // Calculate the Stride Order
+      static constexpr std::array<int, P> mem_stride_order = sliced_mem_stride_order(IdxMap::stride_order, n_of_p);
+      static constexpr uint64_t mem_stride_order_encoded   = encode(mem_stride_order);
+
+      return std::make_pair(offset, idx_map<P, new_static_extents_encoded, mem_stride_order_encoded, li>{len, str});
+    }
   }
 
   // ----------------------------- slice of index map ----------------------------------------------

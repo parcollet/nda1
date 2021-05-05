@@ -29,7 +29,10 @@
 [[nodiscard]] storage_t storage() &&noexcept { return std::move(sto); }
 
 /// Memory stride_order
-[[nodiscard]] constexpr auto stride_order() const noexcept { return lay.stride_order(); }
+[[nodiscard]] constexpr auto stride_order() const noexcept {
+  static_assert(not layout_t::has_dynamic_stride_order);
+  return lay.stride_order();
+}
 
 /// Starting point of the data. NB : this is NOT the beginning of the memory block for a view in general
 [[nodiscard]] ValueType const *data() const noexcept { return sto.data(); }
@@ -59,10 +62,10 @@ ValueType *data() noexcept { return sto.data(); }
 [[nodiscard]] long extent(int i) const noexcept { return lay.lengths()[i]; }
 
 ///
-static constexpr bool is_stride_order_C() noexcept { return layout_t::is_stride_order_C(); }
+static constexpr bool guarantees_stride_order_C() noexcept { return layout_t::guarantees_stride_order_C(); }
 
 ///
-static constexpr bool is_stride_order_Fortran() noexcept { return layout_t::is_stride_order_Fortran(); }
+static constexpr bool guarantees_stride_order_Fortran() noexcept { return layout_t::guarantees_stride_order_Fortran(); }
 
 // -------------------------------  operator () --------------------------------------------
 
@@ -235,9 +238,15 @@ template <typename Iterator>
   if constexpr (iterator_rank == Rank) {
     // FIXME : remove optimziation becasue of a TRIQS bug
     return Iterator{indexmap().lengths(), indexmap().strides(), sto.data(), at_end};
-    if constexpr (layout_t::is_stride_order_C())
+    if constexpr (layout_t::guarantees_stride_order_C())
       return Iterator{indexmap().lengths(), indexmap().strides(), sto.data(), at_end};
-    else
+    else if constexpr (layout_t::has_dynamic_stride_order) {
+      auto stride_order = get_dynamic_stride_order(indexmap.strides());
+      // WHY do we need apply here!? Shouldn't this be apply_inverse instead?
+      // Same holds for else branch below
+      return Iterator{nda::permutations::apply(stride_order, indexmap().lengths()),
+                      nda::permutations::apply(stride_order, indexmap().strides()), sto.data(), at_end};
+    } else
       // general case. In C order, no need to spend time applying the identity permutation
       // the new length used by the iterator is  length[ stride_order[0]], length[ stride_order[1]], ...
       // since stride_order[0] is the slowest, it will traverse the memory in sequential order
@@ -321,7 +330,7 @@ void assign_from_ndarray(RHS const &rhs) { // FIXME noexcept {
 
   // If LHS and RHS are both 1d strided order or contiguous, and have the same stride order
   // we can make a 1d loop
-  if constexpr ((get_layout_info<self_t>.stride_order == get_layout_info<RHS>.stride_order) // same stride order and both contiguous ...
+  if constexpr (not get_layout_info<self_t>.has_dynamic_stride_order and (get_layout_info<self_t>.stride_order == get_layout_info<RHS>.stride_order)
                 and has_layout_strided_1d<self_t> and has_layout_strided_1d<RHS>) {
 
     static_assert(!std::is_reference_v<RHS>, "W?");

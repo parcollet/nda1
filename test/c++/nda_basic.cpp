@@ -45,8 +45,8 @@ TEST(Assign, Contiguous) { //NOLINT
 // -------------------------------------
 
 TEST(Assign, Strided) { //NOLINT
-  nda::array<long, 3> A(3, 5, 9);
-  nda::array<long, 1> B;
+  nda::array<long, 3, C_layout> A(3, 5, 9);
+  nda::array<long, 1, C_layout> B;
 
   for (int i = 0; i < A.extent(0); ++i)
     for (int j = 0; j < A.extent(1); ++j)
@@ -83,8 +83,8 @@ TEST(Assign, Strided) { //NOLINT
 // -------------------------------------
 
 TEST(Assign, Strided2) { //NOLINT
-  nda::array<long, 3> A(3, 5, 9);
-  nda::array<long, 1> B;
+  nda::array<long, 3, C_layout> A(3, 5, 9);
+  nda::array<long, 1, C_layout> B;
 
   for (int i = 0; i < A.extent(0); ++i)
     for (int j = 0; j < A.extent(1); ++j)

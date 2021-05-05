@@ -39,12 +39,12 @@ namespace nda::blas {
 
     // We enforce Fortran order by making a copy if necessary.
     // If both matrix are in C, call itself twice : ok we pass &
-    if constexpr (not A::layout_t::is_stride_order_Fortran()) {
+    if constexpr (not A::layout_t::guarantees_stride_order_Fortran()) {
       auto af = matrix<T, F_layout>{a_in};
       info    = gelss(af, b, c, rcond, rank);
       return info;
 
-    } else if constexpr (not B::layout_t::is_stride_order_Fortran()) {
+    } else if constexpr (not B::layout_t::guarantees_stride_order_Fortran()) {
 
       auto bf = matrix<T, F_layout>{b};
       info    = gelss(a_in, bf, c, rcond, rank);

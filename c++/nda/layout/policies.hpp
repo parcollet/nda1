@@ -17,8 +17,17 @@
 
 namespace nda {
 
+  struct Dynamic_stride_layout;
   struct C_stride_layout;
   struct F_stride_layout;
+
+  struct Dynamic_layout {
+    template <int Rank>
+    using mapping = idx_map<Rank, 0, Dynamic_stride_order, layout_prop_e::contiguous>;
+
+    using with_lowest_guarantee_t = Dynamic_stride_layout;
+    using contiguous_t            = Dynamic_layout;
+  };
 
   struct C_layout {
     template <int Rank>
@@ -34,6 +43,14 @@ namespace nda {
 
     using with_lowest_guarantee_t = F_stride_layout;
     using contiguous_t            = F_layout;
+  };
+
+  struct Dynamic_stride_layout {
+    template <int Rank>
+    using mapping = idx_map<Rank, 0, Dynamic_stride_order, layout_prop_e::none>;
+
+    using with_lowest_guarantee_t = Dynamic_stride_layout;
+    using contiguous_t            = Dynamic_layout;
   };
 
   struct C_stride_layout {

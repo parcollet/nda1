@@ -177,7 +177,7 @@ TEST(Matrix, Slice) { //NOLINT
 
   const int N = 10;
 
-  nda::matrix<double> a(N, N);
+  nda::matrix<double, C_layout> a(N, N);
 
   nda::range R(2,4);
 
