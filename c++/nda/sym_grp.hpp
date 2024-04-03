@@ -20,9 +20,7 @@
 #include <itertools/omp_chunk.hpp>
 
 namespace nda {
-  /**
-    * A structure to capture combinations of complex conjugation and sign flip.
-    */
+  /// A structure to capture combinations of complex conjugation and sign flip.
   struct operation {
     /*@{*/
     bool sgn = false; /**< change sign? */
@@ -97,13 +95,13 @@ namespace nda {
     /**
      * Accessor for symmetry classes
      * @return Vector including the individual classes
-    */
+     */
     [[nodiscard]] std::vector<sym_class_t> const &get_sym_classes() const { return sym_classes; }
 
     /**
      * Accessor for number of symmetry classes
      * @return Number of deduced symmetry classes
-    */
+     */
     long num_classes() const { return sym_classes.size(); }
 
     /**
@@ -112,7 +110,7 @@ namespace nda {
      * @param x An NdArray
      * @param init_func The init function to be used
      * @param parallel Switch to enable parallel evaluation of init_func. Default is false
-    */
+     */
     template <typename H>
       requires(NdaInitFunc<H, A>)
     void init(A &x, H const &init_func, bool parallel = false) const {
@@ -121,7 +119,7 @@ namespace nda {
         // reset input array to allow for mpi reduction
         x() = 0.0;
 
-        #pragma omp parallel
+#pragma omp parallel
         for (auto const &sym_class : itertools::omp_chunk(mpi::chunk(sym_classes))) {
           auto idx           = x.indexmap().to_idx(sym_class[0].first);
           auto ref_val       = init_func(idx);
@@ -207,9 +205,7 @@ namespace nda {
       }
     };
 
-    /**
-     * Default constructor for sym_grp class
-    */
+    /// Default constructor for sym_grp class
     sym_grp() = default;
 
     /**
@@ -217,7 +213,7 @@ namespace nda {
      * @param x An NdArray
      * @param sym_list List of symmetries modeling the NdaSymmetry concept
      * @param max_length Maximum recursion depth for out-of-bounds projection. Default is 0.
-    */
+     */
     sym_grp(A const &x, std::vector<F> const &sym_list, long const max_length = 0) {
 
       // array to check whether index has been sorted into a symmetry class already
