@@ -181,28 +181,29 @@ namespace nda {
     }
 
     /**
-     * Reduce multidimensional array to its representative data using symmetries
-     * @param x An NdArray
-     * @return Vector of data values for the representatives elements of each symmetry class
-    */
+     * Reduce a multidimensional array to its representative data using symmetries
+     *
+     * @param x The multidimensional array
+     * @return Vector of data values for the representative elements of each symmetry class
+     */
     [[nodiscard]] std::vector<get_value_t<A>> get_representative_data(A const &x) const {
-      long const len = sym_classes.size();
-      std::vector<get_value_t<A>> vec(len);
-      for (auto const i : range(len)) vec[i] = std::apply(x, x.indexmap().to_idx(sym_classes[i][0].first));
+      size_t len = sym_classes.size();
+      auto vec   = std::vector<get_value_t<A>>(len);
+      for (long i : range(len)) vec[i] = std::apply(x, x.indexmap().to_idx(sym_classes[i][0].first));
       return vec;
     }
 
     /**
-     * Init multidimensional array from its representative data using symmetries
-     * @param x An NdArray
-     * @param vec Vector or vector view of data values for the representatives elements of each symmetry class
+     * Initialize a multidimensional array from its representative data using symmetries
+     *
+     * @param x The multidimensional array
+     * @param vec Vector of data values for the representative elements of each symmetry class
     */
     template <typename V>
     void init_from_representative_data(A &x, V const &vec) const {
       static_assert(std::is_same_v<const get_value_t<A> &, decltype(vec[0])>);
-      for (auto const i : range(vec.size())) {
-        auto const ref_val = vec[i];
-        for (auto const &[lin_idx, op] : sym_classes[i]) { std::apply(x, x.indexmap().to_idx(lin_idx)) = op(ref_val); }
+      for (long i : range(vec.size())) {
+        for (auto const &[lin_idx, op] : sym_classes[i]) { std::apply(x, x.indexmap().to_idx(lin_idx)) = op(vec[i]); }
       }
     };
 
