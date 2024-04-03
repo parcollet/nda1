@@ -377,41 +377,45 @@ namespace nda {
   }
 
   // ------------------------------- concatenate --------------------------------------------
-  // slice in all dimensions but Axis
-  template <auto Axis, Array A> 
-  auto all_view_except(A const &a, auto const &arg) {
-    auto slice_or_arg = [&arg](auto x) {
-      if constexpr (Axis == decltype(x)::value)
-        return arg;
-      else
-        return range::all;
-    };
 
-    return [&]<auto... Is>(std::index_sequence<Is...>) { return a(slice_or_arg(std::integral_constant<size_t, Is>{})...); }
-    (std::make_index_sequence<A::rank>{});
-  };
-
-  // numpy style concatenation
-  template <auto Axis, Array A0, Array... A>
+  /**
+   * Join a sequence of arrays along an existing axis.
+   *
+   * The arrays must have the same value_type and also shape,
+   * except in the dimension corresponding to axis (the first, by default).
+   *
+   * @tparam Axis The axis along which to concatenate (default: 0)
+   * @tparam A0 Type of the first array
+   * @tparam A Types of the subsequent arrays
+   * @param a0 The first array
+   * @param a  The subsequent arrays
+   * @return New array with the concatenated data
+   */
+  template <size_t Axis = 0, Array A0, Array... A>
   auto concatenate(A0 const &a0, A const &...a) {
     // sanity checks
-    static_assert(A0::rank >= Axis);
-    static_assert(((A0::rank == A::rank) and ... and true));
+    auto constexpr rank = A0::rank;
+    static_assert(Axis < rank);
+    static_assert(((rank == A::rank) and ... and true));
     static_assert(((std::is_same_v<get_value_t<A0>, get_value_t<A>>) and ... and true));
+    for (auto ax [[maybe_unused]] : range(rank)) { EXPECTS(ax == Axis or ((a0.extent(ax) == a.extent(ax)) and ... and true)); }
 
-    for (auto const ax : range(A0::rank)) {
-      if (not (ax == Axis)) { assert(((a0.shape()[ax] == a.shape()[ax]) and ... and true)); }
-    }
-
-    // build concatenated array
+    // construct concatenated array
     auto new_shape  = a0.shape();
-    long offset     = 0;
-    new_shape[Axis] = new_shape[Axis] + ((a.shape()[Axis] + ... + 0));
-    array<get_value_t<A0>, A0::rank> new_array(new_shape);
+    new_shape[Axis] = (a.extent(Axis) + ... + new_shape[Axis]);
+    auto new_array  = array<get_value_t<A0>, rank>(new_shape);
 
+    // slicing helper function
+    auto slice_Axis = [](Array auto &a, range r) {
+      auto all_or_range = std::make_tuple(range::all, r);
+      return [&]<auto... Is>(std::index_sequence<Is...>) { return a(std::get<Is == Axis>(all_or_range)...); }(std::make_index_sequence<rank>{});
+    };
+
+    // initialize concatenated array
+    long offset = 0;
     for (auto const &a_view : {basic_array_view(a0), basic_array_view(a)...}) {
-      all_view_except<Axis>(new_array, range(offset, offset + a_view.shape()[Axis])) = a_view;
-      offset += a_view.shape()[Axis];
+      slice_Axis(new_array, range(offset, offset + a_view.extent(Axis))) = a_view;
+      offset += a_view.extent(Axis);
     }
 
     return new_array;

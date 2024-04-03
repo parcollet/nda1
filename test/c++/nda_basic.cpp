@@ -418,14 +418,6 @@ TEST(Array, Concatenate) { //NOLINT
       for (int k = 0; k < 6; ++k) { c(i, j, k) = i + 10 * j + 102 * k; }
     }
 
-  // test all_view_except
-  auto const a_view_except = all_view_except<1>(a, range(1, 3));
-  EXPECT_EQ(a_view_except.shape()[1], 2);
-
-  for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j)
-      for (int k = 0; k < 4; ++k) { EXPECT_EQ(a_view_except(i, j, k), a(i, j + 1, k)); }
-
   // test concatenate
   auto const abc_axis2_concat = concatenate<2>(a, b, c);
   EXPECT_EQ(abc_axis2_concat.shape()[2], 15);
