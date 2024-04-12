@@ -119,6 +119,14 @@ target_compile_options(${PROJECT_NAME}_warnings
     $<$<CXX_COMPILER_ID:IntelLLVM>:-Wno-tautological-constant-compare>
 )
 
+# Disable the by default enabled fast math functions for intel compilers
+if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+  set(CMAKE_CXX_FLAGS "-fno-fast-math ${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
+  message(STATUS "-------- Intel Compiler Warning --------")
+  message(STATUS "By default, we disable -ffast-math for Intel compilers")
+  message(STATUS "If you want to enable it, add -ffast-math to CMAKE_CXX_FLAGS or to the CXXFLAGS")
+endif()
+
 # ---------------------------------
 # Resolve Clang Linktime Problems
 # CMake will adjust any linker flags from '-L path_to/mylib.so' to -lmylib
