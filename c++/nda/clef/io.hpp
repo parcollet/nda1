@@ -75,16 +75,14 @@ namespace nda::clef {
   }
   template <typename... T>
   std::ostream &operator<<(std::ostream &sout, expr<tags::function, T...> const &ex) {
-    sout << "lambda"
-         << "(";
+    sout << "lambda" << "(";
     //sout << std::get<0>(ex.childs) << "(";
     print_tuple(sout, ex.childs);
     return sout << ")";
   }
   template <typename... T>
   std::ostream &operator<<(std::ostream &sout, expr<tags::subscript, T...> const &ex) {
-    sout << "lambda"
-         << "[";
+    sout << "lambda" << "[";
     //sout << std::get<0>(ex.childs) << "[";
     print_tuple(sout, ex.childs);
     return sout << "]";

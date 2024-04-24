@@ -89,7 +89,7 @@ namespace nda::stdutil {
     constexpr std::array<T, sizeof...(Is)> make_initialized_array(T v, std::index_sequence<Is...>) {
       return {(Is ? v : v)...};
     } // always v, just a trick to have the pack
-  }   // namespace impl
+  } // namespace impl
 
   /**
    * @tparam R

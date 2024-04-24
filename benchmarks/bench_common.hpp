@@ -25,4 +25,3 @@ auto _ = nda::range::all;
 nda::ellipsis ___;
 
 using namespace nda;
-

@@ -272,7 +272,7 @@ namespace nda::slice_static {
     static constexpr std::array<int, P> mem_stride_order = sliced_mem_stride_order(IdxMap::stride_order, n_of_p);
 
     // Compute the new layout_prop
-    static constexpr bool has_only_rangeall_and_long = ((std::is_constructible_v<long, Args> or std::is_base_of_v<range::all_t, Args>)and...);
+    static constexpr bool has_only_rangeall_and_long = ((std::is_constructible_v<long, Args> or std::is_base_of_v<range::all_t, Args>) and ...);
 
     static constexpr layout_prop_e li =
        slice_layout_prop(P, has_only_rangeall_and_long, args_is_range_all, IdxMap::stride_order, IdxMap::layout_prop, e_pos, e_len);

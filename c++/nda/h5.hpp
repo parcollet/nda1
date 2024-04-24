@@ -235,8 +235,8 @@ namespace nda {
       NDA_RUNTIME_ERROR << "Error in sliced h5_write. Existing dataset and array must both be either complex or real";
     auto const [sl, sh] = hyperslab_and_shape_from_slice<A::rank>(slice, lt.lengths, is_complex);
     if (sh != a.shape())
-      NDA_RUNTIME_ERROR << "Error in sliced h5_write. Shape of slice and Array shape incompatible"
-                        << "\n shape of slice : " << sh << "\n array  : " << a.shape();
+      NDA_RUNTIME_ERROR << "Error in sliced h5_write. Shape of slice and Array shape incompatible" << "\n shape of slice : " << sh
+                        << "\n array  : " << a.shape();
 
     auto rank_in_file = lt.rank() - is_complex;
     h5::array_interface::h5_array_view v{h5::hdf5_type<get_value_t<A>>(), (void *)(a.data()), rank_in_file, is_complex};
@@ -303,8 +303,8 @@ namespace nda {
         a.resize(shape);
       } else {
         if (a.shape() != shape)
-          NDA_RUNTIME_ERROR << "Error trying to read from an hdf5 file to a view. Dimension mismatch"
-                            << "\n in file  : " << shape << "\n in view  : " << a.shape();
+          NDA_RUNTIME_ERROR << "Error trying to read from an hdf5 file to a view. Dimension mismatch" << "\n in file  : " << shape
+                            << "\n in view  : " << a.shape();
       }
 
       auto rank_in_file = lt.rank() - is_complex;

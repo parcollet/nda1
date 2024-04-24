@@ -111,15 +111,15 @@ namespace nda::mem {
 
   // Check all A have the same address space
   template <typename A0, typename... A>
-  static constexpr bool have_same_addr_space = ((get_addr_space<A0> == get_addr_space<A>)and... and true);
+  static constexpr bool have_same_addr_space = ((get_addr_space<A0> == get_addr_space<A>) and ... and true);
 
   // Check all Ts are host compatible
   template <typename... Ts>
-  static constexpr bool have_host_compatible_addr_space = ((on_host<Ts> or on_unified<Ts>)and...);
+  static constexpr bool have_host_compatible_addr_space = ((on_host<Ts> or on_unified<Ts>) and ...);
 
   // Check all Ts are device compatible
   template <typename... Ts>
-  static constexpr bool have_device_compatible_addr_space = ((on_device<Ts> or on_unified<Ts>)and...);
+  static constexpr bool have_device_compatible_addr_space = ((on_device<Ts> or on_unified<Ts>) and ...);
 
   // Check all Ts have compatible address spaces
   template <typename... Ts>

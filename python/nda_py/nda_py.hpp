@@ -17,7 +17,9 @@ namespace nda::python {
   // AUR is array<T,R> or array_view<T, R>, but NOT a the Array concept.
   // It must be a container or a view.
   template <MemoryArray AUR>
-  cpp2py::numpy_proxy make_numpy_proxy_from_array_or_view(AUR &&a) requires(is_regular_or_view_v<AUR>) {
+  cpp2py::numpy_proxy make_numpy_proxy_from_array_or_view(AUR &&a)
+    requires(is_regular_or_view_v<AUR>)
+  {
 
     using A          = std::decay_t<AUR>;
     using value_type = typename A::value_type; // NB May be const
@@ -44,7 +46,7 @@ namespace nda::python {
     } else {
       // If T is another type, which requires some conversion to python
       // we make a new array of pyref and return a numpy view of it.
-      // each pyref handles the ownership of the object according to the T conversion rule, 
+      // each pyref handles the ownership of the object according to the T conversion rule,
       // it is not the job of this function to handle this.
       // We need to distinguish the special case where a is a RValue, in which case, the python will steal the ownership
       // by moving the elements one by one.

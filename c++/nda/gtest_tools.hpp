@@ -46,9 +46,7 @@ template <typename X, typename Y>
 // Arrays are equal
 template <typename X, typename Y>
 ::testing::AssertionResult array_are_equal(X const &x, Y const &y) {
-  if (x.shape() != y.shape())
-    return ::testing::AssertionFailure() << "Comparing two arrays of different size "
-                                         << "\n X = " << x << "\n Y = " << y;
+  if (x.shape() != y.shape()) return ::testing::AssertionFailure() << "Comparing two arrays of different size " << "\n X = " << x << "\n Y = " << y;
   if (x == y)
     return ::testing::AssertionSuccess();
   else
@@ -64,9 +62,7 @@ template <typename X, typename Y>
   nda::array<nda::get_value_t<X>, nda::get_rank<X>> x = x1;
   nda::array<nda::get_value_t<X>, nda::get_rank<X>> y = y1;
 
-  if (x.shape() != y.shape())
-    return ::testing::AssertionFailure() << "Comparing two arrays of different size "
-                                         << "\n X = " << x << "\n Y = " << y;
+  if (x.shape() != y.shape()) return ::testing::AssertionFailure() << "Comparing two arrays of different size " << "\n X = " << x << "\n Y = " << y;
 
   // both x, y are contiguous, I check with basic tools instead of max_element(abs(x - y))
   if (x.size() == 0) return ::testing::AssertionSuccess();

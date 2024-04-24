@@ -13,7 +13,7 @@ namespace cpp2py {
   // -----------------------------------
 
   template <int R, typename Layout>
-  bool numpy_check_layout(PyObject * obj) {
+  bool numpy_check_layout(PyObject *obj) {
     EXPECTS(PyArray_Check(obj));
     PyArrayObject *arr = (PyArrayObject *)(obj);
     return Layout::template mapping<R>::is_stride_order_valid(PyArray_DIMS(arr), PyArray_STRIDES(arr));

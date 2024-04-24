@@ -58,5 +58,8 @@ static void GER(benchmark::State &state) {
   auto NBytes                = N * sizeof(value_t);
   state.counters["bytesize"] = double(NBytes);
 }
-BENCHMARK_TEMPLATE(GER, nda::vector<value_t>, nda::matrix<value_t>)->RangeMultiplier(2)->Range(Nmin, Nmax)->Unit(benchmark::kMicrosecond);     // NOLINT
-BENCHMARK_TEMPLATE(GER, nda::cuvector<value_t>, nda::cumatrix<value_t>)->RangeMultiplier(2)->Range(Nmin, Nmax)->Unit(benchmark::kMicrosecond); // NOLINT
+BENCHMARK_TEMPLATE(GER, nda::vector<value_t>, nda::matrix<value_t>)->RangeMultiplier(2)->Range(Nmin, Nmax)->Unit(benchmark::kMicrosecond); // NOLINT
+BENCHMARK_TEMPLATE(GER, nda::cuvector<value_t>, nda::cumatrix<value_t>)
+   ->RangeMultiplier(2)
+   ->Range(Nmin, Nmax)
+   ->Unit(benchmark::kMicrosecond); // NOLINT

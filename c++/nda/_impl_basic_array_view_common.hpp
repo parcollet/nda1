@@ -332,8 +332,7 @@ void assign_from_ndarray(RHS const &rhs) { // FIXME noexcept {
 
 #ifdef NDA_ENFORCE_BOUNDCHECK
   if (this->shape() != rhs.shape())
-    NDA_RUNTIME_ERROR << "Size mismatch:"
-                      << "\n LHS.shape() = " << this->shape() << "\n RHS.shape() = " << rhs.shape();
+    NDA_RUNTIME_ERROR << "Size mismatch:" << "\n LHS.shape() = " << this->shape() << "\n RHS.shape() = " << rhs.shape();
 #endif
 
   static_assert(std::is_assignable_v<value_type &, get_value_t<RHS>>, "Assignment impossible for the type of RHS into the type of LHS");
@@ -383,7 +382,7 @@ void assign_from_ndarray(RHS const &rhs) { // FIXME noexcept {
   if constexpr (mem::on_device<self_t> || mem::on_device<RHS>)
     NDA_RUNTIME_ERROR << "Fallback to elementwise assignment not implemented for arrays on the GPU";
 
-  // Fallback to elementwise assignment
+    // Fallback to elementwise assignment
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
   auto l = [this, &rhs](auto const &...args) { (*this)(args...) = rhs(args...); };
