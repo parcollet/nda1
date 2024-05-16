@@ -11,7 +11,7 @@ NDA Version 1.3.0 is a release that
 * Improves the interface to read/write HDF5 files
 * Fixes several library issues
 
-We thank all contributors: Thomas Hahn, Alexander Hampel, Jason Kaye, Dominik Kiese, Harrison LaBollita, Henri Menke, Olivier Parcollet, Dylan Simon, Nils Wentzell, iskakoff, jasonkaye, mmorale3
+We thank all contributors: Thomas Hahn, Alexander Hampel, Sergei Iskakov, Jason Kaye, Dominik Kiese, Harrison LaBollita, Henri Menke, Miguel Morales, Olivier Parcollet, Dylan Simon, Nils Wentzell
 
 Find below an itemized list of changes in this release.
 
