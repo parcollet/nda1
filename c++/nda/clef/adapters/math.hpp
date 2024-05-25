@@ -14,9 +14,15 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides lazy versions of various math functions of the standard library.
+ */
+
 #pragma once
 
 #include "../clef.hpp"
+
 #include <cmath>
 #include <complex>
 
@@ -24,6 +30,7 @@ namespace nda::clef {
 
 #define CLEF_MAKE_STD_FNT_LAZY(name)                                                                                                                 \
   using std::name;                                                                                                                                   \
+  /** @brief Lazy version of std::name. */                                                                                                           \
   CLEF_MAKE_FNT_LAZY(name)
 
   // FIXME use vim generation

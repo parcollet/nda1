@@ -1,0 +1,145 @@
+// Copyright (c) 2019-2023 Simons Foundation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0.txt
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Authors: Olivier Parcollet, Nils Wentzell
+
+/**
+ * @file
+ * @brief Provides placeholders for the clef library.
+ */
+
+#pragma once
+
+#include "./expression.hpp"
+#include "./utils.hpp"
+
+#include <type_traits>
+#include <utility>
+
+namespace nda::clef {
+
+  // Forward declarations.
+  template <int N, typename T>
+  struct pair;
+
+  /**
+   * @brief A placeholder is an empty struct, labelled by an int.
+   *
+   * @details It is used in lazy expressions. For example:
+   *
+   * @code{.cpp}
+   * nda::clef::placeholder<0> i_;
+   * nda::clef::placeholder<1> j_;
+   * auto expr = i_ + j_;
+   * auto res = nda::clef::eval(expr, i_ = 1.0, j_ = 2.0); // double res = 3.0;
+   * @endcode
+   *
+   * Here `expr` is a lazy binary nda::clef::expr with the nda::clef::tag::plus tag,
+   * which can be evaluated later on with the nda::clef::eval function and by assigning
+   * values to the placeholders (see nda::clef::pair).
+   *
+   * @tparam N Integer label (must be < 64).
+   */
+  template <int N>
+  struct placeholder {
+    static_assert(N >= 0 && N < 64, "Placeholder index must be in {0, 1, ..., 63}");
+
+    /// Integer label.
+    static constexpr int index = N;
+
+    /**
+     * @brief Assign a value to the placeholder.
+     *
+     * @tparam RHS Type of the right-hand side.
+     * @param rhs Right-hand side of the assignment.
+     * @return An nda::clef::pair object, containing the integer label of the placeholder
+     * and the value assigned to it.
+     */
+    template <typename RHS>
+    pair<N, RHS> operator=(RHS &&rhs) const { // NOLINT (we want to return a pair)
+      return {std::forward<RHS>(rhs)};
+    }
+
+    /**
+     * @brief Function call operator.
+     *
+     * @tparam Args Types of the function call arguments.
+     * @param args Function call arguments.
+     * @return An nda::clef::expr object with the nda::clef::tag::function tag containing
+     * the placeholder (for the callable) and the given arguments.
+     */
+    template <typename... Args>
+    expr<tags::function, placeholder, expr_storage_t<Args>...> operator()(Args &&...args) const {
+      return {tags::function{}, *this, std::forward<Args>(args)...};
+    }
+
+    /**
+     * @brief Subscript operator.
+     *
+     * @tparam T Type of the subscript argument.
+     * @param t Subscript argument.
+     * @return An nda::clef::expr object with the nda::clef::tag::subscript tag containing
+     * the placeholder (for the object to be accessed) and the given argument.
+     */
+    template <typename T>
+    expr<tags::subscript, placeholder, expr_storage_t<T>> operator[](T &&t) const {
+      return {tags::subscript{}, *this, std::forward<T>(t)};
+    }
+  };
+
+  /**
+   * @brief A pair consisting of a placeholder and its assigned value.
+   *
+   * @details In most cases, the user should not have to explicitly create or handle pair
+   * objects. Instead, they are constructed indirectly by assigning a value to a placeholder
+   * when calling nda::clef::eval (see nda::clef::placeholder for an example).
+   *
+   * @tparam N Integer label of the placeholder.
+   * @tparam T Value type.
+   */
+  template <int N, typename T>
+  struct pair {
+    /// Value assigned to the placeholder (can be an lvalue reference).
+    T rhs;
+
+    /// Integer label of the placeholder.
+    static constexpr int p = N;
+
+    /// Type of the value after applying std::decay.
+    using value_type = std::decay_t<T>;
+  };
+
+  namespace detail {
+
+    // Specialization of force_copy_in_expr_impl for nda::clef::placeholder types (always true).
+    template <int N>
+    constexpr bool force_copy_in_expr_impl<placeholder<N>> = true;
+
+    // Specialization of ph_set for nda::clef::placeholder types.
+    template <int N>
+    struct ph_set<placeholder<N>> {
+      static constexpr ull_t value = 1ull << N;
+    };
+
+    // Specialization of ph_set for nda::clef::pair types.
+    template <int N, typename T>
+    struct ph_set<pair<N, T>> : ph_set<placeholder<N>> {};
+
+    // Specialization of is_lazy_impl for nda::clef::placeholder types.
+    template <int N>
+    constexpr bool is_lazy_impl<placeholder<N>> = true;
+
+  } // namespace detail
+
+} // namespace nda::clef

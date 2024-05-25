@@ -14,9 +14,16 @@
 //
 // Authors: Nils Wentzell
 
+/**
+ * @file
+ * @brief Includes all clef relevant headers.
+ */
+
 #pragma once
 
-#include "clef/clef.hpp"
-#include "clef/io.hpp"
-#include "clef/adapters/math.hpp"
-#include "clef/adapters/vector.hpp"
+#include "./clef/adapters/math.hpp"
+#include "./clef/adapters/vector.hpp"
+#include "./clef/clef.hpp"
+#include "./clef/io.hpp"
+#include "./clef/literals.hpp"
+#include "./clef/sum.hpp"
