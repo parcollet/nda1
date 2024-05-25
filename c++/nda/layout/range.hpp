@@ -16,29 +16,58 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
-#pragma once
-#include <ostream>
+/**
+ * @file
+ * @brief Includes the itertools header and provides some additional utilities.
+ */
 
-#include <itertools/itertools.hpp>
+#pragma once
 
 #include "../traits.hpp"
 
+#include <itertools/itertools.hpp>
+
+#include <ostream>
+#include <type_traits>
+
 namespace nda {
 
-  // Elevate range implementation from itertools
+  /// Using declaration for itertools::range.
   using itertools::range;
 
-  /// Ellipsis can be provided in place of [[range]], as in python. The type `ellipsis` is similar to [[range_all]] except that it is implicitly repeated to as much as necessary.
+  /**
+   * @brief Mimics Python's `...` syntax.
+   *
+   * @details While itertools's `range::all_t` mimics Python's `:`, `ellipsis` mimics
+   * Python's `...`. It is repeated as much as necessary to match the number of dimensions
+   * of an array/view when used to access elements/slices.
+   */
   struct ellipsis : range::all_t {};
 
+  /**
+   * @brief Write range::all_t to a std::ostream as `_`.
+   *
+   * @param os Output stream.
+   * @return Reference to the output stream.
+   */
   inline std::ostream &operator<<(std::ostream &os, range::all_t) noexcept { return os << "_"; }
+
+  /**
+   * @brief Write nda::ellipsis to a std::ostream as `___`.
+   *
+   * @param os Output stream.
+   * @return Reference to the output stream.
+   */
   inline std::ostream &operator<<(std::ostream &os, ellipsis) noexcept { return os << "___"; }
 
-  // Detects ellipsis in template parameter pack
+  /// Constexpr variable that is true if the parameter pack `Args` contains an nda::ellipsis.
   template <typename... Args>
   constexpr bool ellipsis_is_present = is_any_of<ellipsis, std::remove_cvref_t<Args>...>;
 
-  // Detects ellipsis in template parameter pack
+  /**
+   * @brief Constexpr variable that is true if the type `T` is either an nda::range, an
+   * nda::range::all_t or an nda::ellipsis.
+   */
   template <typename T>
   constexpr bool is_range_or_ellipsis = is_any_of<std::remove_cvref_t<T>, range, range::all_t, ellipsis>;
 

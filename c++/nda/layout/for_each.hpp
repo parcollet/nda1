@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Commissariat à l'énergie atomique et aux énergies alternatives (CEA)
 // Copyright (c) 2018 Centre national de la recherche scientifique (CNRS)
-// Copyright (c) 2018-2024 Simons Foundation
+// Copyright (c) 2018-2021 Simons Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,20 +18,22 @@
 
 /**
  * @file
- * @brief Provides for_each functions for multi-dimensional arrays.
+ * @brief Provides `for_each` functions for multi-dimensional arrays/views.
  */
 
 #pragma once
 
 #include "./permutation.hpp"
+#include "../stdutil/array.hpp"
 
 #include <array>
 #include <concepts>
 #include <cstdint>
+#include <utility>
 
 namespace nda {
 
-  namespace details {
+  namespace detail {
 
     // Get the i-th slowest moving dimension from a given encoded stride order.
     template <int R>
@@ -48,7 +50,7 @@ namespace nda {
         // dynamic extents
         return shape[I];
       } else {
-        // static extents
+        // full/partial static extents
         constexpr auto static_extents = decode<R>(StaticExtents); // FIXME C++20
         if constexpr (static_extents[I] == 0)
           return shape[I];
@@ -65,8 +67,8 @@ namespace nda {
         std::apply(f, idxs);
       } else {
         // get the dimension over which to iterate and its extent
-        static constexpr int J = details::index_from_stride_order<R>(StrideOrder, I);
-        const long imax        = details::get_extent<J, R, StaticExtents>(shape);
+        static constexpr int J = index_from_stride_order<R>(StrideOrder, I);
+        const long imax        = get_extent<J, R, StaticExtents>(shape);
 
         // loop over all indices of the current dimension
         for (long i = 0; i < imax; ++i) {
@@ -78,21 +80,22 @@ namespace nda {
       }
     }
 
-  } // namespace details
+  } // namespace detail
 
   /**
    * @brief Loop over all possible index values of a given shape and apply a function to them.
    *
-   * @details It traverses all possible indices in the order given by the encoded `StrideOrder` parameter.
-   * The shape is either specified at runtime (`StaticExtents == 0`) or, partially or fully, at compile time (`StaticExtents != 0`).
-   * The given function `f` must be callable with as many long values as the number of dimensions in the shape
-   * array, e.g. for a 3-dimensional shape the function must be callable as `f(long, long, long)`.
+   * @details It traverses all possible indices in the order given by the encoded `StrideOrder`
+   * parameter. The shape is either specified at runtime (`StaticExtents == 0`) or, partially or
+   * fully, at compile time (`StaticExtents != 0`). The given function `f` must be callable with
+   * as many long values as the number of dimensions in the shape array, e.g. for a 3-dimensional
+   * shape the function must be callable as `f(long, long, long)`.
    *
    * @tparam StaticExtents Encoded static extents.
    * @tparam StrideOrder Encoded stride order.
    * @tparam F Callable type.
-   * @tparam R Rank of the array.
-   * @tparam Int Integer type.
+   * @tparam R Number of dimensions.
+   * @tparam Int Integer type used in the shape array.
    *
    * @param shape Shape to loop over (index bounds).
    * @param f Callable object.
@@ -100,14 +103,14 @@ namespace nda {
   template <uint64_t StaticExtents, uint64_t StrideOrder, typename F, auto R, std::integral Int = long>
   FORCEINLINE void for_each_static(std::array<Int, R> const &shape, F &&f) { // NOLINT (we do not want to forward here)
     auto idxs = nda::stdutil::make_initialized_array<R>(0l);
-    details::for_each_static_impl<0, StaticExtents, StrideOrder>(shape, idxs, f);
+    detail::for_each_static_impl<0, StaticExtents, StrideOrder>(shape, idxs, f);
   }
 
   /**
    * @brief Loop over all possible index values of a given shape and apply a function to them.
    *
-   * @details It traverses all possible indices in C-order, i.e. the last index varies the fastest.
-   * The shape is specified at runtime and the given function `f` must be callable with
+   * @details It traverses all possible indices in C-order, i.e. the last index varies the
+   * fastest. The shape is specified at runtime and the given function `f` must be callable with
    * as many long values as the number of dimensions in the shape array, e.g. for a 3-dimensional
    * shape the function must be callable as `f(long, long, long)`.
    *
@@ -121,7 +124,7 @@ namespace nda {
   template <typename F, auto R, std::integral Int = long>
   FORCEINLINE void for_each(std::array<Int, R> const &shape, F &&f) { // NOLINT (we do not want to forward here)
     auto idxs = nda::stdutil::make_initialized_array<R>(0l);
-    details::for_each_static_impl<0, 0, 0>(shape, idxs, f);
+    detail::for_each_static_impl<0, 0, 0>(shape, idxs, f);
   }
 
 } // namespace nda

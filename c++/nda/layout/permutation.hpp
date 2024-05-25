@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2024 Simons Foundation
+// Copyright (c) 2019-2022 Simons Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 /**
  * @file
- * @brief Provides utilities to work with permutations and to compactly encode/decode them.
+ * @brief Provides utilities to work with permutations and to compactly encode/decode
+ * std::array objects.
  */
 
 #pragma once
@@ -37,8 +38,8 @@ namespace nda {
    * @brief Decode a `uint64_t` into a `std::array<int, N>`.
    *
    * @details The 64-bit code is split into 4-bit chunks, and each chunk is then decoded into a
-   * value in the range [0, 15]. The 4 least significant bits are decoded into first element, the next
-   * 4-bits into second element, and so on.
+   * value in the range [0, 15]. The 4 least significant bits are decoded into the first element,
+   * the next 4-bits into second element, and so on.
    *
    * @tparam N Size of the array.
    * @param binary_representation 64-bit code.
@@ -79,8 +80,8 @@ namespace nda::permutations {
   /**
    * @brief Check if a given array is a valid permutation.
    *
-   * @details A valid permutation is an array of integers with values in the range [0, N - 1] where
-   * each value appears exactly once.
+   * @details A valid permutation is an array of integers with values in the range [0, N - 1]
+   * where each value appears exactly once.
    *
    * @tparam Int Integral type.
    * @tparam N Degree of the permutation.
@@ -100,8 +101,8 @@ namespace nda::permutations {
   /**
    * @brief Composition of two permutations.
    *
-   * @details The second argument is applied first. Composition is not commutative in general, i.e.
-   * `compose(p1, p2) != compose(p2, p1)`.
+   * @details The second argument is applied first. Composition is not commutative in general,
+   * i.e. `compose(p1, p2) != compose(p2, p1)`.
    *
    * @tparam Int Integral type.
    * @tparam N Degree of the permutations.
@@ -121,7 +122,8 @@ namespace nda::permutations {
   /**
    * @brief Inverse of a permutation.
    *
-   * @details The inverse, `inv`, of a permutation `p` is defined such that `compose(p, inv) == compose(inv, p) == identity`.
+   * @details The inverse, `inv`, of a permutation `p` is defined such that `compose(p, inv) ==
+   * compose(inv, p) == identity`.
    *
    * @tparam Int Integral type.
    * @tparam N Degree of the permutations.
@@ -137,7 +139,9 @@ namespace nda::permutations {
   }
 
   /**
-   * @brief Apply the inverse of a permutation to an array.
+   * @brief Apply the inverse of a permutation to a std::array.
+   *
+   * @details See also nda::permuation::apply and nda::permutation::inverse.
    *
    * @tparam T Value type of the array.
    * @tparam Int Integral type.
@@ -155,7 +159,10 @@ namespace nda::permutations {
   }
 
   /**
-   * @brief Apply a permutation to an array.
+   * @brief Apply a permutation to a std::array.
+   *
+   * @details The application of a permutation `p` to an array `a` results in a new array
+   * `b` such that `b[i] = a[p[i]]`.
    *
    * @tparam T Value type of the array.
    * @tparam Int Integral type.
@@ -173,7 +180,7 @@ namespace nda::permutations {
   }
 
   /**
-   * @brief Get identity permutation.
+   * @brief Get the identity permutation.
    *
    * @tparam N Degree of the permutation.
    * @return Identity permutation of degree `N`.
@@ -186,7 +193,7 @@ namespace nda::permutations {
   }
 
   /**
-   * @brief Get reverse identity permutation.
+   * @brief Get the reverse identity permutation.
    *
    * @tparam N Degree of the permutation.
    * @return Reverse of the identity permutation of degree `N`.
@@ -199,7 +206,10 @@ namespace nda::permutations {
   }
 
   /**
-   * @brief Get a single transposition.
+   * @brief Get the permutation representing a single given transposition.
+   *
+   * @details A transposition is a permutation in which only two elements are different
+   * from the identity permutation.
    *
    * @tparam N Degree of the permutation.
    * @param i First index to transpose.
