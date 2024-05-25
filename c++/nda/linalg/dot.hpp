@@ -14,76 +14,96 @@
 //
 // Authors: Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a dot product for two arrays, a scalar and an array, or two scalars.
+ */
+
 #pragma once
-#include "../layout/policies.hpp"
-#include "../basic_array.hpp"
+
 #include "../blas/dot.hpp"
+#include "../declarations.hpp"
+#include "../layout/policies.hpp"
+#include "../mem/address_space.hpp"
+#include "../mem/policies.hpp"
+
+#include <type_traits>
 
 namespace nda {
 
   /**
-   * @tparam X
-   * @tparam Y
-   * @param x : lhs
-   * @param y : rhs
-   * @return the dot-product
-   *   Implementation varies 
+   * @brief Compute the dot product of two real arrays/views.
+   *
+   * @tparam X Type of the left hand side array/view.
+   * @tparam Y Type of the right hand side array/view.
+   * @param x Left hand side array/view.
+   * @param y Right hand side array/view.
+   * @return The dot product of the two arrays/views.
    */
   template <typename X, typename Y>
-  auto dot(X &&l, Y &&r) {
+  auto dot(X &&x, Y &&y) { // NOLINT (temporary views are allowed here)
+    // check address space compatibility
     static constexpr auto L_adr_spc = mem::get_addr_space<X>;
     static constexpr auto R_adr_spc = mem::get_addr_space<Y>;
     static_assert(L_adr_spc != mem::None);
     static_assert(R_adr_spc != mem::None);
 
-    using promoted_type = decltype(get_value_t<X>{} * get_value_t<Y>{});
-    using vector_t      = basic_array<promoted_type, 1, C_layout, 'V', nda::heap<mem::combine<L_adr_spc, R_adr_spc>>>;
+    // get resulting value type and vector type
+    using value_t  = decltype(get_value_t<X>{} * get_value_t<Y>{});
+    using vector_t = basic_array<value_t, 1, C_layout, 'V', nda::heap<mem::combine<L_adr_spc, R_adr_spc>>>;
 
-    if constexpr (is_blas_lapack_v<promoted_type>) {
-
+    if constexpr (is_blas_lapack_v<value_t>) {
+      // for double value types we use blas::dot
+      // lambda to form a new vector with the correct value type if necessary
       auto as_container = []<typename A>(A const &a) -> decltype(auto) {
-        if constexpr (is_regular_or_view_v<A> and std::is_same_v<get_value_t<A>, promoted_type>)
+        if constexpr (is_regular_or_view_v<A> and std::is_same_v<get_value_t<A>, value_t>)
           return a;
         else
           return vector_t{a};
       };
 
-      return blas::dot(as_container(l), as_container(r));
+      return blas::dot(as_container(x), as_container(y));
     } else {
-      return blas::dot_generic(l, r);
+      // for other value types we use a generic implementation
+      return blas::dot_generic(x, y);
     }
   }
 
   /**
-   * @tparam X
-   * @tparam Y
-   * @param x : lhs
-   * @param y : rhs
-   * @return The dotc-product
-   *   Implementation varies 
+   * @brief Compute the dot product of two complex arrays/views.
+   *
+   * @tparam X Type of the left hand side array/view.
+   * @tparam Y Type of the right hand side array/view.
+   * @param x Left hand side array/view.
+   * @param y Right hand side array/view.
+   * @return The dot product of the two arrays/views.
    */
   template <typename X, typename Y>
-  auto dotc(X &&l, Y &&r) {
+  auto dotc(X &&x, Y &&y) { // NOLINT (temporary views are allowed here)
+    // check address space compatibility
     static constexpr auto L_adr_spc = mem::get_addr_space<X>;
     static constexpr auto R_adr_spc = mem::get_addr_space<Y>;
     static_assert(L_adr_spc != mem::None);
     static_assert(R_adr_spc != mem::None);
 
-    using promoted_type = decltype(get_value_t<X>{} * get_value_t<Y>{});
-    using vector_t      = basic_array<promoted_type, 1, C_layout, 'V', nda::heap<mem::combine<L_adr_spc, R_adr_spc>>>;
+    // get resulting value type and vector type
+    using value_t  = decltype(get_value_t<X>{} * get_value_t<Y>{});
+    using vector_t = basic_array<value_t, 1, C_layout, 'V', nda::heap<mem::combine<L_adr_spc, R_adr_spc>>>;
 
-    if constexpr (is_blas_lapack_v<promoted_type>) {
-
+    if constexpr (is_blas_lapack_v<value_t>) {
+      // for double or complex value types we use blas::dotc
+      // lambda to form a new vector with the correct value type if necessary
       auto as_container = []<typename A>(A const &a) -> decltype(auto) {
-        if constexpr (is_regular_or_view_v<A> and std::is_same_v<get_value_t<A>, promoted_type>)
+        if constexpr (is_regular_or_view_v<A> and std::is_same_v<get_value_t<A>, value_t>)
           return a;
         else
           return vector_t{a};
       };
 
-      return blas::dotc(as_container(l), as_container(r));
+      return blas::dotc(as_container(x), as_container(y));
     } else {
-      return blas::dotc_generic(l, r);
+      // for other value types we use a generic implementation
+      return blas::dotc_generic(x, y);
     }
   }
 

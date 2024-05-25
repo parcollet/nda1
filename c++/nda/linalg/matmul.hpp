@@ -14,136 +14,170 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides matrix-matrix an matrix-vector multiplication.
+ */
+
 #pragma once
 
-#include "../layout/policies.hpp"
-#include "../basic_array.hpp"
+#include "../basic_functions.hpp"
 #include "../blas/gemm.hpp"
 #include "../blas/gemv.hpp"
+#include "../blas/tools.hpp"
+#include "../concepts.hpp"
+#include "../declarations.hpp"
+#include "../layout/policies.hpp"
+#include "../mem/address_space.hpp"
+#include "../mem/policies.hpp"
+#include "../traits.hpp"
+
+#include <type_traits>
+#include <utility>
 
 namespace nda {
 
-  // Helper variable template to check if the three Matrix types can be passed to gemm
-  // Only certain combinations of the memory layout (C/Fortran) and conjugation are allowed
-  template <Matrix A, Matrix B, MemoryMatrix C, bool conj_A = blas::is_conj_array_expr<A>, bool conj_B = blas::is_conj_array_expr<B>>
-    requires((MemoryMatrix<A> or conj_A) and (MemoryMatrix<B> or conj_B))
-  static constexpr bool is_valid_gemm_triple = []() {
-    using blas::has_F_layout;
-    if constexpr (has_F_layout<C>) {
-      return !(conj_A and has_F_layout<A>) and !(conj_B and has_F_layout<B>);
-    } else {
-      return !(conj_B and !has_F_layout<B>) and !(conj_A and !has_F_layout<A>);
-    }
-  }();
+  namespace detail {
 
-  // Get the layout policy for a given Array type
-  template <Array A>
-  using get_layout_policy = typename std::remove_reference_t<decltype(nda::make_regular(std::declval<A>()))>::layout_policy_t;
+    // Helper variable template to check if the three matrix types can be passed to gemm.
+    // The following combinations are allowed (gemm can only be called with 'N', 'T' or 'C' op tags):
+    // - C in Fortran layout:
+    // -- A/B is not a conj expression and has Fortran layout
+    // -- A/B is a conj expression and has C layout
+    // - C in C layout:
+    // -- A/B is not a conj expression and has C layout
+    // -- A/B is a conj expression and has Fortran layout
+    template <Matrix A, Matrix B, MemoryMatrix C, bool conj_A = blas::is_conj_array_expr<A>, bool conj_B = blas::is_conj_array_expr<B>>
+      requires((MemoryMatrix<A> or conj_A) and (MemoryMatrix<B> or conj_B))
+    static constexpr bool is_valid_gemm_triple = []() {
+      using blas::has_F_layout;
+      if constexpr (has_F_layout<C>) {
+        return !(conj_A and has_F_layout<A>)and!(conj_B and has_F_layout<B>);
+      } else {
+        return !(conj_B and !has_F_layout<B>)and!(conj_A and !has_F_layout<A>);
+      }
+    }();
+
+    // Get the layout policy for a given array type.
+    template <Array A>
+    using get_layout_policy = typename std::remove_reference_t<decltype(make_regular(std::declval<A>()))>::layout_policy_t;
+
+  } // namespace detail
 
   /**
-   * @tparam L NdArray with algebra 'M' 
-   * @tparam R 
-   * @param l : lhs
-   * @param r : rhs
-   * @return the matrix multiplication
-   *   Implementation varies 
+   * @brief Perform a matrix-matrix multiplication.
+   *
+   * @tparam A nda::Matrix type of lhs operand.
+   * @tparam B nda::Matrix type of rhs operand.
+   * @param a Left hand side matrix operand.
+   * @param b Right hand side matrix operand.
+   * @return Result of the matrix-matrix multiplication.
    */
-  template <Matrix L, Matrix R>
-  auto matmul(L &&l, R &&r) {
-    EXPECTS_WITH_MESSAGE(l.shape()[1] == r.shape()[0], "Matrix product : dimension mismatch in matrix product " << l << " " << r);
+  template <Matrix A, Matrix B>
+  auto matmul(A &&a, B &&b) { // NOLINT (temporary views are allowed here)
+    // check dimensions
+    EXPECTS_WITH_MESSAGE(a.shape()[1] == b.shape()[0], "Error in nda::matmul: Dimension mismatch in matrix-matrix product");
 
-    static constexpr auto L_adr_spc = mem::get_addr_space<L>;
-    static constexpr auto R_adr_spc = mem::get_addr_space<R>;
+    // check address space compatibility
+    static constexpr auto L_adr_spc = mem::get_addr_space<A>;
+    static constexpr auto R_adr_spc = mem::get_addr_space<B>;
     mem::check_adr_sp_valid<L_adr_spc, R_adr_spc>();
 
-    using promoted_type = decltype(get_value_t<L>{} * get_value_t<R>{});
-    // Same layout as L, R if they have the same stride order, else C layout.
-    using result_layout_policy =
-       std::conditional_t<get_layout_info<L>.stride_order == get_layout_info<R>.stride_order, get_layout_policy<L>, C_layout>;
-    using matrix_t = basic_array<promoted_type, 2, result_layout_policy, 'M', nda::heap<mem::combine<L_adr_spc, R_adr_spc>>>;
-    auto result    = matrix_t(l.shape()[0], r.shape()[1]);
+    // get resulting value type, layout policy and matrix type
+    using value_t = decltype(get_value_t<A>{} * get_value_t<B>{});
+    using layout_policy =
+       std::conditional_t<get_layout_info<A>.stride_order == get_layout_info<B>.stride_order, detail::get_layout_policy<A>, C_layout>;
+    using matrix_t = basic_array<value_t, 2, layout_policy, 'M', nda::heap<mem::combine<L_adr_spc, R_adr_spc>>>;
 
-    if constexpr (is_blas_lapack_v<promoted_type>) {
-
-      auto as_container = []<Matrix A>(A &&a) -> decltype(auto) {
-        if constexpr (std::is_same_v<get_value_t<A>, promoted_type> and (MemoryMatrix<A> or blas::is_conj_array_expr<A>))
-          return std::forward<A>(a);
+    // perform matrix-matrix multiplication
+    auto result = matrix_t(a.shape()[0], b.shape()[1]);
+    if constexpr (is_blas_lapack_v<value_t>) {
+      // for double or complex value types we use blas::gemm
+      // lambda to form a new matrix with the correct value type if necessary
+      auto as_container = []<Matrix M>(M &&m) -> decltype(auto) {
+        if constexpr (std::is_same_v<get_value_t<M>, value_t> and (MemoryMatrix<M> or blas::is_conj_array_expr<M>))
+          return std::forward<M>(m);
         else
-          return matrix_t{std::forward<A>(a)};
+          return matrix_t{std::forward<M>(m)};
       };
 
-      // MSAN has no way to know that we are calling with beta = 0, hence
-      // this is not necessary
-      // of course, in production code, we do NOT waste time to do this.
+      // MSAN has no way to know that we are calling with beta = 0, hence this is not necessary.
+      // Of course, in production code, we do NOT waste time to do this.
 #if defined(__has_feature)
 #if __has_feature(memory_sanitizer)
       result = 0;
 #endif
 #endif
 
-      // Check if we have a valid set of matrices for a gemm call
-      // If not, form a new matrix from any conjugate matrix expressions
-      if constexpr (is_valid_gemm_triple<decltype(as_container(l)), decltype(as_container(r)), matrix_t>) {
-        blas::gemm(1, as_container(l), as_container(r), 0, result);
+      // check if we can call gemm directly
+      if constexpr (detail::is_valid_gemm_triple<decltype(as_container(a)), decltype(as_container(b)), matrix_t>) {
+        blas::gemm(1, as_container(a), as_container(b), 0, result);
       } else {
-        blas::gemm(1, make_regular(as_container(l)), make_regular(as_container(r)), 0, result);
+        // otherwise, turn the lhs and rhs first into regular matrices and then call gemm
+        blas::gemm(1, make_regular(as_container(a)), make_regular(as_container(b)), 0, result);
       }
 
     } else {
-      blas::gemm_generic(1, l, r, 0, result);
+      // for other value types we use a generic implementation
+      blas::gemm_generic(1, a, b, 0, result);
     }
     return result;
   }
 
   /**
-   * @tparam L NdArray with algebra 'M' 
-   * @tparam R 
-   * @param l : lhs
-   * @param r : rhs
-   * @return the matrix multiplication
-   *   Implementation varies 
+   * @brief Perform a matrix-vector multiplication.
+   *
+   * @tparam A nda::Matrix type of lhs operand.
+   * @tparam X nda::Vector type of rhs operand.
+   * @param a Left hand side matrix operand.
+   * @param x Right hand side vector operand.
+   * @return Result of the matrix-vector multiplication.
    */
+  template <Matrix A, Vector X>
+  auto matvecmul(A &&a, X &&x) { // NOLINT (temporary views are allowed here)
+    // check dimensions
+    EXPECTS_WITH_MESSAGE(a.shape()[1] == x.shape()[0], "Error in nda::matvecmul: Dimension mismatch in matrix-vector product");
 
-  template <Matrix L, Vector R>
-  auto matvecmul(L &&l, R &&r) {
-    EXPECTS_WITH_MESSAGE(l.shape()[1] == r.shape()[0], "Matrix Vector product : dimension mismatch in matrix product " << l << " " << r);
-
-    static constexpr auto L_adr_spc = mem::get_addr_space<L>;
-    static constexpr auto R_adr_spc = mem::get_addr_space<R>;
-    static_assert(L_adr_spc == R_adr_spc, "Error: Matrix Product requires arguments with same Adress space");
+    // check address space compatibility
+    static constexpr auto L_adr_spc = mem::get_addr_space<A>;
+    static constexpr auto R_adr_spc = mem::get_addr_space<X>;
+    static_assert(L_adr_spc == R_adr_spc, "Error in nda::matvecmul: Matrix-vector product requires arguments with same adress spaces");
     static_assert(L_adr_spc != mem::None);
 
-    using promoted_type = decltype(get_value_t<L>{} * get_value_t<R>{});
-    vector<promoted_type, heap<L_adr_spc>> result(l.shape()[0]);
+    // get resulting value type and vector type
+    using value_t  = decltype(get_value_t<A>{} * get_value_t<X>{});
+    using vector_t = vector<value_t, heap<L_adr_spc>>;
 
-    if constexpr (is_blas_lapack_v<promoted_type>) {
-
-      auto as_container = []<Array A>(A &&a) -> decltype(auto) {
-        if constexpr (std::is_same_v<get_value_t<A>, promoted_type> and (MemoryMatrix<A> or (Matrix<A> and blas::is_conj_array_expr<A>)))
-          return std::forward<A>(a);
+    // perform matrix-matrix multiplication
+    auto result = vector_t(a.shape()[0]);
+    if constexpr (is_blas_lapack_v<value_t>) {
+      // for double or complex value types we use blas::gemv
+      // lambda to form a new array with the correct value type if necessary
+      auto as_container = []<Array B>(B &&b) -> decltype(auto) {
+        if constexpr (std::is_same_v<get_value_t<B>, value_t> and (MemoryMatrix<B> or (Matrix<B> and blas::is_conj_array_expr<B>)))
+          return std::forward<B>(b);
         else
-          return basic_array<promoted_type, get_rank<A>, C_layout, 'A', heap<L_adr_spc>>{std::forward<A>(a)};
+          return basic_array<value_t, get_rank<B>, C_layout, 'A', heap<L_adr_spc>>{std::forward<B>(b)};
       };
 
-      // MSAN has no way to know that we are calling with beta = 0, hence
-      // this is not necessary
-      // of course, in production code, we do NOT waste time to do this.
+      // MSAN has no way to know that we are calling with beta = 0, hence this is not necessary.
+      // Of course, in production code, we do NOT waste time to do this.
 #if defined(__has_feature)
 #if __has_feature(memory_sanitizer)
       result = 0;
 #endif
 #endif
 
-      // For expressions of the kind 'conj(M)*V' with a Matrix in Fortran Layout
-      // we have to explicitly form the conj operation in memory as gemv only
-      // provides op tags 'N', 'T' and 'C' (hermitian conjugate)
-      if constexpr (blas::is_conj_array_expr<decltype(as_container(l))> and blas::has_F_layout<decltype(as_container(l))>) {
-        blas::gemv(1, make_regular(as_container(l)), as_container(r), 0, result);
+      // for expressions of the kind 'conj(M) * V' with a Matrix in Fortran Layout, we have to explicitly
+      // form the conj operation in memory as gemv only provides op tags 'N', 'T' and 'C' (hermitian conjugate)
+      if constexpr (blas::is_conj_array_expr<decltype(as_container(a))> and blas::has_F_layout<decltype(as_container(a))>) {
+        blas::gemv(1, make_regular(as_container(a)), as_container(x), 0, result);
       } else {
-        blas::gemv(1, as_container(l), as_container(r), 0, result);
+        blas::gemv(1, as_container(a), as_container(x), 0, result);
       }
     } else {
-      blas::gemv_generic(1, l, r, 0, result);
+      // for other value types we use a generic implementation
+      blas::gemv_generic(1, a, x, 0, result);
     }
     return result;
   }

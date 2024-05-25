@@ -16,53 +16,64 @@
 
 #pragma once
 
-#include "../basic_array.hpp"
+/**
+ * @file
+ * @brief Provides the p-norm for general arrays/views of rank 1 and with scalar elements.
+ */
+
+#include "../algorithms.hpp"
+#include "../basic_functions.hpp"
+#include "../blas/dot.hpp"
 #include "../concepts.hpp"
-#include "../blas.hpp"
+#include "../mapped_functions.hxx"
+#include "../traits.hpp"
+
+#include <cmath>
+#include <complex>
+#include <limits>
 
 namespace nda {
 
   /**
-   * Calculate the p-norm of an array x with scalar values and rank one:
-   *
-   *   norm(x) = sum(abs(x)^ord)^(1./ord)
-   *
+   * @brief Calculate the p-norm of an nda::ArrayOfRank<1> object \f$ \mathbf{x} \f$ with
+   * scalar values. The p-norm is defines as
+   * \f[
+   *   || \mathbf{x} ||_p = \left( \sum_{i=0}^{N-1} |x_i|^p \right)^{1/p}
+   * \f]
    * with the special cases (following numpy.linalg.norm convention)
+   * - \f$ || \mathbf{x} ||_0 = \text{number of non-zero elements} \f$,
+   * - \f$ || \mathbf{x} ||_{\infty} = \max_i |x_i| \f$,
+   * - \f$ || \mathbf{x} ||_{-\infty} = \min_i |x_i| \f$.
    *
-   *   norm(x, 0.0)  = number of non-zero elements
-   *   norm(x, inf)  = max_element(abs(x))
-   *   norm(x, -inf) = min_element(abs(x))
-   * 
-   * @param x The array to calculate the norm of
-   * @param p The order of the norm [default=2.0]
-   * @tparam A The type of the array
-   * @return The norm as a double
+   * @tparam A nda::ArrayOfRank<1> type.
+   * @param a nda::ArrayOfRank<1> object.
+   * @param p Order of the norm.
+   * @return Norm of the array/view as a double.
    */
   template <ArrayOfRank<1> A>
-  double norm(A const &x, double p = 2.0) {
-    // Scalar check: Can't move to template constraint, get_value_t not generically implemented
-    static_assert(Scalar<get_value_t<A>>, "norm only works for arrays with scalar values");
+  double norm(A const &a, double p = 2.0) {
+    static_assert(Scalar<get_value_t<A>>, "Error in nda::norm: Only scalar value types are allowed");
 
     if (p == 2.0) [[likely]] {
       if constexpr (MemoryArray<A>)
-        return std::sqrt(std::real(nda::blas::dotc(x, x)));
+        return std::sqrt(std::real(nda::blas::dotc(a, a)));
       else
-        return norm(make_regular(x));
+        return norm(make_regular(a));
     } else if (p == 1.0) {
-      return sum(abs(x));
+      return sum(abs(a));
     } else if (p == 0.0) {
-      // return std::count_if(a.begin(), a.end(), [](S s) { return s != S{0}; }); Fails for nda::expr
       long count = 0;
-      for (long i = 0; i < x.size(); ++i) {
-        if (x(i) != get_value_t<A>{0}) ++count;
+      for (long i = 0; i < a.size(); ++i) {
+        if (a(i) != get_value_t<A>{0}) ++count;
       }
       return double(count);
     } else if (p == std::numeric_limits<double>::infinity()) {
-      return max_element(abs(x));
+      return max_element(abs(a));
     } else if (p == -std::numeric_limits<double>::infinity()) {
-      return min_element(abs(x));
+      return min_element(abs(a));
     } else {
-      return std::pow(sum(pow(abs(x), p)), 1.0 / p);
+      return std::pow(sum(pow(abs(a), p)), 1.0 / p);
     }
   }
+
 } // namespace nda

@@ -14,85 +14,111 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides eigenvalues and eigenvectors of a symmetric or hermitian matrix.
+ */
+
 #pragma once
+
+#include "./det_and_inverse.hpp"
+#include "../basic_array.hpp"
+#include "../declarations.hpp"
+#include "../exceptions.hpp"
 #include "../lapack/interface/cxx_interface.hpp"
+#include "../layout/policies.hpp"
+#include "../macros.hpp"
+#include "../traits.hpp"
+
+#include <type_traits>
+#include <utility>
 
 namespace nda::linalg {
 
-  template <typename M>
-  // dispatch the implementation of invoke for T = double or complex
-  auto _eigen_element_impl(M &&m, char compz) {
+  namespace detail {
 
-    EXPECTS((not m.empty()));
-    EXPECTS(is_matrix_square(m, true));
-    EXPECTS(m.indexmap().is_contiguous());
+    // Dispatch the call to the appropriate LAPACK routine based on the value type of the matrix.
+    template <typename M>
+    auto _eigen_element_impl(M &&m, char compz) { // NOLINT (temporary views are allowed here)
+      using value_type = typename std::decay_t<M>::value_type;
 
-    int dim = m.extent(0);
+      // runtime checks
+      EXPECTS((not m.empty()));
+      EXPECTS(is_matrix_square(m, true));
+      EXPECTS(m.indexmap().is_contiguous());
 
-    using T = typename std::decay_t<M>::value_type;
-
-    array<double, 1> ev(dim);
-    int lwork = 64 * dim;
-    array<T, 1> work(lwork);
-    array<double, 1> work2(is_complex_v<T> ? lwork : 0);
+      // set up the workspace
+      int dim   = m.extent(0);
+      int lwork = 64 * dim;
+      array<double, 1> ev(dim);
+      array<value_type, 1> work(lwork);
+      array<double, 1> work2(is_complex_v<value_type> ? lwork : 0);
 
 #if defined(__has_feature)
 #if __has_feature(memory_sanitizer)
-    work2 = 0;
-    work  = 0;
-    ev    = 0;
+      work2 = 0;
+      work  = 0;
+      ev    = 0;
 #endif
 #endif
 
-    int info = 0;
-    if constexpr (not is_complex_v<T>) {
-      lapack::f77::syev(compz, 'U', dim, m.data(), dim, ev.data(), work.data(), lwork, info);
-    } else {
-      lapack::f77::heev(compz, 'U', dim, m.data(), dim, ev.data(), work.data(), lwork, work2.data(), info);
+      // call the correct LAPACK routine
+      int info = 0;
+      if constexpr (not is_complex_v<value_type>) {
+        lapack::f77::syev(compz, 'U', dim, m.data(), dim, ev.data(), work.data(), lwork, info);
+      } else {
+        lapack::f77::heev(compz, 'U', dim, m.data(), dim, ev.data(), work.data(), lwork, work2.data(), info);
+      }
+      if (info) NDA_RUNTIME_ERROR << "Error in nda::linalg::detail::_eigen_element_impl: Diagonalization error";
+      return ev;
     }
-    if (info) NDA_RUNTIME_ERROR << "Diagonalization error";
-    return ev;
-  }
 
-  //--------------------------------
+  } // namespace detail
 
   /**
-   * Find the eigenvalues and eigenvectors of a symmetric(real) or hermitian(complex) matrix.
-   * Requires an additional copy when M is stored in C memory order
-   * @param M The matrix or view.
-   * @return Pair consisting of the array of eigenvalues and the matrix containing the eigenvectors as columns
+   * @brief Find the eigenvalues and eigenvectors of a symmetric (real) or hermitian
+   * (complex) matrix.
+   *
+   * @details The given matrix is copied and the original is not modified.
+   *
+   * @tparam M Matrix type.
+   * @param m Matrix/View to diagonalize.
+   * @return std::pair consisting of the array of eigenvalues in ascending order and
+   * the matrix containing the eigenvectors in its columns.
    */
   template <typename M>
   std::pair<array<double, 1>, typename M::regular_type> eigenelements(M const &m) {
     auto m_copy = matrix<typename M::value_type, F_layout>(m);
-    auto ev     = _eigen_element_impl(m_copy, 'V');
+    auto ev     = detail::_eigen_element_impl(m_copy, 'V');
     return {ev, m_copy};
   }
 
-  //--------------------------------
-
   /**
-   * Find the eigenvalues of a symmetric(real) or hermitian(complex) matrix.
-   * @param M The matrix or view.
-   * @return The array of eigenvalues
+   * @brief Find the eigenvalues of a symmetric (real) or hermitian (complex) matrix.
+   *
+   * @details The given matrix is copied and the original is not modified.
+   *
+   * @tparam M Matrix type.
+   * @param m Matrix/View to diagonalize.
+   * @return An nda::array containing the eigenvalues in ascending order.
    */
   template <typename M>
   array<double, 1> eigenvalues(M const &m) {
     auto m_copy = matrix<typename M::value_type, F_layout>(m);
-    return _eigen_element_impl(m_copy, 'N');
+    return detail::_eigen_element_impl(m_copy, 'N');
   }
 
-  //--------------------------------
-
   /**
-   * Find the eigenvalues of a symmetric(real) or hermitian(complex) matrix.
-   * Perform the operation in-place, avoiding a copy of the matrix,
-   * but invalidating its contents.
-   * @param M The matrix or view (must be contiguous and Fortran memory order)
-   * @return The array of eigenvalues
+   * @brief Find the eigenvalues of a symmetric (real) or hermitian (complex) matrix.
+   *
+   * @details The given matrix will be modified by the diagonalization process.
+   *
+   * @tparam M Matrix type.
+   * @param m Matrix/View to diagonalize.
+   * @return An nda::array containing the eigenvalues in ascending order.
    */
   template <typename M>
-  array<double, 1> eigenvalues_in_place(M *&m) {
+  array<double, 1> eigenvalues_in_place(M &m) {
     return _eigen_element_impl(m, 'N');
   }
 

@@ -14,21 +14,36 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a cross product for 3-dimensional vectors or other arrays/views
+ * of rank 1.
+ */
+
 #pragma once
+
+#include "../declarations.hpp"
+#include "../macros.hpp"
+#include "../traits.hpp"
 
 namespace nda::linalg {
 
-  /** Cross product. Dim 3 only */
+  /**
+   * @brief Compute the cross product of two 3-dimensional vectors.
+   *
+   * @tparam V Vector type.
+   * @param x Left hand side vector.
+   * @param y Right hand side vector.
+   * @return nda::array of rank 1 containing the cross product of the two vectors.
+   */
   template <typename V>
-  auto cross_product(V const &a, V const &b) {
-    EXPECTS_WITH_MESSAGE(a.shape()[0] == 3,
-                         "nda::linalg::cross_product : works only in d=3 while you gave a vector of size " + std::to_string(a.shape()[0]));
-    EXPECTS_WITH_MESSAGE(b.shape()[0] == 3,
-                         "nda::linalg::cross_product : works only in d=3 while you gave a vector of size " + std::to_string(b.shape()[0]));
+  auto cross_product(V const &x, V const &y) {
+    EXPECTS_WITH_MESSAGE(x.shape()[0] == 3, "nda::linalg::cross_product: Only defined for 3-dimensional vectors");
+    EXPECTS_WITH_MESSAGE(y.shape()[0] == 3, "nda::linalg::cross_product: Only defined for 3-dimensional vectors");
     array<get_value_t<V>, 1> r(3);
-    r(0) = a(1) * b(2) - b(1) * a(2);
-    r(1) = -a(0) * b(2) + b(0) * a(2);
-    r(2) = a(0) * b(1) - b(0) * a(1);
+    r(0) = x(1) * y(2) - y(1) * x(2);
+    r(1) = -x(0) * y(2) + y(0) * x(2);
+    r(2) = x(0) * y(1) - y(0) * x(1);
     return r;
   }
 

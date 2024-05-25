@@ -14,15 +14,19 @@
 //
 // Authors: Nils Wentzell
 
+/**
+ * @file
+ * @brief Includes all relevant headers for the linear algebra functionality.
+ */
+
 #pragma once
 
-#include "nda.hpp"
+#include "./blas.hpp"
+#include "./lapack.hpp"
 
-#include "lapack.hpp"
-#include "blas.hpp"
-
-#include "linalg/cross_product.hpp"
-#include "linalg/det_and_inverse.hpp"
-#include "linalg/eigenelements.hpp"
-#include "linalg/matmul.hpp"
-#include "linalg/norm.hpp"
+#include "./linalg/cross_product.hpp"
+#include "./linalg/det_and_inverse.hpp"
+#include "./linalg/dot.hpp"
+#include "./linalg/eigenelements.hpp"
+#include "./linalg/matmul.hpp"
+#include "./linalg/norm.hpp"
