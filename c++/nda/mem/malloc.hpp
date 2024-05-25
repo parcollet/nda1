@@ -14,16 +14,32 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic malloc and free function for different address spaces.
+ */
+
 #pragma once
+
+#include "./address_space.hpp"
+#include "../device.hpp"
 
 #include <cstdlib>
 
-#include "address_space.hpp"
-#include "../macros.hpp"
-#include "../traits.hpp"
-
 namespace nda::mem {
 
+  /**
+   * @brief Call the correct `malloc` function based on the given address space.
+   *
+   * @details It makes the following function calls depending on the address space:
+   * - `std::malloc` for nda::mem::Host.
+   * - `cudaMalloc` for nda::mem::Device.
+   * - `cudaMallocManaged` for nda::mem::Unified.
+   *
+   * @tparam AdrSp nda::mem::AddressSpace.
+   * @param size Size in bytes to be allocated.
+   * @return Pointer to the allocated memory.
+   */
   template <AddressSpace AdrSp>
   void *malloc(size_t size) {
     check_adr_sp_valid<AdrSp>();
@@ -31,23 +47,33 @@ namespace nda::mem {
 
     void *ptr = nullptr;
     if constexpr (AdrSp == Host) {
-      ptr = std::malloc(size);
+      ptr = std::malloc(size); // NOLINT (we want to return a void*)
     } else if constexpr (AdrSp == Device) {
       device_error_check(cudaMalloc((void **)&ptr, size), "cudaMalloc");
-    } else { // Unified
+    } else {
       device_error_check(cudaMallocManaged((void **)&ptr, size), "cudaMallocManaged");
     }
     return ptr;
   }
 
+  /**
+   * @brief Call the correct `free` function based on the given address space.
+   *
+   * @details It makes the following function calls depending on the address space:
+   * - `std::free` for nda::mem::Host.
+   * - `cudaFree` for nda::mem::Device and nda::mem::Unified.
+   *
+   * @tparam AdrSp nda::mem::AddressSpace.
+   * @param p Pointer to the memory to be freed.
+   */
   template <AddressSpace AdrSp>
   void free(void *p) {
     check_adr_sp_valid<AdrSp>();
     static_assert(nda::have_device == nda::have_cuda, "Adjust function for new device types");
 
     if constexpr (AdrSp == Host) {
-      std::free(p);
-    } else { // Device or Unified
+      std::free(p); // NOLINT (we want to call free with a void*)
+    } else {
       device_error_check(cudaFree(p), "cudaFree");
     }
   }
