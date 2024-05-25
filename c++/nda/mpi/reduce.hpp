@@ -14,71 +14,120 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides an MPI reduce function for nda::Array types.
+ */
+
 #pragma once
+
+#include "../basic_functions.hpp"
+#include "../concepts.hpp"
+#include "../exceptions.hpp"
+#include "../map.hpp"
+#include "../traits.hpp"
+
 #include <mpi/mpi.hpp>
-#include <nda/nda.hpp>
 
-#include "./../map.hpp"
-#include "./../exceptions.hpp"
+#include <cstdlib>
+#include <type_traits>
+#include <utility>
 
-// Models ArrayInitializer concept
+/**
+ * @brief Specialization of the mpi::lazy class for nda::Array types and the mpi::tag::reduce tag.
+ *
+ * @details An object of this class is returned when reducing nda::Array objects across multiple
+ * MPI processes.
+ *
+ * It models an nda::ArrayInitializer, that means it can be used to initialize and assign to
+ * nda::basic_array and nda::basic_array_view objects. The target array will have the same shape
+ * as the input arrays.
+ *
+ * See nda::mpi_reduce for an example.
+ *
+ * @tparam A nda::Array type to be reduced.
+ */
 template <nda::Array A>
 struct mpi::lazy<mpi::tag::reduce, A> {
+  /// Value type of the array/view.
+  using value_type = typename std::decay_t<A>::value_type;
 
-  using value_type      = typename std::decay_t<A>::value_type;
+  /// Const view type of the array/view stored in the lazy object.
   using const_view_type = decltype(std::declval<const A>()());
 
-  const_view_type rhs; // the rhs array
-  mpi::communicator c; // mpi comm
-  const int root;      //
-  const bool all;
-  const MPI_Op op;
+  /// View of the array/view to be reduced.
+  const_view_type rhs;
 
-  /// compute the shape of the target array
+  /// MPI communicator.
+  mpi::communicator comm;
+
+  /// MPI root process.
+  const int root{0}; // NOLINT (const is fine here)
+
+  /// Should all processes receive the result.
+  const bool all{false}; // NOLINT (const is fine here)
+
+  /// MPI reduction operation.
+  const MPI_Op op{MPI_SUM}; // NOLINT (const is fine here)
+
+  /**
+   * @brief Compute the shape of the target array.
+   * @details It is assumed that the shape of the input array is the same for all MPI processes.
+   * @return Shape of the input array.
+   */
   [[nodiscard]] auto shape() const { return rhs.shape(); }
 
-  /// Execute the mpi operation and write result to target
+  /**
+   * @brief Execute the lazy MPI operation and write the result to a target array/view.
+   *
+   * @details If the target array/view is the same as the input array/view, i.e. if their data
+   * pointers are the same, the reduction is performed in-place.
+   *
+   * @tparam T nda::Array type of the target array/view.
+   * @param target Target array/view.
+   */
   template <nda::Array T>
-  void invoke(T &&target) const {
-    if (not target.is_contiguous()) NDA_RUNTIME_ERROR << "mpi operations require contiguous target.data() to be contiguous";
-
+  void invoke(T &&target) const { // NOLINT (temporary views are allowed here)
+    // check if the arrays can be used in the MPI call
+    if (not target.is_contiguous()) NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Target array needs to be contiguous";
     static_assert(std::decay_t<A>::layout_t::stride_order_encoded == std::decay_t<T>::layout_t::stride_order_encoded,
-                  "Array types for rhs and target have incompatible stride order");
+                  "Error in MPI reduce for nda::Array: Incompatible stride orders");
 
+    // special case for non-mpi runs
     if (not mpi::has_env) {
       target = rhs;
       return;
     }
 
+    // perform the reduction
     if constexpr (not mpi::has_mpi_type<value_type>) {
-      target = nda::map([this](auto const &x) { return mpi::reduce(x, this->c, this->root, this->all, this->op); })(rhs);
+      // if the value type cannot be reduced directly, we call mpi::reduce for each element
+      target = nda::map([this](auto const &x) { return mpi::reduce(x, this->comm, this->root, this->all, this->op); })(rhs);
     } else {
-
-      // some checks.
+      // value type has a corresponding MPI type
       bool in_place = (target.data() == rhs.data());
-      auto sha      = shape();
       if (in_place) {
-        if (rhs.size() != target.size()) NDA_RUNTIME_ERROR << "mpi reduce of array : same pointer to data start, but different number of elements !";
-      } else { // check no overlap
-        if ((c.rank() == root) || all) resize_or_check_if_view(target, sha);
-        if (std::abs(target.data() - rhs.data()) < rhs.size()) NDA_RUNTIME_ERROR << "mpi reduce of array : overlapping arrays !";
+        if (rhs.size() != target.size())
+          NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: In-place reduction requires arrays of the same size";
+      } else {
+        if ((comm.rank() == root) || all) nda::resize_or_check_if_view(target, shape());
+        if (std::abs(target.data() - rhs.data()) < rhs.size()) NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Overlapping arrays";
       }
 
-      void *v_p       = (void *)target.data();
-      void *rhs_p     = (void *)rhs.data();
-      auto rhs_n_elem = rhs.size();
-      auto D          = mpi::mpi_type<value_type>::get();
-
+      void *target_ptr    = (void *)target.data();
+      void *rhs_ptr       = (void *)rhs.data();
+      auto count          = rhs.size();
+      auto mpi_value_type = mpi::mpi_type<value_type>::get();
       if (!all) {
         if (in_place)
-          MPI_Reduce((c.rank() == root ? MPI_IN_PLACE : rhs_p), rhs_p, rhs_n_elem, D, op, root, c.get());
+          MPI_Reduce((comm.rank() == root ? MPI_IN_PLACE : rhs_ptr), rhs_ptr, count, mpi_value_type, op, root, comm.get());
         else
-          MPI_Reduce(rhs_p, v_p, rhs_n_elem, D, op, root, c.get());
+          MPI_Reduce(rhs_ptr, target_ptr, count, mpi_value_type, op, root, comm.get());
       } else {
         if (in_place)
-          MPI_Allreduce(MPI_IN_PLACE, rhs_p, rhs_n_elem, D, op, c.get());
+          MPI_Allreduce(MPI_IN_PLACE, rhs_ptr, count, mpi_value_type, op, comm.get());
         else
-          MPI_Allreduce(rhs_p, v_p, rhs_n_elem, D, op, c.get());
+          MPI_Allreduce(rhs_ptr, target_ptr, count, mpi_value_type, op, comm.get());
       }
     }
   }
@@ -87,26 +136,32 @@ struct mpi::lazy<mpi::tag::reduce, A> {
 namespace nda {
 
   /**
-   * Reduction of the array
+   * @brief Implementation of an MPI reduce for nda::basic_array or nda::basic_array_view types.
    *
-   * \tparam A basic_array or basic_array_view, with contiguous data only
-   * \param a
-   * \param c The MPI communicator
-   * \param root Root node of the reduction
-   * \param all all_reduce iif true
-   * \param op The MPI reduction operation to apply to the elements 
+   * @details Since the returned mpi::lazy object models an nda::ArrayInitializer, it can be used
+   * to initialize/assign to nda::basic_array and nda::basic_array_view objects:
    *
-   * NB : A::value_type must have an MPI reduction (basic type or custom type, cf mpi library)
+   * @code{.cpp}
+   * nda::array<int, 2> arr(3, 4);
+   * // fill array on each rank
+   * nda::array<int, 2> res = mpi::reduce(arr);
+   * @endcode
    *
+   * @tparam A nda::basic_array or nda::basic_array_view type.
+   * @param a Array or view to be gathered.
+   * @param comm mpi::communicator object.
+   * @param root Rank of the root process.
+   * @param all Should all processes receive the result of the gather.
+   * @param op MPI reduction operation.
+   * @return An mpi::lazy object modelling an nda::ArrayInitializer.
    */
   template <typename A>
-  ArrayInitializer<std::remove_reference_t<A>> auto mpi_reduce(A &&a, mpi::communicator c = {}, int root = 0, bool all = false, MPI_Op op = MPI_SUM)
+  ArrayInitializer<std::remove_reference_t<A>> auto mpi_reduce(A &&a, mpi::communicator comm = {}, int root = 0, bool all = false,
+                                                               MPI_Op op = MPI_SUM)
     requires(is_regular_or_view_v<A>)
   {
-
-    if (not a.is_contiguous()) NDA_RUNTIME_ERROR << "mpi operations require contiguous rhs.data() to be contiguous";
-
-    return mpi::lazy<mpi::tag::reduce, A>{std::forward<A>(a), c, root, all, op};
+    if (not a.is_contiguous()) NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Array needs to be contiguous";
+    return mpi::lazy<mpi::tag::reduce, A>{std::forward<A>(a), comm, root, all, op};
   }
 
 } // namespace nda
