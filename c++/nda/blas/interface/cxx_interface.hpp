@@ -14,12 +14,17 @@
 //
 // Authors: Miguel Morales, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a C++ interface for various BLAS routines.
+ */
+
 #pragma once
 
-#include <complex>
+#include "../tools.hpp"
 
 #if defined(NDA_HAVE_CUDA)
-#include "cublas_interface.hpp"
+#include "./cublas_interface.hpp"
 #endif
 
 namespace nda::blas::f77 {
@@ -63,7 +68,7 @@ namespace nda::blas::f77 {
   void scal(int M, double alpha, double *x, int incx);
   void scal(int M, dcomplex alpha, dcomplex *x, int incx);
 
-  void swap(int N, double *x, int incx, double *Y, int incy);
-  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy);
+  void swap(int N, double *x, int incx, double *Y, int incy);     // NOLINT (this is a BLAS swap)
+  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy); // NOLINT (this is a BLAS swap)
 
 } // namespace nda::blas::f77

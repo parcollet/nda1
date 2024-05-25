@@ -14,85 +14,108 @@
 //
 // Authors: Miguel Morales, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic interface to the BLAS `gemv` routine.
+ */
+
 #pragma once
-#include "tools.hpp"
-#include "interface/cxx_interface.hpp"
+
+#include "./interface/cxx_interface.hpp"
+#include "./tools.hpp"
+#include "../concepts.hpp"
+#include "../macros.hpp"
 #include "../mem/address_space.hpp"
+#include "../traits.hpp"
+
+#ifndef NDA_HAVE_DEVICE
+#include "../device.hpp"
+#endif
+
+#include <tuple>
 
 namespace nda::blas {
 
-  // make the generic version for non lapack types or more complex types
-  // largely suboptimal
-  template <typename A, typename B, typename Out>
-  void gemv_generic(get_value_t<A> alpha, A const &a, B const &b, get_value_t<A> beta, Out &c) {
-    EXPECTS(a.extent(1) == b.extent(0));
-    EXPECTS(a.extent(0) == c.extent(0));
-    c() = 0;
+  /**
+   * @brief Multiply a matrix by a vector and add it to another vector.
+   *
+   * @details Generic nda::blas::gemv implementation for types not supported by BLAS/LAPACK.
+   *
+   * @tparam A Matrix type.
+   * @tparam X Vector type.
+   * @tparam Y Vector type.
+   * @param alpha Scalar constant.
+   * @param a Input matrix of size m by n.
+   * @param x Input vector of size n.
+   * @param beta Scalar constant.
+   * @param y Input/Output vector of size m.
+   */
+  template <typename A, typename X, typename Y>
+  void gemv_generic(get_value_t<A> alpha, A const &a, X const &x, get_value_t<A> beta, Y &y) {
+    EXPECTS(a.extent(1) == x.extent(0));
+    EXPECTS(a.extent(0) == y.extent(0));
     for (int i = 0; i < a.extent(0); ++i) {
-      for (int k = 0; k < a.extent(1); ++k) c(i) += alpha * a(i, k) * b(k);
-      c(i) += beta * c(i);
+      y(i) = beta * y(i);
+      for (int k = 0; k < a.extent(1); ++k) y(i) += alpha * a(i, k) * x(k);
     }
   }
 
   /**
-   * Calls gemv on a matrix, matrix_view, array, array_view of rank 2
-   * to compute c <- alpha a*b + beta * c
+   * @brief Interface to the BLAS `gemv` routine.
    *
-   * @tparam A matrix, matrix_view, array, array_view of rank 2
-   * @tparam B matrix, matrix_view, array, array_view of rank 1
-   * @tparam C matrix, matrix_view, array, array_view of rank 1
-   * @param alpha
-   * @param a 
-   * @param b
-   * @param beta
-   * @param c The result. Can be a temporary view. 
-   *         
-   * @StaticPrecondition : A, B, C have the same value_type and it is complex<double> or double         
-   * @Precondition : 
-   *       * c has the correct dimension given a, b. 
-   *         gemm does not resize the object, 
+   * @details This function performs one of the matrix-vector operations
+   * - \f$ /mathbf{y} \leftarrow \alpha /mathbf{A} /mathbf{x} + \beta /mathbf{y} \f$,
+   * - \f$ /mathbf{y} \leftarrow \alpha /mathbf{A}^T /mathbf{x} + \beta /mathbf{y} \f$,
+   * - \f$ /mathbf{y} \leftarrow \alpha /mathbf{A}^H /mathbf{x} + \beta /mathbf{y} \f$,
+   * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, \f$ /mathbf{x} \f$ and \f$ /mathbf{y} \f$
+   * are vectors and \f$ /mathbf{A} \f$ is an m by n matrix.
    *
-   *
+   * @tparam A nda::Matrix type.
+   * @tparam X nda::MemoryVector type.
+   * @tparam Y nda::MemoryVector type.
+   * @param alpha Scalar constant.
+   * @param a Input matrix of size m by n.
+   * @param x Input vector of size n.
+   * @param beta Scalar constant.
+   * @param y Input/Output vector of size m.
    */
-  template <Matrix X, MemoryVector B, MemoryVector C>
-    requires((MemoryMatrix<X> or is_conj_array_expr<X>) and //
-             have_same_value_type_v<X, B, C> and            //
-             is_blas_lapack_v<get_value_t<X>>)              //
-  void gemv(get_value_t<X> alpha, X const &x, B const &b, get_value_t<X> beta, C &&c) {
-
+  template <Matrix A, MemoryVector X, MemoryVector Y>
+    requires((MemoryMatrix<A> or is_conj_array_expr<A>) and have_same_value_type_v<A, X, Y> and is_blas_lapack_v<get_value_t<A>>)
+  void gemv(get_value_t<A> alpha, A const &a, X const &x, get_value_t<A> beta, Y &&y) { // NOLINT (temporary views are allowed here)
+    // get underlying matrix in case it is given as a lazy expression
     auto to_mat = []<Matrix Z>(Z const &z) -> decltype(auto) {
       if constexpr (is_conj_array_expr<Z>)
         return std::get<0>(z.a);
       else
         return z;
     };
-    auto &a = to_mat(x);
+    auto &mat = to_mat(a);
 
-    static constexpr bool conj_A = is_conj_array_expr<X>;
+    // compile-time checks
+    using mat_type = decltype(mat);
+    static_assert(mem::have_compatible_addr_space<mat_type, X, Y>);
 
-    using A = decltype(a);
-    static_assert(mem::have_compatible_addr_space<A, B, C>);
+    // runtime checks
+    EXPECTS(mat.extent(1) == x.extent(0));
+    EXPECTS(mat.extent(0) == y.extent(0));
+    EXPECTS(mat.indexmap().min_stride() == 1);
+    EXPECTS(x.indexmap().min_stride() == 1);
+    EXPECTS(y.indexmap().min_stride() == 1);
 
-    EXPECTS(a.extent(1) == b.extent(0));
-    EXPECTS(a.extent(0) == c.extent(0));
+    // gather parameters for gemv call
+    static constexpr bool conj_A = is_conj_array_expr<A>;
+    char op_a                    = get_op<conj_A, /* transpose = */ !has_F_layout<mat_type>>;
+    auto [m, n]                  = mat.shape();
+    if constexpr (has_C_layout<mat_type>) std::swap(m, n);
 
-    // Must be lapack compatible
-    EXPECTS(a.indexmap().min_stride() == 1);
-    EXPECTS(b.indexmap().min_stride() == 1);
-    EXPECTS(c.indexmap().min_stride() == 1);
-
-    char op_a   = get_op<conj_A, /*transpose =*/!has_F_layout<A>>;
-    auto [m, n] = a.shape();
-    if constexpr (has_C_layout<A>) std::swap(m, n);
-
-    if constexpr (mem::have_device_compatible_addr_space<A, B, C>) {
+    if constexpr (mem::have_device_compatible_addr_space<mat_type, X, Y>) {
 #if defined(NDA_HAVE_DEVICE)
-      device::gemv(op_a, m, n, alpha, a.data(), get_ld(a), b.data(), b.indexmap().strides()[0], beta, c.data(), c.indexmap().strides()[0]);
+      device::gemv(op_a, m, n, alpha, mat.data(), get_ld(mat), x.data(), x.indexmap().strides()[0], beta, y.data(), y.indexmap().strides()[0]);
 #else
       compile_error_no_gpu();
 #endif
     } else {
-      f77::gemv(op_a, m, n, alpha, a.data(), get_ld(a), b.data(), b.indexmap().strides()[0], beta, c.data(), c.indexmap().strides()[0]);
+      f77::gemv(op_a, m, n, alpha, mat.data(), get_ld(mat), x.data(), x.indexmap().strides()[0], beta, y.data(), y.indexmap().strides()[0]);
     }
   }
 

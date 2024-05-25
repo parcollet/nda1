@@ -14,10 +14,18 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a C++ interface for the GPU versions of various BLAS routines.
+ */
+
 #pragma once
 
-#include <nda/exceptions.hpp>
-#include <complex>
+#include "../tools.hpp"
+
+#ifndef NDA_HAVE_MAGMA
+#include "../../exceptions.hpp"
+#endif // NDA_HAVE_MAGMA
 
 namespace nda::blas::device {
 
@@ -70,7 +78,7 @@ namespace nda::blas::device {
   void scal(int M, double alpha, double *x, int incx);
   void scal(int M, dcomplex alpha, dcomplex *x, int incx);
 
-  void swap(int N, double *x, int incx, double *Y, int incy);
-  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy);
+  void swap(int N, double *x, int incx, double *Y, int incy);     // NOLINT (this is a BLAS swap)
+  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy); // NOLINT (this is a BLAS swap)
 
 } // namespace nda::blas::device

@@ -14,21 +14,25 @@
 //
 // Authors: Thomas Hahn, Henri Menke, Miguel Morales, Olivier Parcollet, Nils Wentzell
 
-#include <nda/nda.hpp>
-#include <nda/exceptions.hpp>
-#include "cxx_interface.hpp"
+/**
+ * @file
+ * @brief Implementation details for blas/interface/cxx_interface.hpp.
+ */
 
 // Extracted from Reference Lapack (https://github.com/Reference-LAPACK):
-#include "cblas_f77.h"
+#include "./cblas_f77.h"
+#include "./cxx_interface.hpp"
+#include "../tools.hpp"
 
-#include <string>
-#include <vector>
-
-using namespace std::string_literals;
+#include <cstddef>
 
 #ifdef NDA_USE_MKL
+#include "../../declarations.hpp"
+
 #include <mkl.h>
+
 namespace nda::blas {
+
 #ifdef NDA_USE_MKL_RT
   static int const mkl_interface_layer = mkl_set_interface_layer(MKL_INTERFACE_LP64 + MKL_INTERFACE_GNU);
 #endif
@@ -36,25 +40,28 @@ namespace nda::blas {
   inline auto *mklcplx(nda::dcomplex const *c) { return reinterpret_cast<const MKL_Complex16 *>(c); }   // NOLINT
   inline auto *mklcplx(nda::dcomplex **c) { return reinterpret_cast<MKL_Complex16 **>(c); }             // NOLINT
   inline auto *mklcplx(nda::dcomplex const **c) { return reinterpret_cast<const MKL_Complex16 **>(c); } // NOLINT
+
 } // namespace nda::blas
 #endif
 
-// Define a complex struct which is returned by BLAS functions
 namespace {
+
+  // complex struct which is returned by BLAS functions
   struct nda_complex_double {
     double real;
     double imag;
   };
+
 } // namespace
 
-// Manual Include since cblas uses Fortan _sub to wrap function again
+// manually define dot routines since cblas_f77.h uses "_sub" to wrap the Fortran routines
 #define F77_ddot F77_GLOBAL(ddot, DDOT)
 #define F77_zdotu F77_GLOBAL(zdotu, DDOT)
 #define F77_zdotc F77_GLOBAL(zdotc, DDOT)
 extern "C" {
 double F77_ddot(FINT, const double *, FINT, const double *, FINT);
-nda_complex_double F77_zdotu(FINT, const double *, FINT, const double *, FINT); // NOLINT
-nda_complex_double F77_zdotc(FINT, const double *, FINT, const double *, FINT); // NOLINT
+nda_complex_double F77_zdotu(FINT, const double *, FINT, const double *, FINT);
+nda_complex_double F77_zdotc(FINT, const double *, FINT, const double *, FINT);
 }
 
 namespace nda::blas::f77 {
@@ -68,6 +75,7 @@ namespace nda::blas::f77 {
   void axpy(int N, dcomplex alpha, const dcomplex *x, int incx, dcomplex *Y, int incy) {
     F77_zaxpy(&N, blacplx(&alpha), blacplx(x), &incx, blacplx(Y), &incy);
   }
+
   // No Const In Wrapping!
   void copy(int N, const double *x, int incx, double *Y, int incy) { F77_dcopy(&N, x, &incx, Y, &incy); }
   void copy(int N, const dcomplex *x, int incx, dcomplex *Y, int incy) { F77_zcopy(&N, blacplx(x), &incx, blacplx(Y), &incy); }
@@ -140,7 +148,9 @@ namespace nda::blas::f77 {
 #if defined(NDA_USE_MKL) && INTEL_MKL_VERSION >= 20200002
     dgemm_batch_strided(&op_a, &op_b, &M, &N, &K, &alpha, A, &LDA, &strideA, B, &LDB, &strideB, &beta, C, &LDC, &strideC, &batch_count);
 #else
-    for (int i = 0; i < batch_count; ++i) gemm(op_a, op_b, M, N, K, alpha, A + i * strideA, LDA, B + i * strideB, LDB, beta, C + i * strideC, LDC);
+    for (int i = 0; i < batch_count; ++i)
+      gemm(op_a, op_b, M, N, K, alpha, A + static_cast<ptrdiff_t>(i * strideA), LDA, B + static_cast<ptrdiff_t>(i * strideB), LDB, beta,
+           C + static_cast<ptrdiff_t>(i * strideC), LDC);
 #endif
   }
   void gemm_batch_strided(char op_a, char op_b, int M, int N, int K, dcomplex alpha, const dcomplex *A, int LDA, int strideA, const dcomplex *B,
@@ -149,7 +159,9 @@ namespace nda::blas::f77 {
     zgemm_batch_strided(&op_a, &op_b, &M, &N, &K, mklcplx(&alpha), mklcplx(A), &LDA, &strideA, mklcplx(B), &LDB, &strideB, mklcplx(&beta), mklcplx(C),
                         &LDC, &strideC, &batch_count);
 #else
-    for (int i = 0; i < batch_count; ++i) gemm(op_a, op_b, M, N, K, alpha, A + i * strideA, LDA, B + i * strideB, LDB, beta, C + i * strideC, LDC);
+    for (int i = 0; i < batch_count; ++i)
+      gemm(op_a, op_b, M, N, K, alpha, A + static_cast<ptrdiff_t>(i * strideA), LDA, B + static_cast<ptrdiff_t>(i * strideB), LDB, beta,
+           C + static_cast<ptrdiff_t>(i * strideC), LDC);
 #endif
   }
 
@@ -170,7 +182,9 @@ namespace nda::blas::f77 {
   void scal(int M, double alpha, double *x, int incx) { F77_dscal(&M, &alpha, x, &incx); }
   void scal(int M, dcomplex alpha, dcomplex *x, int incx) { F77_zscal(&M, blacplx(&alpha), blacplx(x), &incx); }
 
-  void swap(int N, double *x, int incx, double *Y, int incy) { F77_dswap(&N, x, &incx, Y, &incy); }
-  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy) { F77_zswap(&N, blacplx(x), &incx, blacplx(Y), &incy); }
+  void swap(int N, double *x, int incx, double *Y, int incy) { F77_dswap(&N, x, &incx, Y, &incy); } // NOLINT (this is a BLAS swap)
+  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy) {                                  // NOLINT (this is a BLAS swap)
+    F77_zswap(&N, blacplx(x), &incx, blacplx(Y), &incy);
+  }
 
 } // namespace nda::blas::f77

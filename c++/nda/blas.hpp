@@ -14,15 +14,18 @@
 //
 // Authors: Miguel Morales, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Includes all BLAS relevant headers.
+ */
+
 #pragma once
 
-/// BLAS Interface
-namespace nda::blas {}
-
-#include "blas/tools.hpp"
-#include "blas/gemm.hpp"
-#include "blas/gemm_batch.hpp"
-#include "blas/gemv.hpp"
-#include "blas/ger.hpp"
-#include "blas/dot.hpp"
-#include "blas/scal.hpp"
+#include "./blas/interface/cxx_interface.hpp"
+#include "./blas/dot.hpp"
+#include "./blas/gemm.hpp"
+#include "./blas/gemm_batch.hpp"
+#include "./blas/gemv.hpp"
+#include "./blas/ger.hpp"
+#include "./blas/scal.hpp"
+#include "./blas/tools.hpp"

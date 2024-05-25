@@ -14,19 +14,39 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic interface to the BLAS `scal` routine.
+ */
+
 #pragma once
+
+#include "./interface/cxx_interface.hpp"
+#include "./tools.hpp"
 #include "../concepts.hpp"
+#include "../device.hpp"
 #include "../mem/address_space.hpp"
-#include "tools.hpp"
-#include "interface/cxx_interface.hpp"
+#include "../traits.hpp"
 
 namespace nda::blas {
 
-  // --------
+  /**
+   * @brief Interface to the BLAS `scal` routine.
+   *
+   * @details Scales a vector by a constant. This function calculates
+   * \f[
+   *   \mathbf{x} \leftarrow \alpha \mathbf{x} ;,
+   * \f]
+   * where \f$ \alpha \f$ is a scalar constant and \f$ x \f$ is a vector.
+   *
+   * @tparam X nda::MemoryVector or a conjugate array expression.
+   * @param alpha Scalar constant.
+   * @param x Input/Output vector to be scaled.
+   */
   template <typename X>
     requires(MemoryVector<X> or is_conj_array_expr<X>)
-  void scal(get_value_t<X> alpha, X &&x) {
-    static_assert(is_blas_lapack_v<get_value_t<X>>, "Vector hold value_type incompatible with blas");
+  void scal(get_value_t<X> alpha, X &&x) { // NOLINT (temporary views are allowed here)
+    static_assert(is_blas_lapack_v<get_value_t<X>>, "Error in nda::blas::scal: Value type of vector is incompatible with blas");
 
     if constexpr (mem::on_host<X>) {
       f77::scal(x.size(), alpha, x.data(), x.indexmap().strides()[0]);

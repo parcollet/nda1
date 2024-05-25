@@ -14,24 +14,25 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
-#include <nda/nda.hpp>
-#include <nda/device.hpp>
-#include "cublas_interface.hpp"
+/**
+ * @file
+ * @brief Implementation details for blas/interface/cublas_interface.hpp.
+ */
+
+#include "./cublas_interface.hpp"
+#include "../tools.hpp"
+#include "../../device.hpp"
+#include "../../exceptions.hpp"
 
 #ifdef NDA_HAVE_MAGMA
 #include "magma_v2.h"
 #endif
 
-#include <string>
-#include <vector>
-
-using namespace std::string_literals;
-
 namespace nda::blas::device {
 
-  // Local function to get unique CuBlas Handle, Used by all routines
+  // Local function to get unique CuBlas handle.
   inline cublasHandle_t &get_handle() {
-    struct handle_storage_t { // RAII for handle
+    struct handle_storage_t { // RAII for the handle
       handle_storage_t() { cublasCreate(&handle); }
       ~handle_storage_t() { cublasDestroy(handle); }
       cublasHandle_t handle = {};
@@ -41,6 +42,7 @@ namespace nda::blas::device {
   }
 
 #ifdef NDA_HAVE_MAGMA
+  // Local function to get Magma op.
   constexpr magma_trans_t get_magma_op(char op) {
     switch (op) {
       case 'N': return MagmaNoTrans; break;
@@ -50,8 +52,8 @@ namespace nda::blas::device {
     }
   }
 
-  // Get Magma queue, Used by all magma routines
-  auto &get_magma_queue() {
+  // Local function to get Magma queue.
+  magma_queue_t &get_magma_queue() {
     struct queue_t {
       queue_t() {
         int device{};
@@ -69,8 +71,10 @@ namespace nda::blas::device {
   }
 #endif
 
-  /// Global option to turn on/off the cudaDeviceSynchronize after cublas library calls
-  static bool synchronize = true;
+  // Global option to turn on/off the cudaDeviceSynchronize after cublas library calls.
+  static bool synchronize = true; // NOLINT  (global option is on purpose)
+
+// Macro to check cublas calls.
 #define CUBLAS_CHECK(X, ...)                                                                                                                         \
   {                                                                                                                                                  \
     auto err = X(get_handle(), __VA_ARGS__);                                                                                                         \
@@ -184,7 +188,9 @@ namespace nda::blas::device {
   void scal(int M, double alpha, double *x, int incx) { CUBLAS_CHECK(cublasDscal, M, &alpha, x, incx); }
   void scal(int M, dcomplex alpha, dcomplex *x, int incx) { CUBLAS_CHECK(cublasZscal, M, cucplx(&alpha), cucplx(x), incx); }
 
-  void swap(int N, double *x, int incx, double *Y, int incy) { CUBLAS_CHECK(cublasDswap, N, x, incx, Y, incy); }
-  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy) { CUBLAS_CHECK(cublasZswap, N, cucplx(x), incx, cucplx(Y), incy); }
+  void swap(int N, double *x, int incx, double *Y, int incy) { CUBLAS_CHECK(cublasDswap, N, x, incx, Y, incy); } // NOLINT (this is a BLAS swap)
+  void swap(int N, dcomplex *x, int incx, dcomplex *Y, int incy) {                                               // NOLINT (this is a BLAS swap)
+    CUBLAS_CHECK(cublasZswap, N, cucplx(x), incx, cucplx(Y), incy);
+  }
 
 } // namespace nda::blas::device
