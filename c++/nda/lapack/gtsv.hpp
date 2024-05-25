@@ -14,64 +14,67 @@
 //
 // Authors: Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic interface to the LAPACK `gtsv` routine.
+ */
+
 #pragma once
 
-#include "../lapack.hpp"
+#include "./interface/cxx_interface.hpp"
+#include "../concepts.hpp"
+#include "../macros.hpp"
+#include "../mem/address_space.hpp"
+#include "../traits.hpp"
 
 namespace nda::lapack {
 
   /**
-   * Solves the equation
+   * @brief Interface to the LAPACK `gtsv` routine.
    *
-   *     A*X = B,
+   * @details Solves the equation
+   * \f[
+   *   \mathbf{A} \mathbf{X} = \mathbf{B},
+   * \f]
+   * where \f$ \mathbf{A} \f$ is an N-by-N tridiagonal matrix, by Gaussian elimination with
+   * partial pivoting.
    *
-   *  where A is an N-by-N tridiagonal matrix, by Gaussian elimination with
-   *  partial pivoting.
+   * Note that the equation \f$ \mathbf{A}^T \mathbf{X} = \mathbf{B} \f$ may be solved by
+   * interchanging the order of the arguments containing the subdiagonal elements.
    *
-   *  Note that the equation  A**T *X = B  may be solved by interchanging the
-   *  order of the arguments du and dl.
-   *
-   * [in,out]  dl is real/complex array, dimension (N-1)
-   *           On entry, dl must contain the (n-1) subdiagonal elements of
-   *           A.
-   *           On exit, dl is overwritten by the (n-2) elements of the
-   *           second superdiagonal of the upper triangular matrix U from
-   *           the LU factorization of A, in dl(1), ..., dl(n-2).
-   *
-   * [in,out]  d is real/complex array, dimension (N)
-   *           On entry, D must contain the diagonal elements of A.
-   *           On exit, D is overwritten by the n diagonal elements of U.
-   *
-   * [in,out]  du is real/complex array, dimension (N-1)
-   *           On entry, du must contain the (n-1) superdiagonal elements
-   *           of A.
-   *           On exit, du is overwritten by the (n-1) elements of the first
-   *           superdiagonal of U.
-   *
-   * [in,out]  b is real/complex array, dimension (LDB,NRHS)
-   *           On entry, the N-by-NRHS right hand side matrix B.
-   *           On exit, if INFO = 0, the N-by-NRHS solution matrix X.
-   *
-   * [return]  INFO is INTEGER
-   *           = 0:  successful exit
-   *           < 0:  if INFO = -i, the i-th argument had an illegal value
-   *           > 0:  if INFO = i, U(i,i) is exactly zero, and the solution
-   *                 has not been computed.  The factorization has not been
-   *                 completed unless i = N.
+   * @tparam DL nda::MemoryVector type.
+   * @tparam D nda::MemoryVector type.
+   * @tparam DU nda::MemoryVector type.
+   * @tparam B nda::MemoryArray type.
+   * @param dl Input/Output vector. On entry, it must contain the (n-1) subdiagonal elements
+   * of \f$ \mathbf{A} \f$. On exit, it is overwritten by the (n-2) elements of the second
+   * superdiagonal of the upper triangular matrix \f$ \mathbf{U} \f$ from the LU factorization
+   * of \f$ \mathbf{A} \f$.
+   * @param d Input/Output vector. On entry, it must contain the diagonal elements of \f$ \mathbf{A} \f$.
+   * On exit, it is overwritten by the n diagonal elements of \f$ \mathbf{U} \f$.
+   * @param du Input/Output vector. On entry, it must contain the (n-1) superdiagonal elements
+   * of \f$ \mathbf{A} \f$. On exit, it is overwritten by the (n-1) elements of the first superdiagonal
+   * of \f$ \mathbf{U} \f$ .
+   * @param b Input/Output array. On entry, the N-by-NRHS right hand side matrix \f$ \mathbf{B} \f$.
+   * On exit, if `INFO = 0`, the N-by-NRHS solution matrix \f$ \mathbf{X} \f$.
+   * @return Integer return code from the LAPACK call.
    */
   template <MemoryVector DL, MemoryVector D, MemoryVector DU, MemoryArray B>
     requires(have_same_value_type_v<DL, D, DU, B> and mem::on_host<DL, D, DU, B> and is_blas_lapack_v<get_value_t<DL>>)
-  int gtsv(DL &&dl, D &&d, DU &&du, B &&b) {
-    static_assert((get_rank<B> == 1 or get_rank<B> == 2), "gtsv: M must be an matrix/array/view of rank  1 or 2");
+  int gtsv(DL &&dl, D &&d, DU &&du, B &&b) { // NOLINT (temporary views are allowed here)
+    static_assert((get_rank<B> == 1 or get_rank<B> == 2), "Error in nda::lapack::gtsv: B must be an matrix/array/view of rank 1 or 2");
 
-    int N    = d.extent(0);
-    int NRHS = (get_rank<B> == 2 ? b.extent(1) : 1);
+    // get and check dimensions of input arrays
     EXPECTS(dl.extent(0) == d.extent(0) - 1); // "gtsv : dimension mismatch between sub-diagonal and diagonal vectors "
     EXPECTS(du.extent(0) == d.extent(0) - 1); // "gtsv : dimension mismatch between super-diagonal and diagonal vectors "
     EXPECTS(b.extent(0) == d.extent(0));      // "gtsv : dimension mismatch between diagonal vector and RHS matrix, "
 
+    // perform actual library call
+    int N    = d.extent(0);
+    int NRHS = (get_rank<B> == 2 ? b.extent(1) : 1);
     int info = 0;
     f77::gtsv(N, NRHS, dl.data(), d.data(), du.data(), b.data(), N, info);
     return info;
   }
+
 } // namespace nda::lapack

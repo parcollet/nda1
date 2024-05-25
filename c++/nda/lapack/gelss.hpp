@@ -14,80 +14,83 @@
 //
 // Authors: Thomas Hahn, Jason Kaye, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic interface to the LAPACK `gelss` routine.
+ */
+
 #pragma once
 
-#include "../lapack.hpp"
+#include "./interface/cxx_interface.hpp"
+#include "../basic_array.hpp"
+#include "../concepts.hpp"
+#include "../declarations.hpp"
+#include "../exceptions.hpp"
+#include "../macros.hpp"
+#include "../mem/address_space.hpp"
+#include "../traits.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <complex>
 
 namespace nda::lapack {
 
   /**
-   * Computes the minimum norm solution to a real/complex linear
-   * least squares problem:
+   * @brief Interface to the LAPACK `gelss` routine.
    *
-   * Minimize 2-norm(| b - A*x |).
+   * @details Computes the minimum norm solution to a complex linear least squares problem:
+   * \f[
+   *   \min_x | \mathbf{b} - \mathbf{A x} |_2
+   * \f]
+   * using the singular value decomposition (SVD) of \f$ \mathbf{A} \f$. \f$ \mathbf{A} \f$
+   * is an M-by-N matrix which may be rank-deficient.
    *
-   * using the singular value decomposition (SVD) of A. A is an M-by-N
-   * matrix which may be rank-deficient.
+   * Several right hand side vectors \f$ \mathbf{b} \f$ and solution vectors \f$ \mathbf{x} \f$
+   * can be handled in a single call; they are stored as the columns of the M-by-NRHS right hand
+   * side matrix \f$ \mathbf{B} \f$ and the N-by-NRHS solution matrix \f$ \mathbf{X} \f$.
    *
-   * Several right hand side vectors b and solution vectors x can be
-   * handled in a single call; they are stored as the columns of the
-   * M-by-NRHS right hand side matrix B and the N-by-NRHS solution matrix
-   * X.
+   * The effective rank of \f$ \mathbf{A} \f$ is determined by treating as zero those singular
+   * values which are less than RCOND times the largest singular value.
    *
-   * The effective rank of A is determined by treating as zero those
-   * singular values which are less than RCOND times the largest singular
-   * value.
-   *
-   * [in,out]  a is real/complex array, dimension (LDA,N)
-   *           On entry, the M-by-N matrix A.
-   *           On exit, the first min(m,n) rows of A are overwritten with
-   *           its right singular vectors, stored rowwise.
-   *
-   * [in,out]  b is real/complex array, dimension (LDB,NRHS)
-   *           On entry, the M-by-NRHS right hand side matrix B.
-   *           On exit, B is overwritten by the N-by-NRHS solution matrix X.
-   *           If m >= n and RANK = n, the residual sum-of-squares for
-   *           the solution in the i-th column is given by the sum of
-   *           squares of the modulus of elements n+1:m in that column.
-   *
-   * [out]     s is a double array, dimension (min(M,N))
-   *           The singular values of A in decreasing order.
-   *           The condition number of A in the 2-norm = S(1)/S(min(m,n)).
-   *
-   * [in]      rcond is a double used to determine the effective rank of A.
-   *           Singular values s(i) <= rcond*s(1) are treated as zero.
-   *           If rcond < 0, machine precision is used instead.
-   *
-   * [out]     The effective rank of A, i.e., the number of singular values
-   *           which are greater than RCOND*S(1).
-   *
-   * [return]  info is INTEGER
-   *           = 0:  successful exit
-   *           < 0:  if INFO = -i, the i-th argument had an illegal value.
-   *           > 0:  the algorithm for computing the SVD failed to converge;
-   *                 if INFO = i, i off-diagonal elements of an intermediate
-   *                 bidiagonal form did not converge to zero.
+   * @tparam A nda::MemoryMatrix type.
+   * @tparam B nda::MemoryArray type.
+   * @tparam S nda::MemoryVector type.
+   * @param a Input/output matrix. On entry, the M-by-N matrix \f$ \mathbf{A} \f$. On exit, the
+   * first min(m,n) rows of \f$ \mathbf{A} \f$ are overwritten with its right singular vectors,
+   * stored rowwise.
+   * @param b Input/output array. On entry, the M-by-NRHS right hand side matrix \f$ \mathbf{B} \f$.
+   * On exit, \f$ \mathbf{B} \f$ is overwritten by the N-by-NRHS solution matrix \f$ \mathbf{X} \f$.
+   * If `m >= n` and `RANK == n`, the residual sum-of-squares for the solution in the i-th column is
+   * given by the sum of squares of the modulus of elements `n+1:m` in that column.
+   * @param s Output vector. The singular values of \f$ \mathbf{A} \f$ in decreasing order. The condition
+   * number of A in the 2-norm is `s(1)/s(min(m,n))`.
+   * @param rcond It is used to determine the effective rank of \f$ \mathbf{A} \f$. Singular values
+   * `s(i) <= rcond * s(1)` are treated as zero. If `rcond < 0`, machine precision is used instead.
+   * @param rank Output variable of the effective rank of \f$ \mathbf{A} \f$, i.e., the number of
+   * singular values which are greater than `rcond * s(1)`.
+   * @return Integer return code.
    */
   template <MemoryMatrix A, MemoryArray B, MemoryVector S>
     requires(have_same_value_type_v<A, B> and mem::on_host<A, B, S> and is_blas_lapack_v<get_value_t<A>>)
-  int gelss(A &&a, B &&b, S &&s, double rcond, int &rank) {
-    static_assert(has_F_layout<A> and has_F_layout<B>, "C order not implemented");
-    static_assert(MemoryVector<B> or MemoryMatrix<B>, "B must be vector or matrix");
+  int gelss(A &&a, B &&b, S &&s, double rcond, int &rank) { // NOLINT (temporary views are allowed here)
+    static_assert(has_F_layout<A> and has_F_layout<B>, "Error in nda::lapack::gelss: C order not supported");
+    static_assert(MemoryVector<B> or MemoryMatrix<B>, "Error in nda::lapack::gelss: B must be a vector or a matrix");
 
-    using T    = get_value_t<A>;
-    auto dm    = std::min(a.extent(0), a.extent(1));
-    auto rwork = array<double, 1>(5 * dm);
+    auto dm = std::min(a.extent(0), a.extent(1));
     if (s.size() < dm) s.resize(dm);
 
-    // Must be lapack compatible
+    // must be lapack compatible
     EXPECTS(a.indexmap().min_stride() == 1);
     EXPECTS(b.indexmap().min_stride() == 1);
     EXPECTS(s.indexmap().min_stride() == 1);
 
-    // First call to get the optimal bufferSize
-    T bufferSize_T{};
-    int info = 0;
-    int nrhs = 1, ldb = b.size(); // Defaults for B MemoryVector
+    // first call to get the optimal bufferSize
+    using value_type = get_value_t<A>;
+    value_type bufferSize_T{};
+    auto rwork = array<double, 1>(5 * dm);
+    int info   = 0;
+    int nrhs = 1, ldb = b.size(); // defaults for B MemoryVector
     if constexpr (MemoryMatrix<B>) {
       nrhs = b.extent(1);
       ldb  = get_ld(b);
@@ -95,12 +98,12 @@ namespace nda::lapack {
     f77::gelss(a.extent(0), a.extent(1), nrhs, a.data(), get_ld(a), b.data(), ldb, s.data(), rcond, rank, &bufferSize_T, -1, rwork.data(), info);
     int bufferSize = static_cast<int>(std::ceil(std::real(bufferSize_T)));
 
-    // Allocate work buffer and perform actual library call
-    array<T, 1> work(bufferSize);
+    // allocate work buffer and perform actual library call
+    array<value_type, 1> work(bufferSize);
     f77::gelss(a.extent(0), a.extent(1), nrhs, a.data(), get_ld(a), b.data(), ldb, s.data(), rcond, rank, work.data(), bufferSize, rwork.data(),
                info);
 
-    if (info) NDA_RUNTIME_ERROR << "Error in gesvd : info = " << info;
+    if (info) NDA_RUNTIME_ERROR << "Error in nda::lapack::gelss: info = " << info;
     return info;
   }
 

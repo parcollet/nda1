@@ -14,18 +14,16 @@
 //
 // Authors: Jason Kaye, Olivier Parcollet, Nils Wentzell
 
-#include <nda/nda.hpp>
-#include <nda/macros.hpp>
-#include <nda/exceptions.hpp>
-#include <nda/mem/handle.hpp>
-#include "cxx_interface.hpp"
+/**
+ * @file
+ * @brief Implementation details for lapack/interface/cxx_interface.hpp.
+ */
 
 // Extracted from Reference Lapack (https://github.com/Reference-LAPACK):
-#include "lapack.h"
+#include "./lapack.h"
+#include "./cxx_interface.hpp"
 
-#include <string>
-
-using namespace std::string_literals;
+#include <complex>
 
 namespace nda::lapack::f77 {
 

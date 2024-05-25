@@ -14,29 +14,20 @@
 //
 // Authors: Jason Kaye, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Includes all LAPACK relevant headers.
+ */
+
 #pragma once
-#include <complex>
 
-#include "basic_array.hpp"
-#include "blas/tools.hpp"
-#include "lapack/interface/cxx_interface.hpp"
-
-/// LAPACK Interface
-namespace nda::lapack {
-  using blas::get_ld;
-  using blas::get_ncols;
-  using blas::get_op;
-  using blas::has_C_layout;
-  using blas::has_F_layout;
-  using blas::is_conj_array_expr;
-} // namespace nda::lapack
-
-#include "lapack/gelss.hpp"
-#include "lapack/gesvd.hpp"
-#include "lapack/geqp3.hpp"
-#include "lapack/getrf.hpp"
-#include "lapack/getri.hpp"
-#include "lapack/getrs.hpp"
-#include "lapack/gtsv.hpp"
-#include "lapack/orgqr.hpp"
-#include "lapack/ungqr.hpp"
+#include "./lapack/interface/cxx_interface.hpp"
+#include "./lapack/gelss.hpp"
+#include "./lapack/geqp3.hpp"
+#include "./lapack/gesvd.hpp"
+#include "./lapack/getrf.hpp"
+#include "./lapack/getri.hpp"
+#include "./lapack/getrs.hpp"
+#include "./lapack/gtsv.hpp"
+#include "./lapack/orgqr.hpp"
+#include "./lapack/ungqr.hpp"

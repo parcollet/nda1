@@ -14,9 +14,14 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a C++ interface for the GPU versions of various LAPACK routines.
+ */
+
 #pragma once
 
-#include <complex>
+#include "../../blas/tools.hpp"
 
 namespace nda::lapack::device {
 

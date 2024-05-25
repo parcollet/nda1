@@ -13,116 +13,181 @@
 // limitations under the License.
 //
 // Authors: Jason Kaye, Olivier Parcollet, Nils Wentzell
+/**
+ * @file
+ * @brief Provides worker classes that can be used for solving linear least square problems.
+ */
 
 #pragma once
 
-#include <optional>
-
 #include "./gesvd.hpp"
+#include "../algorithms.hpp"
+#include "../basic_array.hpp"
+#include "../declarations.hpp"
+#include "../exceptions.hpp"
+#include "../layout/policies.hpp"
+#include "../layout_transforms.hpp"
 #include "../linalg.hpp"
+#include "../mapped_functions.hpp"
+#include "../matrix_functions.hpp"
+
+#include <itertools/itertools.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <complex>
+#include <optional>
+#include <utility>
+#include <vector>
 
 namespace nda::lapack {
 
+  /**
+   * @brief Worker class for solving linear least square problems.
+   *
+   * @details See https://math.stackexchange.com/questions/772039/how-does-the-svd-solve-the-least-squares-problem.
+   *
+   * @tparam T Value type of the given problem.
+   */
   template <typename T>
   class gelss_worker {
-    // cf. Notation in https://math.stackexchange.com/questions/772039/how-does-the-svd-solve-the-least-squares-problem
-
-    // Number of rows (M) and columns (N) of the Matrix A
+    // Number of rows (M) and columns (N) of the Matrix A.
     long M, N;
 
-    // The matrix to be decomposed by SVD
     // FIXME Do we need to store it ? only use n_var
+    // Matrix to be decomposed by SVD.
     matrix<T> A;
 
-    // The (pseudo) inverse of A, i.e. V * Diag(S_vec)^{-1} * UT, for the least square procedure
-    matrix<T> V_x_InvS_x_UT;
+    // (Pseudo) Inverse of A, i.e. V * Diag(S_vec)^{-1} * UH, for the least square problem.
+    matrix<T> V_x_InvS_x_UH;
 
-    // The part of UT fixing the error of the LLS
-    matrix<T> UT_NULL;
+    // Part of UH fixing the error of the least square problem.
+    matrix<T> UH_NULL;
 
-    // Vector containing the singular values
+    // Array containing the singular values.
     array<double, 1> s_vec;
 
     public:
+    /**
+     * @brief Get the number of variables of the given problem.
+     * @return Number of columns of the matrix A.
+     */
     int n_var() const { return A.extent(1); }
 
-    /// ???
-    // FIXME Looks it is not used
-    //matrix<T> const &A_mat() const { return A; }
+    /**
+     * @brief Get the singular value array.
+     * @return 1-dimensional array containing the singular values.
+     */
+    [[nodiscard]] array<double, 1> const &S_vec() const { return s_vec; }
 
-    /// ???
-    array<double, 1> const &S_vec() const { return s_vec; }
+    /**
+     * @brief Construct a new worker object for a given matrix A.
+     *
+     * @details It performs the SVD decomposition of the given matrix A and calculates
+     * the (pseudo) inverse of A. Furthermore, it sets the null space term which determines
+     * the error of the least square problem.
+     *
+     * @param A_ Matrix to be decomposed by SVD.
+     */
+    gelss_worker(matrix<T> A_) : M(A_.extent(0)), N(A_.extent(1)), A(std::move(A_)), s_vec(std::min(M, N)) {
+      if (N > M) NDA_RUNTIME_ERROR << "Error in nda::lapack::gelss_worker: Matrix A cannot have more columns than rows";
 
-    /// ???
-    gelss_worker(matrix<T> _A) : M(_A.extent(0)), N(_A.extent(1)), A(std::move(_A)), s_vec(std::min(M, N)) {
-
-      if (N > M) NDA_RUNTIME_ERROR << "ERROR: Matrix A for linear least square procedure cannot have more columns than rows";
-
+      // intialize matrices
       matrix<T, F_layout> A_FL{A};
       matrix<T, F_layout> U(M, M);
-      matrix<T, F_layout> VT(N, N);
+      matrix<T, F_layout> VH(N, N);
 
-      // Calculate the SVD A = U * Diag(S_vec) * VT
-      gesvd(A_FL, s_vec, U, VT);
+      // calculate the SVD: A = U * Diag(S_vec) * VH
+      gesvd(A_FL, s_vec, U, VH);
 
-      // Calculate the matrix V * Diag(S_vec)^{-1} * UT for the least square procedure
+      // calculate the matrix V * Diag(S_vec)^{-1} * UH for the least square procedure
       matrix<double, F_layout> S_inv(N, M);
       S_inv = 0.;
-      for (int i : range(std::min(M, N))) S_inv(i, i) = 1.0 / s_vec(i);
-      V_x_InvS_x_UT = dagger(VT) * S_inv * dagger(U);
+      for (long i : range(std::min(M, N))) S_inv(i, i) = 1.0 / s_vec(i);
+      V_x_InvS_x_UH = dagger(VH) * S_inv * dagger(U);
 
-      // Read off U_Null for defining the error of the least square procedure
-      if (N < M) UT_NULL = dagger(U)(range(N, M), range(M));
+      // read off UH_Null for defining the error of the least square procedure
+      if (N < M) UH_NULL = dagger(U)(range(N, M), range(M));
     }
 
-    /// Solve the least-square problem that minimizes || A * x - B ||_2 given A and B
-    std::pair<matrix<T>, double> operator()(matrix_const_view<T> B, std::optional<long> /*inner_matrix_dim*/ = {}) const {
+    /**
+     * @brief Solve the least-square problem for a given right hand side matrix B.
+     * @param B Right hand side matrix.
+     * @return A std::pair containing the solution matrix X and the error of the least
+     * square problem.
+     */
+    std::pair<matrix<T>, double> operator()(matrix_const_view<T> B, std::optional<long> /* inner_matrix_dim */ = {}) const {
       using std::sqrt;
       double err = 0.0;
       if (M != N) {
         std::vector<double> err_vec;
-        for (int i : range(B.shape()[1])) err_vec.push_back(frobenius_norm(UT_NULL * B(range::all, range(i, i + 1))) / sqrt(B.shape()[0]));
+        for (long i : range(B.shape()[1])) err_vec.push_back(frobenius_norm(UH_NULL * B(range::all, range(i, i + 1))) / sqrt(B.shape()[0]));
         err = *std::max_element(err_vec.begin(), err_vec.end());
       }
-      return std::make_pair(V_x_InvS_x_UT * B, err);
+      return std::make_pair(V_x_InvS_x_UH * B, err);
     }
 
-    std::pair<vector<T>, double> operator()(vector_const_view<T> B, std::optional<long> /*inner_matrix_dim*/ = {}) const {
+    /**
+     * @brief Solve the least-square problem for a given right hand side vector b.
+     * @param b Right hand side vector.
+     * @return A std::pair containing the solution vector x and the error of the least
+     * square problem.
+     */
+    std::pair<vector<T>, double> operator()(vector_const_view<T> b, std::optional<long> /*inner_matrix_dim*/ = {}) const {
       using std::sqrt;
       double err = 0.0;
-      if (M != N) { err = norm(UT_NULL * B) / sqrt(B.size()); }
-      return std::make_pair(V_x_InvS_x_UT * B, err);
+      if (M != N) { err = norm(UH_NULL * b) / sqrt(b.size()); }
+      return std::make_pair(V_x_InvS_x_UH * b, err);
     }
   };
 
-  // Least square solver version specific for hermitian tail-fitting.
-  // Restrict the resulting vector of moment matrices to one of hermitian matrices
+  /**
+   * @brief Worker class for solving linear least square problems for hermitian tail-fitting.
+   * @details Restrict the resulting vector of moment matrices to one of hermitian matrices.
+   */
   struct gelss_worker_hermitian {
-
+    private:
+    // Complex double type.
     using dcomplex = std::complex<double>;
 
-    private:
-    // The matrix to be decomposed by SVD
+    // Matrix to be decomposed by SVD.
     matrix<dcomplex> A;
 
-    // Solver for the associated real-valued least-squares problem
+    // Solver for the associated real-valued least-squares problem.
     gelss_worker<dcomplex> _lss;
 
-    // Solver for the associated real-valued least-squares problem imposing hermiticity
+    // Solver for the associated real-valued least-squares problem imposing hermiticity.
     gelss_worker<dcomplex> _lss_matrix;
 
     public:
-    int n_var() const { return A.extent(1); }
+    /**
+     * @brief Get the number of variables of the given problem.
+     * @return Number of columns of the matrix A.
+     */
+    int n_var() const { return static_cast<int>(A.extent(1)); }
 
-    //matrix<dcomplex> const &A_mat() const { return A; }
+    /**
+     * @brief Get the singular value array.
+     * @return 1-dimensional array containing the singular values.
+     */
     array<double, 1> const &S_vec() const { return _lss.S_vec(); }
 
-    gelss_worker_hermitian(matrix<dcomplex> _A) : A(std::move(_A)), _lss(A), _lss_matrix(vstack(A, conj(A))) {}
+    /**
+     * @brief Construct a new worker object for a given matrix A.
+     * @param A_ Matrix to be decomposed by SVD.
+     */
+    gelss_worker_hermitian(matrix<dcomplex> A_) : A(std::move(A_)), _lss(A), _lss_matrix(vstack(A, conj(A))) {}
 
-    // Solve the least-square problem that minimizes || A * x - B ||_2 given A and B with a real-valued vector x
+    /**
+     * @brief Solve the least-square problem for a given right hand side matrix B.
+     * @param B Right hand side matrix.
+     * @return A std::pair containing the solution matrix X and the error of the least
+     * square problem.
+     */
     std::pair<matrix<dcomplex>, double> operator()(matrix_const_view<dcomplex> B, std::optional<long> inner_matrix_dim = {}) const {
-
-      if (not inner_matrix_dim.has_value()) NDA_RUNTIME_ERROR << "Inner matrix dimension required for hermitian least square fitting\n";
+      if (not inner_matrix_dim.has_value())
+        NDA_RUNTIME_ERROR << "Error in nda::lapack::gelss_worker_hermitian: Inner matrix dimension required for hermitian least square fitting";
       long d = *inner_matrix_dim;
 
       // Construction of an inner 'adjoint' matrix by performing the following steps
@@ -134,7 +199,7 @@ namespace nda::lapack {
         auto l       = idx_map.lengths();
         //auto s       = idx_map.strides();
 
-        NDA_ASSERT2(l[1] % (d * d) == 0, "ERROR in hermitian least square fitting: Data shape incompatible with given dimension");
+        NDA_ASSERT2(l[1] % (d * d) == 0, "Error in nda::lapack::gelss_worker_hermitian: Data shape incompatible with given dimension");
         long N = l[1] / (d * d);
 
         // We reshape the Matrix into a dim=4 array and swap the two innermost indices

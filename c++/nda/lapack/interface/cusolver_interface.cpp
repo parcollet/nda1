@@ -14,21 +14,27 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
-#include <nda/nda.hpp>
-#include <nda/macros.hpp>
-#include <nda/exceptions.hpp>
-#include "cxx_interface.hpp"
+/**
+ * @file
+ * @brief Implementation details for lapack/interface/cusolver_interface.hpp.
+ */
 
-#include "cuda_runtime.h"
-#include "cusolverDn.h"
+#include "./cusolver_interface.hpp"
+#include "../../blas/tools.hpp"
+#include "../../declarations.hpp"
+#include "../../device.hpp"
+#include "../../exceptions.hpp"
+#include "../../macros.hpp"
+#include "../../mem/allocators.hpp"
+#include "../../mem/handle.hpp"
+
+#include <cusolverDn.h>
 
 #include <string>
 
-using namespace std::string_literals;
-
 namespace nda::lapack::device {
 
-  // Local function to get unique CuSolver Handle, Used by all routines
+  // Local function to get unique CuSolver handle.
   inline cusolverDnHandle_t &get_handle() {
     struct handle_storage_t { // RAII for handle
       handle_storage_t() { cusolverDnCreate(&handle); }
@@ -39,14 +45,16 @@ namespace nda::lapack::device {
     return sto.handle;
   }
 
-  // Get Integer Pointer in unified memory, Used to return info from lapack routines
+  // Get an integer pointer in unified memory to return info from lapack routines.
   int *get_info_ptr() {
     static auto info_u_handle = mem::handle_heap<int, mem::mallocator<mem::Unified>>(1);
     return info_u_handle.data();
   }
 
-  /// Global option to turn on/off the cudaDeviceSynchronize after cusolver library calls
-  static bool synchronize = true;
+  // Global option to turn on/off the cudaDeviceSynchronize after cusolver library calls.
+  static bool synchronize = true; // NOLINT  (global option is on purpose)
+
+// Macro to check cusolver calls.
 #define CUSOLVER_CHECK(X, info, ...)                                                                                                                 \
   auto err = X(get_handle(), __VA_ARGS__, get_info_ptr());                                                                                           \
   if (err != CUSOLVER_STATUS_SUCCESS) { NDA_RUNTIME_ERROR << AS_STRING(X) << " failed with error code " << std::to_string(err); }                    \

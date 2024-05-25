@@ -14,50 +14,58 @@
 //
 // Authors: Miguel Morales, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic interface to the LAPACK `getrf` routine.
+ */
+
 #pragma once
 
-#include "../lapack.hpp"
+#include "./interface/cxx_interface.hpp"
+#include "../concepts.hpp"
+#include "../macros.hpp"
+#include "../mem/address_space.hpp"
+#include "../traits.hpp"
+
+#include <algorithm>
+#include <type_traits>
 
 namespace nda::lapack {
 
   /**
-   * Computes an LU factorization of a general M-by-N matrix A
-   * using partial pivoting with row interchanges.
+   * @brief Interface to the LAPACK `getrf` routine.
+   *
+   * @details Computes an LU factorization of a general M-by-N matrix A using partial
+   * pivoting with row interchanges.
    *
    * The factorization has the form
-   *    A = P * L * U
-   * where P is a permutation matrix, L is lower triangular with unit
-   * diagonal elements (lower trapezoidal if m > n), and U is upper
+   * \f[
+   *   \mathbf{A} = \mathbf{P L U}
+   * \f]
+   * where \f$ \mathbf{P} \f$ is a permutation matrix, \f$ \mathbf{L} \f$ is lower triangular
+   * with unit diagonal elements (lower trapezoidal if m > n), and \f$ \mathbf{U} \f$ is upper
    * triangular (upper trapezoidal if m < n).
    *
    * This is the right-looking Level 3 BLAS version of the algorithm.
    *
-   * [in,out]  a is real/complex array, dimension (LDA,N)
-   *           On entry, the M-by-N matrix to be factored.
-   *           On exit, the factors L and U from the factorization
-   *           a = P*l*u; the unit diagonal elements of L are not stored.
-   *
-   * [out]     ipiv is INTEGER array, dimension (min(M,N))
-   *           The pivot indices; for 1 <= i <= min(M,N), row i of the
-   *           matrix was interchanged with row ipiv(i).
-   *
-   * [return]  info is INTEGER
-   *           = 0:  successful exit
-   *           < 0:  if info = -i, the i-th argument had an illegal value
-   *           > 0:  if info = i, U(i,i) is exactly zero. The factorization
-   *                 has been completed, but the factor U is exactly
-   *                 singular, and division by zero will occur if it is used
-   *                 to solve a system of equations.
+   * @tparam A nda::MemoryMatrix type.
+   * @tparam IPIV nda::MemoryVector type.
+   * @param a Input/output matrix. On entry, the M-by-N matrix to be factored. On exit, the
+   * factors \f$ \mathbf{L} \f$ and \f$ \mathbf{U} \f$ from the factorization \f$ \mathbf{A} =
+   * \mathbf{P L U} \f$; the unit diagonal elements of \f$ \mathbf{L} \f$ are not stored.
+   * @param tau Output vector.The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i of
+   * the matrix was interchanged with row IPIV(i).
+   * @return Integer return code from the LAPACK call.
    */
   template <MemoryMatrix A, MemoryVector IPIV>
     requires(mem::have_compatible_addr_space<A, IPIV> and is_blas_lapack_v<get_value_t<A>>)
-  int getrf(A &&a, IPIV &&ipiv) {
-    static_assert(std::is_same_v<get_value_t<IPIV>, int>, "Pivoting array must have elements of type int");
+  int getrf(A &&a, IPIV &&ipiv) { // NOLINT (temporary views are allowed here)
+    static_assert(std::is_same_v<get_value_t<IPIV>, int>, "Error in nda::lapack::getri: Pivoting array must have elements of type int");
 
     auto dm = std::min(a.extent(0), a.extent(1));
-    if (ipiv.size() < dm) ipiv.resize(dm);
+    if (ipiv.size() < dm) ipiv.resize(dm); // ipiv needs to be a regular array?
 
-    // Must be lapack compatible
+    // must be lapack compatiblem
     EXPECTS(a.indexmap().min_stride() == 1);
     EXPECTS(ipiv.indexmap().min_stride() == 1);
 

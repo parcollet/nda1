@@ -14,75 +14,82 @@
 //
 // Authors: Jason Kaye, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides a generic interface to the LAPACK `geqp3` routine.
+ */
+
 #pragma once
 
-#include "../lapack.hpp"
-#include "nda/concepts.hpp"
+#include "./interface/cxx_interface.hpp"
+#include "../basic_array.hpp"
+#include "../concepts.hpp"
+#include "../declarations.hpp"
+#include "../exceptions.hpp"
+#include "../macros.hpp"
+#include "../mem/address_space.hpp"
+#include "../traits.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <complex>
+#include <type_traits>
 
 namespace nda::lapack {
 
   /**
-   * Computes a QR factorization with column pivoting of an M-by-N matrix A:
+   * @brief Interface to the LAPACK `geqp3` routine.
    *
-   * A*P = Q*R
-   *
+   * @details Computes a QR factorization with column pivoting of a matrix \f$ \mathbf{A} \f$:
+   * \f[
+   *   \mathbf{A P} = \mathbf{Q R}
+   * \f]
    * using Level 3 BLAS.
    *
-   * [in,out]  a is real/complex array, dimension (LDA,N)
-   *           On entry, the M-by-N matrix A.  On exit, the upper triangle of a
-   *           contains the min(M,N)-by-N upper triangular matrix R; the
-   *           elements below the diagonal, together with the length min(M,N)
-   *           vector tau, represent the unitary matrix Q as a product of
-   *           min(M,N) elementary reflectors.
-   *
-   * [in,out]  jpvt is integer array, dimension (N)
-   *           On entry, if jpvt(j).ne.0, the j-th column of A is permuted to
-   *           the front of A*P (a leading column); if jpvt(j)=0, the j-th
-   *           column of A is a free column.  On exit, if JPVT(j)=k, then the
-   *           j-th column of A*P was the the k-th column of A.
-   *
-   * [out]     tau is a real/complex array, dimension (min(M,N))
-   *           The scalar factors of the elementary reflectors.
-   *
-   * [return]  info is INTEGER
-   *           = 0: successful exit.
-   *           < 0: if INFO = -i, the i-th argument had an illegal value.
-   *
-   * @note If one wishes to carry out the column pivoted QR algorithm, the array
-   * \p jpvt must be initialized to zero; see the explanation above of the
-   * argument jpvt.
+   * @tparam A nda::MemoryMatrix type.
+   * @tparam JPVT nda::MemoryVector type.
+   * @tparam TAU nda::MemoryVector type.
+   * @param a Input/output matrix. On entry, the M-by-N matrix \f$ \mathbf{A} \f$. On exit, the
+   * upper triangle of the array contains the min(M,N)-by-N upper trapezoidal matrix \f$ \mathbf{R} \f$;
+   * the elements below the diagonal, together with the array `tau`, represent the unitary matrix
+   * \f$ \mathbf{Q} \f$ as a product of min(M,N) elementary reflectors.
+   * @param jpvt Input/output vector. On entry, if `JPVT(J) !=n 0`, the J-th column of \f$ \mathbf{A} \f$
+   * is permuted to the front of \f$ \mathbf{A P} \f$ (a leading column); if `JPVT(J) == 0`, the J-th
+   * column of \f$ \mathbf{A} \f$ is a free column. On exit, if `JPVT(J) == K`, then the J-th column of
+   * \f$ \mathbf{A P} \f$ was the the K-th column of \f$ \mathbf{A} \f$.
+   * @param tau Output vector. The scalar factors of the elementary reflectors.
+   * @return Integer return code from the LAPACK call.
    */
   template <MemoryMatrix A, MemoryVector JPVT, MemoryVector TAU>
     requires(mem::on_host<A> and is_blas_lapack_v<get_value_t<A>> and have_same_value_type_v<A, TAU>
              and mem::have_compatible_addr_space<A, JPVT, TAU>)
-  int geqp3(A &&a, JPVT &&jpvt, TAU &&tau) {
-    static_assert(has_F_layout<A>, "C order not implemented");
-    static_assert(std::is_same_v<get_value_t<JPVT>, int>, "Pivoting array must have elements of type int");
-    static_assert(mem::have_host_compatible_addr_space<A, JPVT, TAU>,
-                  "geqp3 is only implemented on the CPU, but was provided non-host compatible array");
+  int geqp3(A &&a, JPVT &&jpvt, TAU &&tau) { // NOLINT (temporary views are allowed here)
+    static_assert(has_F_layout<A>, "Error in nda::lapack::geqp3: C order not supported");
+    static_assert(std::is_same_v<get_value_t<JPVT>, int>, "Error in nda::lapack::geqp3: Pivoting array must have elements of type int");
+    static_assert(mem::have_host_compatible_addr_space<A, JPVT, TAU>, "Error in nda::lapack::geqp3: Only CPU is supported");
 
-    using T     = get_value_t<A>;
     auto [m, n] = a.shape();
-    auto rwork  = array<double, 1>(2 * n);
     EXPECTS(tau.size() >= std::min(m, n));
 
-    // Must be lapack compatible
+    // must be lapack compatible
     EXPECTS(a.indexmap().min_stride() == 1);
     EXPECTS(jpvt.indexmap().min_stride() == 1);
     EXPECTS(tau.indexmap().min_stride() == 1);
 
-    // First call to get the optimal buffersize
-    T bufferSize_T{};
+    // first call to get the optimal buffersize
+    using value_type = get_value_t<A>;
+    value_type bufferSize_T{};
     int info = 0;
+    array<double, 1> rwork(2 * n);
     lapack::f77::geqp3(m, n, a.data(), get_ld(a), jpvt.data(), tau.data(), &bufferSize_T, -1, rwork.data(), info);
     int bufferSize = static_cast<int>(std::ceil(std::real(bufferSize_T)));
 
-    // Allocate work buffer and perform actual library call
-    nda::array<T, 1, C_layout, heap<mem::get_addr_space<A>>> work(bufferSize);
+    // allocate work buffer and perform actual library call
+    nda::array<value_type, 1> work(bufferSize);
     lapack::f77::geqp3(m, n, a.data(), get_ld(a), jpvt.data(), tau.data(), work.data(), bufferSize, rwork.data(), info);
     jpvt -= 1; // Shift to 0-based indexing
 
-    if (info) NDA_RUNTIME_ERROR << "Error in geqp3 : info = " << info;
+    if (info) NDA_RUNTIME_ERROR << "Error in nda::lapack::geqp3: info = " << info;
     return info;
   }
 
