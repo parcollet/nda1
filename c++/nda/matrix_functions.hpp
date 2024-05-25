@@ -14,14 +14,38 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides functions to create and manipulate matrices, i.e. arrays/view with 'M' algebra.
+ */
+
 #pragma once
 
-#include "basic_array.hpp"
-#include "declarations.hpp"
+#include "./accessors.hpp"
+#include "./concepts.hpp"
+#include "./declarations.hpp"
+#include "./layout/policies.hpp"
+#include "./layout_transforms.hpp"
+#include "./macros.hpp"
+#include "./mapped_functions.hpp"
+#include "./mem/policies.hpp"
+#include "./stdutil/array.hpp"
+
+#include <algorithm>
+#include <concepts>
+#include <ranges>
+#include <type_traits>
 
 namespace nda {
 
-  /// Create a two-dimensional matrix of scalar-type T with ones on the diagonal and zeros elsewhere
+  /**
+   * @brief Create an identity nda::matrix with ones on the diagonal.
+   *
+   * @tparam S Scalar value type of the matrix.
+   * @tparam Int Integral type.
+   * @param dim Dimension of the square matrix.
+   * @return Identity nda::matrix of size dim x dim.
+   */
   template <Scalar S, std::integral Int = long>
   auto eye(Int dim) {
     auto r = matrix<S>(dim, dim);
@@ -29,10 +53,16 @@ namespace nda {
     return r;
   }
 
-  /// Return the trace of a matrix or a rank==2 array
+  /**
+   * @brief Get the trace of a 2-dimensional array/view.
+   *
+   * @tparam M nda::ArrayOfRank<2> type.
+   * @param m 2-dimensional array/view.
+   * @return Sum of the diagonal elements of the array/view.
+   */
   template <ArrayOfRank<2> M>
   auto trace(M const &m) {
-    static_assert(get_rank<M> == 2, "trace: array must have rank two");
+    static_assert(get_rank<M> == 2, "Error in nda::trace: Array/View must have rank 2");
     EXPECTS(m.shape()[0] == m.shape()[1]);
     auto r = get_value_t<M>{};
     auto d = m.shape()[0];
@@ -40,7 +70,13 @@ namespace nda {
     return r;
   }
 
-  /// Return the conjugate transpase of a matrix or a rank==2 array
+  /**
+   * @brief Get the conjugate transpose of 2-dimensional array/view.
+   *
+   * @tparam M nda::ArrayOfRank<2> type.
+   * @param m 2-dimensional array/view.
+   * @return (Lazy) Conjugate transpose of the array/view.
+   */
   template <ArrayOfRank<2> M>
   ArrayOfRank<2> auto dagger(M const &m) {
     if constexpr (is_complex_v<typename M::value_type>)
@@ -49,7 +85,13 @@ namespace nda {
       return transpose(m);
   }
 
-  /// Return a vector_view on the diagonal of a matrix or a rank==2 array
+  /**
+   * @brief Get a view on the diagonal of a 2-dimensional array/view.
+   *
+   * @tparam M nda::MemoryArrayOfRank<2> type.
+   * @param m 2-dimensional array/view.
+   * @return A vector view on the diagonal of the array/view.
+   */
   template <MemoryArrayOfRank<2> M>
   ArrayOfRank<1> auto diagonal(M &m) {
     long dim    = std::min(m.shape()[0], m.shape()[1]);
@@ -59,7 +101,13 @@ namespace nda {
     return vector_view_t{C_stride_layout::mapping<1>{{dim}, {stride}}, m.data()};
   }
 
-  /// Return a new matrix with the values of v on the diagonal
+  /**
+   * @brief Get a new nda::matrix with the given values on the diagonal.
+   *
+   * @tparam V nda::ArrayOfRank<1> or std::ranges::contiguous_range type.
+   * @param v 1-dimensional array/view containing the diagonal values.
+   * @return nda::matrix with the given values on the diagonal.
+   */
   template <typename V>
     requires(std::ranges::contiguous_range<V> or ArrayOfRank<V, 1>)
   ArrayOfRank<2> auto diag(V const &v) {
@@ -72,26 +120,32 @@ namespace nda {
     }
   }
 
-  /// Give 2 matrices A (of size n x q) and B (of size p x q)
-  /// produces a new matrix C of size (n + p) x q such that
-  /// C[0:n,:] == A and C[n:n+p,:] == B
+  /**
+   * @brief Stack two 2-dimensional arrays/views vertically.
+   *
+   * @details This is a more restricted implementation then nda::concatenate. It is only for 2D arrays/views.
+   *
+   * Given a an array A of size n x q and an array B of size p x q, the function returns a new array C of size (n + p) x q
+   * such that `C(range(0, n), range::all) == A` and `C(range(n, n + p), range::all) == B` is true.
+   *
+   * @tparam A nda::ArrayOfRank<2> type.
+   * @tparam B nda::ArrayOfRank<2> type.
+   * @param a 2-dimensional array/view.
+   * @param b 2-dimensional array/view.
+   * @return A new 2-dimensional array/view with the two arrays stacked vertically.
+   */
   template <ArrayOfRank<2> A, ArrayOfRank<2> B>
     requires(std::same_as<get_value_t<A>, get_value_t<B>>) // NB the get_value_t gets rid of const if any
   matrix<get_value_t<A>> vstack(A const &a, B const &b) {
-    static_assert(get_rank<A> == 2, "vstack: first argument must have rank two");
-    static_assert(get_rank<B> == 2, "vstack: second argument must have rank two");
-    EXPECTS_WITH_MESSAGE(a.shape()[1] == b.shape()[1],
-                         "vstack. The second dimension of the two matrices must be equal but \n   a is of shape " + to_string(a.shape())
-                            + "   b is of shape" + to_string(b.shape()));
-    // Impl. Concept only ! A, B can be expression template, e.g.
+    static_assert(get_rank<A> == 2, "Error in nda::vstack: Only rank 2 arrays/views are allowed");
+    static_assert(get_rank<A> == 2, "Error in nda::vstack: Only rank 2 arrays/views are allowed");
+    EXPECTS_WITH_MESSAGE(a.shape()[1] == b.shape()[1], "Error in nda::vstack: The second dimension of the two matrices must be equal");
 
     auto [n, q] = a.shape();
     auto p      = b.shape()[0];
-    auto _      = range::all;
-
     matrix<get_value_t<A>> res(n + p, q);
-    res(range(0, n), _)     = a;
-    res(range(n, n + p), _) = b;
+    res(range(0, n), range::all)     = a;
+    res(range(n, n + p), range::all) = b;
     return res;
   }
 

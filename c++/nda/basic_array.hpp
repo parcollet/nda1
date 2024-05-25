@@ -16,220 +16,347 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides the generic class for arrays.
+ */
+
 #pragma once
+
+#include "./accessors.hpp"
+#include "./basic_array_view.hpp"
+#include "./basic_functions.hpp"
+#include "./concepts.hpp"
+#include "./exceptions.hpp"
+#include "./iterators.hpp"
+#include "./layout/for_each.hpp"
+#include "./layout/permutation.hpp"
+#include "./layout/range.hpp"
+#include "./layout_transforms.hpp"
+#include "./macros.hpp"
+#include "./mem/address_space.hpp"
+#include "./mem/memcpy.hpp"
+#include "./mem/policies.hpp"
+#include "./stdutil/array.hpp"
+#include "./traits.hpp"
+
 #include <algorithm>
-#include <memory>
-#include <ranges>
+#include <array>
+#include <complex>
+#include <concepts>
+#include <initializer_list>
 #include <random>
-#include "basic_array_view.hpp"
+#include <ranges>
+#include <type_traits>
+#include <utility>
+
+#ifdef NDA_ENFORCE_BOUNDCHECK
+#include <exception>
+#include <iostream>
+#endif // NDA_ENFORCE_BOUNDCHECK
 
 namespace nda {
 
-  // forward for friend declaration
-  template <MemoryArray A, typename NewLayoutType>
-  auto map_layout_transform(A &&a, NewLayoutType const &new_layout);
-
-  // ---------------------- array--------------------------------
-
+  /**
+   * @brief A generic n-dimensional array.
+   *
+   * @details Together with nda::basic_array_view, this class forms the backbone of the
+   * nda library. It is templated with the following parameters:
+   *
+   * - ValueType: This is the type of the elements stored in the array. Most of the time,
+   * this will be a scalar type like an int, double or std::complex<double>, but it can also
+   * be a more complex type like a custom class or a another nda::basic_array.
+   * - Rank: Integer specifying the number of dimensions of the array. This is a compile-time
+   * constant.
+   * - LayoutPolicy: The layout policy specifies how the array views the memory it uses and how
+   * it access its elements. It provides a mapping from multi-dimensional to linear indices and
+   * vice versa.
+   * - Algebra: The algebra specifies how the array behaves when it is used in an expression.
+   * Possible values are 'A' (array), 'M' (matrix) and 'V' (vector).
+   * - ContainerPolicy: The container policy specifies how and where the data is stored. It is
+   * responsible for allocating/deallocating the memory.
+   *
+   * In contrast to views (see nda::basic_array_view), regular arrays own the memory they use
+   * for data storage.
+   *
+   * @tparam ValueType Type stored in the array.
+   * @tparam Rank Number of dimensions of the array.
+   * @tparam LayoutPolicy Policy determining the memory layout.
+   * @tparam Algebra Algebra of the array.
+   * @tparam ContainerPolicy Policy determining how and where the data is stored.
+   */
   template <typename ValueType, int Rank, typename LayoutPolicy, char Algebra, typename ContainerPolicy>
   class basic_array {
-
-    static_assert(!std::is_const<ValueType>::value, "ValueType of basic_array cannot be const.");
-    static_assert((Algebra != 'N'), " Internal error : Algebra 'N' not supported");
-    static_assert((Algebra != 'M') or (Rank == 2), " Internal error : Algebra 'M' only makes sense for rank 2");
-    static_assert((Algebra != 'V') or (Rank == 1), " Internal error : Algebra 'V' only makes sense for rank 1");
+    // Compile-time checks.
+    static_assert(!std::is_const_v<ValueType>, "Error in nda::basic_array: ValueType cannot be const");
+    static_assert((Algebra != 'N'), "Internal error in nda::basic_array: Algebra 'N' not supported");
+    static_assert((Algebra != 'M') or (Rank == 2), "Internal error in nda::basic_array: Algebra 'M' requires a rank 2 array");
+    static_assert((Algebra != 'V') or (Rank == 1), "Internal error in nda::basic_array: Algebra 'V' requires a rank 1 array");
 
     public:
-    /// Type of the array's values
+    /// Type of the values in the array.
     using value_type = ValueType;
-    /// Type of the memory layout policy
+
+    /// Type of the memory layout policy.
     using layout_policy_t = LayoutPolicy;
-    /// Type of the memory layout
+
+    /// Type of the memory layout  (an nda::idx_map).
     using layout_t = typename LayoutPolicy::template mapping<Rank>;
-    /// Type of the container policy
+
+    /// Type of the container policy.
     using container_policy_t = ContainerPolicy;
-    /// Type of the memory handle
+
+    /// Type of the memory handle.
     using storage_t = typename ContainerPolicy::template handle<ValueType>;
-    /// The associated regular type
+
+    /// The associated regular type.
     using regular_type = basic_array;
 
-    /// The number of dimensions of the array
+    /// Number of dimensions of the array.
     static constexpr int rank = Rank;
 
-    static_assert(has_contiguous(layout_t::layout_prop), "Non sense. A basic_array is a contiguous object");
+    // Compile-time check.
+    static_assert(has_contiguous(layout_t::layout_prop), "Error in nda::basic_array: Memory layout has to be contiguous");
 
     private:
-    // details for the common code with view
-    using self_t                   = basic_array;
-    using AccessorPolicy           = default_accessor; // no_alias_accessor
-    using OwningPolicy             = borrowed<storage_t::address_space>;
-    static constexpr bool is_const = false;
-    static constexpr bool is_view  = false;
+    // Type of the array itself.
+    using self_t = basic_array;
 
+    // Type of the accessor policy for views (no no_alias_accessor).
+    using AccessorPolicy = default_accessor;
+
+    // Type of the owning policy for views.
+    using OwningPolicy = borrowed<storage_t::address_space>;
+
+    // Constexpr variable that is true if the value_type is const (never for basic_array).
+    static constexpr bool is_const = false;
+
+    // Constexpr variable that is true if the array is a view (never for basic_array).
+    static constexpr bool is_view = false;
+
+    // Memory layout of the array, i.e. the nda::idx_map.
     layout_t lay;
+
+    // Memory handle of the array.
     storage_t sto;
 
+    // Construct an array with a given shape and initialize the memory with zeros.
     template <std::integral Int = long>
     basic_array(std::array<Int, Rank> const &shape, mem::init_zero_t) : lay{shape}, sto{lay.size(), mem::init_zero} {}
 
     public:
+    /**
+     * @brief Convert the current array to a view with an 'A' (array) algebra.
+     * @return An nda::basic_array_view of the current array.
+     */
     basic_array_view<ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy> as_array_view() { return {*this}; };
+
+    /**
+     * @brief Convert the current array to a view with an 'A' (array) algebra.
+     * @return A const nda::basic_array_view of the current array.
+     */
     basic_array_view<const ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy> as_array_view() const { return {*this}; };
 
+    /// @deprecated Create the transpose of a 2-dimensional array. Use nda::transpose instead.
     [[deprecated]] auto transpose()
       requires(Rank == 2)
     {
       return permuted_indices_view<encode(std::array<int, 2>{1, 0})>(*this);
     }
+
+    /// @deprecated Create the transpose of a 2-dimensional array. Use nda::transpose instead.
     [[deprecated]] auto transpose() const
       requires(Rank == 2)
     {
       return permuted_indices_view<encode(std::array<int, 2>{1, 0})>(*this);
     }
 
-    // ------------------------------- constructors --------------------------------------------
+    /**
+     * @brief Default constructor constructs an empty array.
+     * @details We need to provide a user-defined constructor to avoid value initialization
+     * of the sso buffer.
+     */
+    basic_array(){}; // NOLINT (see explanation above)
 
-    /// Empty array
-    // Caution! We need to provide a user-defined constructor (over =default)
-    // to avoid value initialization of the sso buffer
-    basic_array(){};
-
-    ///
-    basic_array(basic_array &&X) = default;
-
-    /// Makes a deep copy, since array is a regular type
-    explicit basic_array(basic_array const &x) : lay(x.indexmap()), sto(x.sto) {}
-
-    /// Makes a deep copy, given a basic_array with a different container policy
-    template <char AlgebraOther, typename ContainerPolicyOther>
-    explicit basic_array(basic_array<ValueType, Rank, LayoutPolicy, AlgebraOther, ContainerPolicyOther> x) noexcept
-       : lay(x.indexmap()), sto(std::move(x.storage())) {}
+    /// Default move constructor (everything is done in the memory handle).
+    basic_array(basic_array &&) = default;
 
     /**
-     * Construct with a shape [i0, is ...].
-     * Int are integers (convertible to long), and there must be exactly R arguments.
-     *
-     * @param i0, is ... are the extents (lengths) in each dimension
+     * @brief Copy constructor makes a deep copy of the other array.
+     * @param a Other array to be copied.
      */
-    template <std::integral... Int>
-      requires(sizeof...(Int) == Rank)
-    explicit basic_array(Int... is) {
-      // Constructing layout and storage in constructor body improves error message for wrong # of args
-      lay = layout_t{std::array{long(is)...}};
-      sto = storage_t{lay.size()};
+    explicit basic_array(basic_array const &a) : lay(a.indexmap()), sto(a.sto) {}
+
+    /**
+     * @brief Construct an array from another array with a different algebra and/or container
+     * policy.
+     *
+     * @details It takes the memory layout of the other array and copies the data from the
+     * memory handle.
+     *
+     * @tparam A Algebra of the other array.
+     * @tparam CP Container policy of the other array.
+     * @param a Other array.
+     */
+    template <char A, typename CP>
+    explicit basic_array(basic_array<ValueType, Rank, LayoutPolicy, A, CP> a) noexcept : lay(a.indexmap()), sto(std::move(a.storage())) {}
+
+    /**
+     * @brief Construct an array with the given dimensions.
+     *
+     * @details The integer type must be convertible to long and there must be exactly Rank
+     * arguments. It depends on the value type and the container policy whether the data is
+     * initialized with zeros or not.
+     *
+     * @tparam Ints Integer types.
+     * @param is Extent (number of elements) along each dimension.
+     */
+    template <std::integral... Ints>
+      requires(sizeof...(Ints) == Rank)
+    explicit basic_array(Ints... is) {
+      // setting the layout and storage in the constructor body improves error messages for wrong # of args
+      lay = layout_t{std::array{long(is)...}}; // NOLINT (for better error messages)
+      sto = storage_t{lay.size()};             // NOLINT (for better error messages)
     }
 
     /**
-     * Construct one-dimensional array with a shape [i0]
-     * with all elements initialized to val
-     * Int is an integer (convertible to long)
+     * @brief Construct a 1-dimensional array with the given size and initialized to the
+     * given scalar value.
      *
-     * @param i0 is the extents of the only dimension
+     * @tparam Int Integer type.
+     * @tparam RHS Type of the scalar value to initialize the array with.
+     * @param i Size of the array.
+     * @param val Scalar value to initialize the array with.
      */
     template <std::integral Int, typename RHS>
     explicit basic_array(Int i, RHS const &val)
       requires((Rank == 1 and is_scalar_for_v<RHS, basic_array>))
-    {
-      lay = layout_t{std::array{long(i)}};
-      sto = storage_t{lay.size()};
+       : lay(layout_t{std::array{long(i)}}), sto{lay.size()} {
       assign_from_scalar(val);
     }
 
     /**
-     * Construct with the given shape and default construct elements
+     * @brief Construct an array with the given shape.
      *
-     * @param shape  Shape of the array (lengths in each dimension)
+     * @details It depends on the value type and the container policy whether the data is
+     * initialized with zeros or not.
+     *
+     * @tparam Int Integer type.
+     * @param shape Shape of the array.
      */
     template <std::integral Int = long>
     explicit basic_array(std::array<Int, Rank> const &shape)
       requires(std::is_default_constructible_v<ValueType>)
        : lay(shape), sto(lay.size()) {}
 
-    /// Construct from the layout
+    /**
+     * @brief Construct an array with the given memory layout.
+     *
+     * @details It depends on the value type and the container policy whether the data is
+     * initialized with zeros or not.
+     *
+     * @param layout Memory layout.
+     */
     explicit basic_array(layout_t const &layout)
       requires(std::is_default_constructible_v<ValueType>)
        : lay{layout}, sto{lay.size()} {}
 
-    /// Construct from the layout and existing memory
+    /**
+     * @brief Construct an array with the given memory layout and with an existing memory
+     * handle/storage.
+     *
+     * @details The memory handle is moved into the array.
+     *
+     * @param layout Memory layout.
+     * @param storage Memory handle/Storage.
+     */
     explicit basic_array(layout_t const &layout, storage_t &&storage) noexcept : lay{layout}, sto{std::move(storage)} {}
 
     /**
-     * Constructs from a.shape() and then assign from the evaluation of a
+     * @brief Construct an array from an nda::ArrayOfRank object with the same rank as the
+     * array by copying each element.
+     *
+     * @tparam A nda::ArrayOfRank type.
+     * @param a nda::ArrayOfRank object.
      */
     template <ArrayOfRank<Rank> A>
-    basic_array(A const &a) //
       requires(HasValueTypeConstructibleFrom<A, value_type>)
-
-       : lay(a.shape()), sto{lay.size(), mem::do_not_initialize} {
-      static_assert(std::is_constructible_v<value_type, get_value_t<A>>,
-                    "Can not construct the array. ValueType can not be constructed from the value_type of the argument");
+    basic_array(A const &a) : lay(a.shape()), sto{lay.size(), mem::do_not_initialize} {
+      static_assert(std::is_constructible_v<value_type, get_value_t<A>>, "Error in nda::basic_array: Incompatible value types in constructor");
       if constexpr (std::is_trivial_v<ValueType> or is_complex_v<ValueType>) {
-        // simple type. the initialization was not necessary anyway.
-        // we use the assign, including the optimization (1d strided, contiguous) possibly
+        // trivial and complex value types can use the optimized assign_from_ndarray
         assign_from_ndarray(a);
       } else {
-        // in particular ValueType may or may not be default constructible
-        // so we do not init memory, and make the placement new now, directly with the value returned by a
+        // general value types may not be default constructible -> use placement new
         nda::for_each(lay.lengths(), [&](auto const &...is) { new (sto.data() + lay(is...)) ValueType{a(is...)}; });
       }
     }
 
     /**
-     * Initialize with any type modelling ArrayInitializer, typically a
-     * delayed operation (mpi operation, matmul) that requires
-     * the knowledge of the data pointer to execute
+     * @brief Construct an array from an nda::ArrayInitializer object.
      *
+     * @details This is typically used in delayed operations (e.g. mpi) that requires the
+     * knowledge of the data pointer to execute.
+     *
+     * @tparam Initializer nda::ArrayInitializer type.
+     * @param initializer nda::ArrayInitializer object.
      */
     template <ArrayInitializer<basic_array> Initializer> // can not be explicit
     basic_array(Initializer const &initializer) : basic_array{initializer.shape()} {
       initializer.invoke(*this);
     }
 
-    private: // impl. detail for next function
+    private:
+    // Get the corresponding shape from an initializer list.
     static std::array<long, 1> shape_from_init_list(std::initializer_list<ValueType> const &l) noexcept { return {long(l.size())}; }
 
+    // Get the corresponding shape from a nested initializer list.
     template <typename L>
     static auto shape_from_init_list(std::initializer_list<L> const &l) noexcept {
-      const auto [min, max] =
-         std::minmax_element(std::begin(l), std::end(l), [](auto &&x, auto &&y) { return shape_from_init_list(x) == shape_from_init_list(y); });
-      EXPECTS_WITH_MESSAGE(shape_from_init_list(*min) == shape_from_init_list(*max), "initializer list not rectangular !");
+      const auto [min, max] = std::minmax_element(std::begin(l), std::end(l), [](auto &&x, auto &&y) { return x.size() < y.size(); });
+      EXPECTS_WITH_MESSAGE(min->size() == max->size(),
+                           "Error in nda::basic_array: Arrays can only be initialized with rectangular initializer lists");
       return stdutil::front_append(shape_from_init_list(*max), long(l.size()));
     }
 
     public:
-    ///
-    basic_array(std::initializer_list<ValueType> const &l) //
+    /**
+     * @brief Construct a 1-dimensional array from an initializer list.
+     * @param l Initializer list.
+     */
+    basic_array(std::initializer_list<ValueType> const &l)
       requires(Rank == 1)
        : lay(std::array<long, 1>{long(l.size())}), sto{lay.size(), mem::do_not_initialize} {
       long i = 0;
-      // We can not assume that ValueType is default constructible. As before, we do not initialize,
-      // and use placement new
-      // https://godbolt.org/z/Lwic2o. Same code as = for basic type
-      // Alternative : if constexpr (std::is_trivial_v<ValueType> or is_complex<ValueType>::value) for (auto const &x : l) *(sto.data() + lay(i++)) = x;
       for (auto const &x : l) { new (sto.data() + lay(i++)) ValueType{x}; }
     }
 
-    ///
-    basic_array(std::initializer_list<std::initializer_list<ValueType>> const &l2) //
+    /**
+     * @brief Construct a 2-dimensional array from a double nested initializer list.
+     * @param l2 Initializer list.
+     */
+    basic_array(std::initializer_list<std::initializer_list<ValueType>> const &l2)
       requires(Rank == 2)
        : lay(shape_from_init_list(l2)), sto{lay.size(), mem::do_not_initialize} {
       long i = 0, j = 0;
       for (auto const &l1 : l2) {
-        for (auto const &x : l1) { new (sto.data() + lay(i, j++)) ValueType{x}; } // cf dim1
+        for (auto const &x : l1) { new (sto.data() + lay(i, j++)) ValueType{x}; }
         j = 0;
         ++i;
       }
     }
 
-    ///
-    basic_array(std::initializer_list<std::initializer_list<std::initializer_list<ValueType>>> const &l3) //
+    /**
+     * @brief Construct a 3-dimensional array from a triple nested initializer list.
+     * @param l3 Initializer list.
+     */
+    basic_array(std::initializer_list<std::initializer_list<std::initializer_list<ValueType>>> const &l3)
       requires(Rank == 3)
        : lay(shape_from_init_list(l3)), sto{lay.size(), mem::do_not_initialize} {
       long i = 0, j = 0, k = 0;
-      static_assert(Rank == 3, "?");
       for (auto const &l2 : l3) {
         for (auto const &l1 : l2) {
-          for (auto const &x : l1) { new (sto.data() + lay(i, j, k++)) ValueType{x}; } // cf dim1
+          for (auto const &x : l1) { new (sto.data() + lay(i, j, k++)) ValueType{x}; }
           k = 0;
           ++j;
         }
@@ -238,40 +365,28 @@ namespace nda {
       }
     }
 
-    /////
-    //template <typename U>
-    //explicit basic_array(std::initializer_list<std::initializer_list<U>> const &l2) //
-    //requires((Rank == 1) and (std::is_constructible_v<ValueType, std::initializer_list<U>>))
-    //: lay(l2.size()), sto{lay.size(), mem::do_not_initialize} {
-    //long i = 0;
-    //for (auto const &l1 : l2) { new (sto.data() + lay(i++)) ValueType{l1}; }
-    //}
+    /**
+     * @brief Construct a 2-dimensional array from another 2-dimensional array with a
+     * different algebra.
+     *
+     * @details The given array is moved into the constructed array. Note that for
+     * stack/sso arrays, this might involve a copy of the data.
+     *
+     * @tparam A2 Algebra of the given array.
+     * @param a Array to move.
+     */
+    template <char A2>
+    explicit basic_array(basic_array<ValueType, 2, LayoutPolicy, A2, ContainerPolicy> &&a) noexcept
+      requires(Rank == 2)
+       : basic_array{a.indexmap(), std::move(a).storage()} {}
 
-    /////
-    //template <typename U>
-    //explicit basic_array(std::initializer_list<std::initializer_list<std::initializer_list<U>>> const &l3) //
-    //requires((Rank == 2) and (std::is_constructible_v<ValueType, std::initializer_list<U>>))
-    //: lay(pop(shape_from_init_list(l3))), sto{lay.size(), mem::do_not_initialize} {
-    //long i = 0, j = 0;
-    //static_assert(Rank == 3, "?");
-    //for (auto const &l2 : l3) {
-    //for (auto const &l1 : l2) { new (sto.data() + lay(i, j++)) ValueType{l1}; }
-    //j = 0;
-    //++i;
-    //}
-    /*}*/
-
-    /// Allows to move a array of Rank 2 into a matrix and vice versa
-    /// Beware that for stack/sso array, it will copy the data (but move them for heap allocated array).
-    /// \trailing_requires
-    template <char Algebra2>
-    explicit basic_array(basic_array<ValueType, 2, LayoutPolicy, Algebra2, ContainerPolicy> &&am) noexcept
-      requires(Rank == 2) // NB Rank =2 since matrix/array for the moment. generalize if needed
-       : basic_array{am.indexmap(), std::move(am).storage()} {}
-
-    //------------------ Factories -------------------------
-
-    /// Make a zero-initialized array of the given shape
+    /**
+     * @brief Make a zero-initialized array with the given shape.
+     *
+     * @tparam Int Integer type.
+     * @param shape Shape of the array.
+     * @return Zero-initialized array.
+     */
     template <std::integral Int = long>
     static basic_array zeros(std::array<Int, Rank> const &shape)
       requires(std::is_standard_layout_v<ValueType> && std::is_trivially_copyable_v<ValueType>)
@@ -279,15 +394,27 @@ namespace nda {
       return basic_array{stdutil::make_std_array<long>(shape), mem::init_zero};
     }
 
-    /// Make a zero-initialized array with the given dimensions
+    /**
+     * @brief Make a zero-initialized array with the given dimensions.
+     *
+     * @tparam Ints Integer types.
+     * @param is Extent (number of elements) along each dimension.
+     * @return Zero-initialized array.
+     */
     template <std::integral... Ints>
-    static basic_array zeros(Ints... i)
+    static basic_array zeros(Ints... is)
       requires(sizeof...(Ints) == Rank)
     {
-      return zeros(std::array<long, Rank>{i...});
+      return zeros(std::array<long, Rank>{is...});
     }
 
-    /// Make an array of the given shape holding 'scalar ones'
+    /**
+     * @brief Make a one-initialized array with the given shape.
+     *
+     * @tparam Int Integer type.
+     * @param shape Shape of the array.
+     * @return One-initialized array.
+     */
     template <std::integral Int = long>
     static basic_array ones(std::array<Int, Rank> const &shape)
       requires(nda::is_scalar_v<ValueType>)
@@ -297,89 +424,124 @@ namespace nda {
       return res;
     }
 
-    /// Make an array of the given dimensions holding 'scalar ones'
+    /**
+     * @brief Make a one-initialized array with the given dimensions.
+     *
+     * @tparam Ints Integer types.
+     * @param is Extent (number of elements) along each dimension.
+     * @return One-initialized array.
+     */
     template <std::integral... Ints>
-    static basic_array ones(Ints... i)
+    static basic_array ones(Ints... is)
       requires(sizeof...(Ints) == Rank)
     {
-      return ones(std::array<long, Rank>{i...});
+      return ones(std::array<long, Rank>{is...});
     }
 
-    /// Create an array the given shape and populate it with random
-    /// samples from a uniform distribution over [0, 1)
+    /**
+     * @brief Make a random-initialized array with the given shape.
+     *
+     * @details The random values are take from a uniform distribution over [0, 1). For a
+     * complex array, both real and imaginary parts are initialized with random values.
+     *
+     * @tparam Int Integer type.
+     * @param shape Shape of the array.
+     * @return Random-initialized array.
+     */
     template <std::integral Int = long>
     static basic_array rand(std::array<Int, Rank> const &shape)
       requires(std::is_floating_point_v<ValueType> or nda::is_complex_v<ValueType>)
     {
-
+      using namespace std::complex_literals;
       auto static gen  = std::mt19937(std::random_device{}());
       auto static dist = std::uniform_real_distribution<>(0.0, 1.0);
-
-      auto res = basic_array{shape};
+      auto res         = basic_array{shape};
       if constexpr (nda::is_complex_v<ValueType>)
         for (auto &x : res) x = dist(gen) + 1i * dist(gen);
       else
         for (auto &x : res) x = dist(gen);
-
       return res;
     }
 
-    /// Create an array the given dimensions and populate it with random
-    /// samples from a uniform distribution over [0, 1)
+    /**
+     * @brief Make a random-initialized array with the given dimensions.
+     *
+     * @details The random values are take from a uniform distribution over [0, 1). For a
+     * complex array, both real and imaginary parts are initialized with random values.
+     *
+     * @tparam Ints Integer types.
+     * @param is Extent (number of elements) along each dimension.
+     * @return Random-initialized array.
+     */
     template <std::integral... Ints>
-    static basic_array rand(Ints... i)
+    static basic_array rand(Ints... is)
       requires(sizeof...(Ints) == Rank)
     {
-      return rand(std::array<long, Rank>{i...});
+      return rand(std::array<long, Rank>{is...});
     }
 
-    //------------------ Assignment -------------------------
+    /// Default move assignment (everything is done in the memory handle).
+    basic_array &operator=(basic_array &&) = default;
 
-    ///
-    basic_array &operator=(basic_array &&x) = default;
+    /// Default copy assignment (everything is done in the memory handle).
+    basic_array &operator=(basic_array const &) = default;
 
-    /// Deep copy (array is a regular type). Invalidates all references to the storage.
-    basic_array &operator=(basic_array const &X) = default;
-
-    /// Deep copy assignment given array with different algebra and/or container policy
-    template <char Algebra_other, typename ContainerPolicy_other>
-    basic_array &operator=(basic_array<ValueType, Rank, LayoutPolicy, Algebra_other, ContainerPolicy_other> const &x) {
-      *this = basic_array{x};
+    /**
+     * @brief Assignment operator copies the elements of another array with a different algebra
+     * and/or container policy.
+     *
+     * @tparam A Algebra of the other array.
+     * @tparam CP Container policy of the other array.
+     * @param rhs Right hand side of the assignment operation.
+     */
+    template <char A, typename CP>
+    basic_array &operator=(basic_array<ValueType, Rank, LayoutPolicy, A, CP> const &rhs) {
+      *this = basic_array{rhs};
       return *this;
     }
 
     /**
-     * Resizes the array (if necessary).
-     * Invalidates all references to the storage.
+     * @brief Assignment operator makes a deep copy of an nda::ArrayOfRank object.
      *
-     * @tparam RHS A scalar or an object modeling NdArray
+     * @details The array is resized to the shape of the right hand side and the elements are
+     * copied. This might invalidate all references to the storage.
+     *
+     * @tparam RHS nda::ArrayOfRank type.
+     * @param rhs Right hand side of the assignment operation.
      */
     template <ArrayOfRank<Rank> RHS>
     basic_array &operator=(RHS const &rhs) {
-      static_assert(!is_const, "Cannot assign to a const !");
       resize(rhs.shape());
-      assign_from_ndarray(rhs); // common code with view, private
+      assign_from_ndarray(rhs);
       return *this;
     }
 
     /**
-     * Resizes the array (if necessary).
-     * Invalidates all references to the storage.
+     * @brief Assignment operator assigns a scalar to the array.
      *
-     * @tparam RHS A scalar or an object modeling NdArray
+     * @details The behavior depends on the algebra of the array:
+     * - 'A' (array) and 'V' (vector): The scalar is assigned to all elements of the array.
+     * - 'M' (matrix): The scalar is assigned to the diagonal elements of the shorter dimension.
+     *
+     * @tparam RHS Scalar type.
+     * @param rhs Right hand side of the assignment operation.
      */
     template <typename RHS>
-    // FIXME : explode this notion
     basic_array &operator=(RHS const &rhs) noexcept
       requires(is_scalar_for_v<RHS, basic_array>)
     {
-      static_assert(!is_const, "Cannot assign to a const !");
-      assign_from_scalar(rhs); // common code with view, private
+      assign_from_scalar(rhs);
       return *this;
     }
 
     /**
+     * @brief Assignment operator uses an nda::ArrayInitializer to assign to the array.
      *
+     * @details The array is resized to the shape of the initializer. This might invalidate all
+     * references to the storage.
+     *
+     * @tparam Initializer nda::ArrayInitializer type.
+     * @param initializer Initializer object.
      */
     template <ArrayInitializer<basic_array> Initializer>
     basic_array &operator=(Initializer const &initializer) {
@@ -388,38 +550,42 @@ namespace nda {
       return *this;
     }
 
-    //------------------ resize  -------------------------
     /**
-     * Resizes the array.
-     * Invalidates all references to the storage.
-     * Content is undefined, makes no copy of previous data.
+     * @brief Resize the array to a new shape.
      *
+     * @details The content of the resulting array is undefined since it makes no copy of
+     * previous data. This operations invalidates all references to the storage.
+     *
+     * @tparam Ints Integer types.
+     * @param is New extent (number of elements) along each dimension.
      */
-    template <std::integral... Int>
-    void resize(Int const &...extent) {
-      static_assert(std::is_copy_constructible_v<ValueType>, "Can not resize an array if its value_type is not copy constructible");
-      static_assert(sizeof...(extent) == Rank, "Incorrect number of arguments for resize. Should be Rank");
-      resize(std::array<long, Rank>{long(extent)...});
+    template <std::integral... Ints>
+    void resize(Ints const &...is) {
+      static_assert(std::is_copy_constructible_v<ValueType>, "Error in nda::basic_array: Resizing requires the value_type to be copy constructible");
+      static_assert(sizeof...(is) == Rank, "Error in nda::basic_array: Resizing requires exactly Rank arguments");
+      resize(std::array<long, Rank>{long(is)...});
     }
 
     /**
-     * Resizes the array.
-     * Invalidates all references to the storage.
-     * Content is undefined, makes no copy of previous data.
+     * @brief Resize the array to a new shape.
      *
-     * @param shape  New shape of the array (lengths in each dimension)
+     * @details Resizing is only performed if the storage is not null and if the new size is
+     * different from the previous size. The content of the resulting array may be undefined
+     * since it makes no copy of previous data. This operation may invalidate all references
+     * to the storage.
+     *
+     * @param shape New shape of the array.
      */
     [[gnu::noinline]] void resize(std::array<long, Rank> const &shape) {
       lay = layout_t(shape);
-      // Construct a storage only if the new index is not compatible (size mismatch).
       if (sto.is_null() or (sto.size() != lay.size())) sto = storage_t{lay.size()};
     }
 
+// include common functionality of arrays and views
 #include "./_impl_basic_array_view_common.hpp"
   };
 
-  // --- Class Template Argument Deduction Guides ---
-
+  // Class template argument deduction guides.
   template <MemoryArray A>
   basic_array(A &&a) -> basic_array<get_value_t<A>, get_rank<A>, get_contiguous_layout_policy<get_rank<A>, get_layout_info<A>.stride_order>,
                                     get_algebra<A>, heap<mem::get_addr_space<A>>>;
@@ -427,31 +593,4 @@ namespace nda {
   template <Array A>
   basic_array(A &&a) -> basic_array<get_value_t<A>, get_rank<A>, C_layout, get_algebra<A>, heap<>>;
 
-  // --- get_regular_t ---
-
-  template <typename T, typename T2 = std::remove_reference_t<T> /* Keep this: Fix for gcc11 bug */>
-  using get_regular_t = decltype(basic_array{std::declval<T>()});
-
-  // --- Get the associated regular type with host/device/unified memory ---
-
-  template <typename T, typename RT = get_regular_t<T>>
-  using get_regular_host_t =
-     std::conditional_t<mem::on_host<RT>, RT,
-                        basic_array<get_value_t<RT>, get_rank<RT>, get_contiguous_layout_policy<get_rank<RT>, get_layout_info<RT>.stride_order>,
-                                    get_algebra<RT>, heap<mem::Host>>>;
-
-  template <typename T, typename RT = get_regular_t<T>>
-  using get_regular_device_t =
-     std::conditional_t<mem::on_device<RT>, RT,
-                        basic_array<get_value_t<RT>, get_rank<RT>, get_contiguous_layout_policy<get_rank<RT>, get_layout_info<RT>.stride_order>,
-                                    get_algebra<RT>, heap<mem::Device>>>;
-
-  template <typename T, typename RT = get_regular_t<T>>
-  using get_regular_unified_t =
-     std::conditional_t<mem::on_unified<RT>, RT,
-                        basic_array<get_value_t<RT>, get_rank<RT>, get_contiguous_layout_policy<get_rank<RT>, get_layout_info<RT>.stride_order>,
-                                    get_algebra<RT>, heap<mem::Unified>>>;
-
 } // namespace nda
-
-#include "./layout_transforms.hpp"

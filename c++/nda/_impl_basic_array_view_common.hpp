@@ -14,104 +14,170 @@
 //
 // Authors: Thomas Hahn, Miguel Morales, Olivier Parcollet, Nils Wentzell
 
-// ------------------------------- data access --------------------------------------------
+/**
+ * @file
+ * @brief Common implementation details for nda::basic_array and nda::basic_array_view.
+ */
 
-// FIXME get_layout
-
-/// The Index Map object
+/**
+ * @brief Get the memory layout of the view/array.
+ * @return nda::idx_map specifying the layout of the view/array.
+ */
 [[nodiscard]] constexpr auto const &indexmap() const noexcept { return lay; }
 
-/// \private
+/**
+ * @brief Get the data storage of the view/array.
+ * @return A const reference to the memory handle of the view/array.
+ */
 [[nodiscard]] storage_t const &storage() const & noexcept { return sto; }
 
-/// \private
+/**
+ * @brief Get the data storage of the view/array.
+ * @return A reference to the memory handle of the view/array.
+ */
 [[nodiscard]] storage_t &storage() & noexcept { return sto; }
 
-/// \private
+/**
+ * @brief Get the data storage of the view/array.
+ * @return A copy of the memory handle of the view/array.
+ */
 [[nodiscard]] storage_t storage() && noexcept { return std::move(sto); }
 
-/// Memory stride_order
+/**
+ * @brief Get the stride order of the memory layout of the view/array (see nda::idx_map
+ * for more details on how we define stride orders).
+ *
+ * @return std::array object specifying the stride order.
+ */
 [[nodiscard]] constexpr auto stride_order() const noexcept { return lay.stride_order; }
 
-/// Starting point of the data. NB : this is NOT the beginning of the memory block for a view in general
+/**
+ * @brief Get a pointer to the actual data (in general this is not the beginning of the
+ * memory block for a view).
+ *
+ * @return Const pointer to the first element of the view.
+ */
 [[nodiscard]] ValueType const *data() const noexcept { return sto.data(); }
 
-/// Starting point of the data. NB : this is NOT the beginning of the memory block for a view in general
-ValueType *data() noexcept { return sto.data(); }
+/**
+ * @brief Get a pointer to the actual data (in general this is not the beginning of the
+ * memory block for a view).
+ *
+ * @return Pointer to the first element of the view.
+ */
+[[nodiscard]] ValueType *data() noexcept { return sto.data(); }
 
-/// Shape
+/**
+ * @brief Get the shape of the view/array.
+ * @return std::array object specifying the shape of the view/array.
+ */
 [[nodiscard]] std::array<long, rank> const &shape() const noexcept { return lay.lengths(); }
 
-/// Strides
+/**
+ * @brief Get the strides of the view/array (see nda::idx_map for more details on how we
+ * define strides).
+ *
+ * @return std::array object specifying the strides of the view/array.
+ */
 [[nodiscard]] std::array<long, rank> const &strides() const noexcept { return lay.strides(); }
 
-///
+/**
+ * @brief Get the total size of the view/array.
+ * @return Number of elements contained in the view/array.
+ */
 [[nodiscard]] long size() const noexcept { return lay.size(); }
 
-///
+/**
+ * @brief Is the memory layout of the view/array contiguous?
+ * @return True if the memory layout is contiguous, false otherwise.
+ */
 [[nodiscard]] long is_contiguous() const noexcept { return lay.is_contiguous(); }
 
-/// size() == 0
+/**
+ * @brief Is the view/array empty?
+ * @return True if the view/array does not contain any elements.
+ */
 [[nodiscard]] bool empty() const { return sto.is_null(); }
 
-//[[deprecated]]
+/// @deprecated Use empty() instead.
 [[nodiscard]] bool is_empty() const noexcept { return sto.is_null(); }
 
+/**
+ * @brief Get the extent of the i<sup>th</sup> dimension.
+ * @return Number of elements along the i<sup>th</sup> dimension.
+ */
 [[nodiscard]] long extent(int i) const noexcept {
 #ifdef NDA_ENFORCE_BOUNDCHECK
   if (i < 0 || i >= rank) {
-    std::cerr << "Dimension i in arr.extent(i) is incompatible with array rank: i=" << i << "  rank=" << rank << std::endl;
+    std::cerr << "Error in extent: Dimension " << i << " is incompatible with array of rank " << rank << std::endl;
     std::terminate();
   }
 #endif
   return lay.lengths()[i];
 }
 
-/// Same as shape()[i]
-//[[deprecated]]
+/// @deprecated Use `extent(i)` or `shape()[i]` instead.
 [[nodiscard]] long shape(int i) const noexcept { return extent(i); }
 
-/// Return a range that generates all valid index tuples
+/**
+ * @brief Get a range that generates all valid index tuples.
+ * @return An itertools::mulitplied range that can be used to iterate over all valid
+ * index tuples.
+ */
 [[nodiscard]] auto indices() const noexcept { return itertools::product_range(shape()); }
 
-///
+/**
+ * @brief Is the stride order of the view/array in C-order?
+ * @return True if the stride order is C-order, false otherwise.
+ */
 static constexpr bool is_stride_order_C() noexcept { return layout_t::is_stride_order_C(); }
 
-///
+/**
+ * @brief Is the stride order of the view/array in Fortran-order?
+ * @return True if the stride order is Fortran-order, false otherwise.
+ */
 static constexpr bool is_stride_order_Fortran() noexcept { return layout_t::is_stride_order_Fortran(); }
 
-// -------------------------------  operator () --------------------------------------------
-
-// impl details : optimization
-// can NOT be put private, since used by expr template e.g. forwarding argument.
-// but it is not for the user directly
-
-/// \private NO DOC
-decltype(auto) operator()(_linear_index_t x) const noexcept {
-  //NDA_PRINT(layout_t::layout_prop);
+/**
+ * @brief Access the element of the view/array at the given nda::_lindear_index_t.
+ *
+ * @details The linear index specifies the position of the element in the view/array
+ * and not the position of the element w.r.t. to the data pointer (i.e. any possible
+ * strides should not be taken into account).
+ *
+ * @param idx nda::_linear_index_t object.
+ * @return Const reference to the element at the given linear index.
+ */
+decltype(auto) operator()(_linear_index_t idx) const noexcept {
   if constexpr (layout_t::layout_prop == layout_prop_e::strided_1d)
-    return sto[x.value * lay.min_stride()];
+    return sto[idx.value * lay.min_stride()];
   else if constexpr (layout_t::layout_prop == layout_prop_e::contiguous)
-    return sto[x.value]; // min_stride is 1
+    return sto[idx.value];
   else
-    static_assert(always_false<layout_t>, "Internal error in calling this type with a _linear_index_t. One should never reach this !");
+    static_assert(always_false<layout_t>, "Internal error in array/view: Calling this type with a _linear_index_t is not allowed");
 }
 
-/// \private NO DOC
+/**
+ * @brief Access the element of the view/array at the given nda::_lindear_index_t.
+ *
+ * @details The linear index specifies the position of the element in the view/array
+ * and not the position of the element w.r.t. to the data pointer (i.e. any possible
+ * strides should not be taken into account).
+ *
+ * @param idx nda::_linear_index_t object.
+ * @return Reference to the element at the given linear index.
+ */
 decltype(auto) operator()(_linear_index_t x) noexcept {
-  //NDA_PRINT(layout_t::layout_prop);
   if constexpr (layout_t::layout_prop == layout_prop_e::strided_1d)
     return sto[x.value * lay.min_stride()];
   else if constexpr (layout_t::layout_prop == layout_prop_e::contiguous)
-    return sto[x.value]; // min_stride is 1
+    return sto[x.value];
   else
-    static_assert(always_false<layout_t>, "Internal error in calling this type with a _linear_index_t. One should never reach this !");
-  // other case : should not happen, let it be a compilation error.
+    static_assert(always_false<layout_t>, "Internal error in array/view: Calling this type with a _linear_index_t is not allowed");
 }
 
 private:
-// impl of call. Only different case is if Self is &&
-
+// Constexpr variable that is true if bounds checking is disabled.
 #ifdef NDA_ENFORCE_BOUNDCHECK
 static constexpr bool has_no_boundcheck = false;
 #else
@@ -119,205 +185,267 @@ static constexpr bool has_no_boundcheck = true;
 #endif
 
 public:
-// I keep this public for the call of gf, which has to be reinterpreted as matrix
-// I can construct a matrix at once. Of course, the optimizer may eliminate the copy of handle and idx_map
-// but I prefer to keep it shorter here.
-// FIXME : consider to make this private, and use a make_matrix (...) on the resut in gf operator()
-// and restest carefully with benchmarsk
-/// \private
-template <char ResultAlgebra, bool SelfIsRvalue, typename Self, typename... T>
-FORCEINLINE static decltype(auto) call(Self &&self, T const &...x) noexcept(has_no_boundcheck) {
-
+/**
+ * @brief Implementation of the function call operator.
+ *
+ * @details This function is an implementation detail an should be private. Since the
+ * Green's function library in TRIQS uses this function, it is kept public (for now).
+ *
+ * @tparam ResultAlgebra Algebra of the resulting view/array.
+ * @tparam SelfIsRvalue True if the view/array is an rvalue.
+ * @tparam Self Type of the calling view/array.
+ * @tparam T Types of the arguments.
+ *
+ * @param self Calling view.
+ * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
+ * nda::ellipsis or lazy arguments.
+ * @return Result of the function call depending on the given arguments and type of the
+ * view/array.
+ */
+template <char ResultAlgebra, bool SelfIsRvalue, typename Self, typename... Ts>
+FORCEINLINE static decltype(auto) call(Self &&self, Ts const &...idxs) noexcept(has_no_boundcheck) {
+  // resulting value type
   using r_v_t = std::conditional_t<std::is_const_v<std::remove_reference_t<Self>>, ValueType const, ValueType>;
 
-  if constexpr (clef::is_any_lazy<T...>) return clef::make_expr_call(std::forward<Self>(self), x...);
-
-  // () returns a full view
-  else if constexpr (sizeof...(T) == 0) {
+  // behavior depends on the given arguments
+  if constexpr (clef::is_any_lazy<Ts...>) {
+    // if there are lazy arguments, e.g. as in A(i_) << i_, a lazy expression is returned
+    return clef::make_expr_call(std::forward<Self>(self), idxs...);
+  } else if constexpr (sizeof...(Ts) == 0) {
+    // if no arguments are given, a full view is returned
     return basic_array_view<r_v_t, Rank, LayoutPolicy, Algebra, AccessorPolicy, OwningPolicy>{self.lay, self.sto};
-  }
+  } else {
+    // otherwise we check the arguments and either access a single element or make a slice
+    static_assert(((layout_t::template argument_is_allowed_for_call_or_slice<Ts> + ...) > 0),
+                  "Error in array/view: Slice arguments must be convertible to range, ellipsis, or long (or string if the layout permits it)");
 
-  else {
-    static_assert(((layout_t::template argument_is_allowed_for_call_or_slice<T> + ...) > 0),
-                  "Slice arguments must be convertible to range, Ellipsis, or long (or string if the layout permits it)");
+    // number of arguments convertible to long
+    static constexpr int n_args_long = (layout_t::template argument_is_allowed_for_call<Ts> + ...);
 
-    static constexpr int n_args_long = (layout_t::template argument_is_allowed_for_call<T> + ...);
-
-    // case 1 : all arguments are long, we simply compute the offset
-    if constexpr (n_args_long == rank) {         // no range, simply compute the linear position. There may be an ellipsis, but it is of zero length !
-      long offset = self.lay(x...);              // compute the offset
-      if constexpr (is_view or not SelfIsRvalue) //
-        return AccessorPolicy::template accessor<ValueType>::access(self.sto.data(),
-                                                                    offset); // We return a REFERENCE here. Ok since underlying array is still alive
-      else                                                                   //
-        return ValueType{self.sto[offset]};                                  // We return a VALUE here, the array is about be destroyed.
-    }
-    // case 2 : we have to make a slice
-    else {
-      // Static rank
-      auto const [offset, idxm] = self.lay.slice(x...);
-
-      using r_layout_t = std::decay_t<decltype(idxm)>;
-
-      static constexpr char newAlgebra = (ResultAlgebra == 'M' and (r_layout_t::rank() == 1) ? 'V' : ResultAlgebra);
-
-      using r_view_t =
-         // FIXME  basic_array_view<r_v_t, r_layout_t::rank(),
-         basic_array_view<ValueType, r_layout_t::rank(), typename details::layout_to_policy<r_layout_t>::type, newAlgebra, AccessorPolicy,
-                          OwningPolicy>;
-
-      return r_view_t{std::move(idxm), {self.sto, offset}};
+    if constexpr (n_args_long == rank) {
+      // access a single element
+      long offset = self.lay(idxs...);
+      if constexpr (is_view or not SelfIsRvalue) {
+        // if the calling object is a view or an lvalue, we return a reference
+        return AccessorPolicy::template accessor<ValueType>::access(self.sto.data(), offset);
+      } else {
+        // otherwise, we return a copy of the value
+        return ValueType{self.sto[offset]};
+      }
+    } else {
+      // access a slice of the view/array
+      auto const [offset, idxm]      = self.lay.slice(idxs...);
+      static constexpr auto res_rank = decltype(idxm)::rank();
+      // resulting algebra
+      static constexpr char newAlgebra = (ResultAlgebra == 'M' and (res_rank == 1) ? 'V' : ResultAlgebra);
+      // resulting layout policy
+      using r_layout_p = typename detail::layout_to_policy<std::decay_t<decltype(idxm)>>::type;
+      return basic_array_view<ValueType, res_rank, r_layout_p, newAlgebra, AccessorPolicy, OwningPolicy>{std::move(idxm), {self.sto, offset}};
     }
   }
 }
 
 public:
 /**
- * Access the array, make a lazy expression or slice of it depending on the arguments
- *
- * @tparam T Can be long, range, range_all or ellipsis, of clef lazy (placeholder or expression)
- * @param x
- * @example array_call
- */
-template <typename... T>
-FORCEINLINE decltype(auto) operator()(T const &...x) const & noexcept(has_no_boundcheck) {
-  static_assert((rank == -1) or (sizeof...(T) == rank) or (sizeof...(T) == 0) or (ellipsis_is_present<T...> and (sizeof...(T) <= rank + 1)),
-                "Incorrect number of parameters in call");
-  return call<Algebra, false>(*this, x...);
-}
-
-///
-template <typename... T>
-FORCEINLINE decltype(auto) operator()(T const &...x) & noexcept(has_no_boundcheck) {
-
-  if constexpr (not((rank == -1) or (sizeof...(T) == rank) or (sizeof...(T) == 0)
-                    or (ellipsis_is_present<T...> and (sizeof...(T) <= rank + 1)))) { // +1 since ellipsis can be of size 0
-    //if ((sizeof...(T) != rank))
-    static_assert(with_Args<T...> or with_Array<self_t>, "Incorrect number of parameters in calling Array with Args");
-  }
-  //static_assert(,
-  //              "Incorrect number of parameters in call");
-  return call<Algebra, false>(*this, x...);
-}
-
-///
-template <typename... T>
-FORCEINLINE decltype(auto) operator()(T const &...x) && noexcept(has_no_boundcheck) {
-  static_assert((rank == -1) or (sizeof...(T) == rank) or (sizeof...(T) == 0) or (ellipsis_is_present<T...> and (sizeof...(T) <= rank + 1)),
-                "Incorrect number of parameters in call");
-  return call<Algebra, true>(*this, x...);
+  * @brief Function call operator to access the view/array.
+  *
+  * @tparam Ts Types of the function arguments.
+  * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
+  * nda::ellipsis or lazy arguments.
+  * @return Result of the function call depending on the given arguments and type of the
+  * view/array.
+  */
+template <typename... Ts>
+FORCEINLINE decltype(auto) operator()(Ts const &...idxs) const & noexcept(has_no_boundcheck) {
+  static_assert((rank == -1) or (sizeof...(Ts) == rank) or (sizeof...(Ts) == 0) or (ellipsis_is_present<Ts...> and (sizeof...(Ts) <= rank + 1)),
+                "Error in array/view: Incorrect number of parameters in call operator");
+  return call<Algebra, false>(*this, idxs...);
 }
 
 /**
- * Access the array, make a lazy expression or slice of it depending on the arguments
+  * @brief Function call operator to access the view/array.
+  *
+  * @tparam Ts Types of the function arguments.
+  * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
+  * nda::ellipsis or lazy arguments.
+  * @return Result of the function call depending on the given arguments and type of the
+  * view/array.
+  */
+template <typename... Ts>
+FORCEINLINE decltype(auto) operator()(Ts const &...idxs) & noexcept(has_no_boundcheck) {
+  static_assert((rank == -1) or (sizeof...(Ts) == rank) or (sizeof...(Ts) == 0) or (ellipsis_is_present<Ts...> and (sizeof...(Ts) <= rank + 1)),
+                "Error in array/view: Incorrect number of parameters in call operator");
+  return call<Algebra, false>(*this, idxs...);
+}
+
+/**
+ * @brief Function call operator to access the view/array.
  *
- * @tparam T Can be long, range, range_all or ellipsis, of clef lazy (placeholder or expression)
- * @param x
- * @example array_call
+ * @tparam Ts Types of the function arguments.
+ * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
+ * nda::ellipsis or lazy arguments.
+ * @return Result of the function call depending on the given arguments and type of the
+ * view/array.
+ */
+template <typename... Ts>
+FORCEINLINE decltype(auto) operator()(Ts const &...idxs) && noexcept(has_no_boundcheck) {
+  static_assert((rank == -1) or (sizeof...(Ts) == rank) or (sizeof...(Ts) == 0) or (ellipsis_is_present<Ts...> and (sizeof...(Ts) <= rank + 1)),
+                "Error in array/view: Incorrect number of parameters in call operator");
+  return call<Algebra, true>(*this, idxs...);
+}
+
+/**
+ * @brief Subscript operator to access the 1-dimensional view/array.
+ *
+ * @tparam T Type of the argument.
+ * @param idx 1-dimensional index that is either a long, nda::range, nda::range::all_t,
+ * nda::ellipsis or a lazy argument.
+ * @return Result of the subscript operation depending on the given argument and type of
+ * the view/array.
  */
 template <typename T>
-decltype(auto) operator[](T const &x) const & noexcept(has_no_boundcheck) {
-  static_assert((rank == 1), " [ ] operator is only available for rank 1 in C++17/20");
-  return call<Algebra, false>(*this, x);
+decltype(auto) operator[](T const &idx) const & noexcept(has_no_boundcheck) {
+  static_assert((rank == 1), "Error in array/view: Subscript operator is only available for rank 1 views/arrays in C++17/20");
+  return call<Algebra, false>(*this, idx);
 }
 
-///
+/**
+ * @brief Subscript operator to access the 1-dimensional view/array.
+ *
+ * @tparam T Type of the argument.
+ * @param idx 1-dimensional index that is either a long, nda::range, nda::range::all_t,
+ * nda::ellipsis or a lazy argument.
+ * @return Result of the subscript operation depending on the given argument and type of
+ * the view/array.
+ */
 template <typename T>
 decltype(auto) operator[](T const &x) & noexcept(has_no_boundcheck) {
-  static_assert((rank == 1), " [ ] operator is only available for rank 1 in C++17/20");
+  static_assert((rank == 1), "Error in array/view: Subscript operator is only available for rank 1 views/arrays in C++17/20");
   return call<Algebra, false>(*this, x);
 }
 
-///
+/**
+ * @brief Subscript operator to access the 1-dimensional view/array.
+ *
+ * @tparam T Type of the argument.
+ * @param idx 1-dimensional index that is either a long, nda::range, nda::range::all_t,
+ * nda::ellipsis or a lazy argument.
+ * @return Result of the subscript operation depending on the given argument and type of
+ * the view/array.
+ */
 template <typename T>
 decltype(auto) operator[](T const &x) && noexcept(has_no_boundcheck) {
-  static_assert((rank == 1), " [ ] operator is only available for rank 1 in C++17/20");
+  static_assert((rank == 1), "Error in array/view: Subscript operator is only available for rank 1 views/arrays in C++17/20");
   return call<Algebra, true>(*this, x);
 }
 
-// ------------------------------- Iterators --------------------------------------------
-
+/// Rank of the nda::array_iterator for the view/array.
 static constexpr int iterator_rank = (has_strided_1d(layout_t::layout_prop) ? 1 : Rank);
 
-///
+/// Const iterator type of the view/array.
 using const_iterator = array_iterator<iterator_rank, ValueType const, typename AccessorPolicy::template accessor<ValueType>::pointer>;
 
-///
+/// Iterator type of the view/array.
 using iterator = array_iterator<iterator_rank, ValueType, typename AccessorPolicy::template accessor<ValueType>::pointer>;
 
 private:
+// Make an iterator for the view/array depending on its type.
 template <typename Iterator>
 [[nodiscard]] auto make_iterator(bool at_end) const noexcept {
   if constexpr (iterator_rank == Rank) {
-    if constexpr (layout_t::is_stride_order_C())
+    // multi-dimensional iterator
+    if constexpr (layout_t::is_stride_order_C()) {
+      // C-order case (array_iterator already traverses the data in C-order)
       return Iterator{indexmap().lengths(), indexmap().strides(), sto.data(), at_end};
-    else
-      // general case. In C order, no need to spend time applying the identity permutation
-      // the new length used by the iterator is  length[ stride_order[0]], length[ stride_order[1]], ...
-      // since stride_order[0] is the slowest, it will traverse the memory in sequential order
+    } else {
+      // general case (we need to permute the shape and the strides according to the stride order of the layout)
       return Iterator{nda::permutations::apply(layout_t::stride_order, indexmap().lengths()),
                       nda::permutations::apply(layout_t::stride_order, indexmap().strides()), sto.data(), at_end};
-  } else // 1d iteration
+    }
+  } else {
+    // 1-dimensional iterator
     return Iterator{std::array<long, 1>{size()}, std::array<long, 1>{indexmap().min_stride()}, sto.data(), at_end};
+  }
 }
 
 public:
-///
+/// Get a const iterator to the beginning of the view/array.
 [[nodiscard]] const_iterator begin() const noexcept { return make_iterator<const_iterator>(false); }
-///
+
+/// Get a const iterator to the beginning of the view/array.
 [[nodiscard]] const_iterator cbegin() const noexcept { return make_iterator<const_iterator>(false); }
-///
+
+/// Get an iterator to the beginning of the view/array.
 iterator begin() noexcept { return make_iterator<iterator>(false); }
 
-///
+/// Get a const iterator to the end of the view/array.
 [[nodiscard]] const_iterator end() const noexcept { return make_iterator<const_iterator>(true); }
-///
+
+/// Get a const iterator to the end of the view/array.
 [[nodiscard]] const_iterator cend() const noexcept { return make_iterator<const_iterator>(true); }
-///
+
+/// Get an iterator to the end of the view/array.
 iterator end() noexcept { return make_iterator<iterator>(true); }
 
-// ------------------------------- Operations --------------------------------------------
-
 /**
- * @tparam RHS A scalar or a type modeling NdArray
- * @param rhs
+ * @brief Addition assignment operator.
+ *
+ * @tparam RHS An nda::Scalar or an nda::Array.
+ * @param rhs Right hand side operand of the addition assignment operation.
+ * @return Reference to this object.
  */
 template <typename RHS>
 auto &operator+=(RHS const &rhs) noexcept {
-  static_assert(not is_const, "Can not assign to a const view");
+  static_assert(not is_const, "Error in array/view: Can not assign to a const view");
   return operator=(*this + rhs);
 }
+
 /**
- * @tparam RHS A scalar or a type modeling NdArray
- * @param rhs
+ * @brief Subtraction assignment operator.
+ *
+ * @tparam RHS An nda::Scalar or an nda::Array.
+ * @param rhs Right hand side operand of the subtraction assignment operation.
+ * @return Reference to this object.
  */
 template <typename RHS>
 auto &operator-=(RHS const &rhs) noexcept {
-  static_assert(not is_const, "Can not assign to a const view");
+  static_assert(not is_const, "Error in array/view: Can not assign to a const view");
   return operator=(*this - rhs);
 }
+
 /**
- * @tparam RHS A scalar or a type modeling NdArray
- * @param rhs
+ * @brief Multiplication assignment operator.
+ *
+ * @tparam RHS An nda::Scalar or an nda::Array.
+ * @param rhs Right hand side operand of the multiplication assignment operation.
+ * @return Reference to this object.
  */
 template <typename RHS>
 auto &operator*=(RHS const &rhs) noexcept {
-  static_assert(not is_const, "Can not assign to a const view");
-  return operator=(*this *rhs);
+  static_assert(not is_const, "Error in array/view: Can not assign to a const view");
+  return operator=((*this) * rhs);
 }
+
 /**
- * @tparam RHS A scalar or a type modeling NdArray
- * @param rhs
+ * @brief Division assignment operator.
+ *
+ * @tparam RHS An nda::Scalar or an nda::Array.
+ * @param rhs Right hand side operand of the division assignment operation.
+ * @return Reference to this object.
  */
 template <typename RHS>
 auto &operator/=(RHS const &rhs) noexcept {
-  static_assert(not is_const, "Can not assign to a const view");
+  static_assert(not is_const, "Error in array/view: Can not assign to a const view");
   return operator=(*this / rhs);
 }
 
-// ------------------------------- Assignment --------------------------------------------
-
-/// Assign from 1D Contiguous Range
+/**
+ * @brief Assign a general contiguous range to the 1-dimensional view/array.
+ *
+ * @tparam R Range type.
+ * @param rhs Right hand side range object.
+ * @return Reference to this object.
+ */
 template <std::ranges::contiguous_range R>
 auto &operator=(R const &rhs) noexcept
   requires(Rank == 1 and not MemoryArray<R>)
@@ -327,37 +455,42 @@ auto &operator=(R const &rhs) noexcept
 }
 
 private:
+// Implementation of the assignment from an n-dimensional array type.
 template <typename RHS>
 void assign_from_ndarray(RHS const &rhs) { // FIXME noexcept {
-
 #ifdef NDA_ENFORCE_BOUNDCHECK
   if (this->shape() != rhs.shape())
-    NDA_RUNTIME_ERROR << "Size mismatch:" << "\n LHS.shape() = " << this->shape() << "\n RHS.shape() = " << rhs.shape();
+    NDA_RUNTIME_ERROR << "Error in assign_from_ndarray: Size mismatch:"
+                      << "\n LHS.shape() = " << this->shape() << "\n RHS.shape() = " << rhs.shape();
 #endif
+  // compile-time check if assignment is possible
+  static_assert(std::is_assignable_v<value_type &, get_value_t<RHS>>, "Error in assign_from_ndarray: Incompatible value types");
 
-  static_assert(std::is_assignable_v<value_type &, get_value_t<RHS>>, "Assignment impossible for the type of RHS into the type of LHS");
+  // are both operands nda::MemoryArray types?
+  static constexpr bool both_in_memory = MemoryArray<self_t> and MemoryArray<RHS>;
 
-  static constexpr bool both_in_memory    = MemoryArray<self_t> and MemoryArray<RHS>;
+  // do both operands have the same stride order?
   static constexpr bool same_stride_order = get_layout_info<self_t>.stride_order == get_layout_info<RHS>.stride_order;
 
+  // prefer optimized options if possible
   if constexpr (both_in_memory and same_stride_order) {
     if (rhs.empty()) return;
-
+    // are both operands strided in 1d?
     static constexpr bool both_1d_strided = has_layout_strided_1d<self_t> and has_layout_strided_1d<RHS>;
-
-    if constexpr (mem::on_host<self_t, RHS> and both_1d_strided) { // -> vectorizable host copy
+    if constexpr (mem::on_host<self_t, RHS> and both_1d_strided) {
+      // vectorizable copy on host
       for (long i = 0; i < size(); ++i) (*this)(_linear_index_t{i}) = rhs(_linear_index_t{i});
       return;
     } else if constexpr (!mem::on_host<self_t, RHS> and have_same_value_type_v<self_t, RHS>) {
-      // Check for block-layout and use mem::memcpy2D if possible
+      // check for block-layout and use mem::memcpy2D if possible
       auto bl_layout_dst = get_block_layout(*this);
       auto bl_layout_src = get_block_layout(rhs);
       if (bl_layout_dst && bl_layout_src) {
         auto [n_bl_dst, bl_size_dst, bl_str_dst] = *bl_layout_dst;
         auto [n_bl_src, bl_size_src, bl_str_src] = *bl_layout_src;
-
-        if (n_bl_dst * bl_size_dst != n_bl_src * bl_size_src) NDA_RUNTIME_ERROR << "Incompatible block sizes in assign_from_ndarray";
-        // If either destination or source consist of a single block we can chunk it up to make the layouts compatible
+        // check that the total memory size is the same
+        if (n_bl_dst * bl_size_dst != n_bl_src * bl_size_src) NDA_RUNTIME_ERROR << "Error in assign_from_ndarray: Incompatible block sizes";
+        // if either destination or source consists of a single block, we can chunk it up to make the layouts compatible
         if (n_bl_dst == 1 && n_bl_src > 1) {
           n_bl_dst = n_bl_src;
           bl_size_dst /= n_bl_src;
@@ -368,8 +501,7 @@ void assign_from_ndarray(RHS const &rhs) { // FIXME noexcept {
           bl_size_src /= n_bl_dst;
           bl_str_src = bl_size_src;
         }
-
-        // Copy only if block-layouts are compatible, otherwise continue to fallback
+        // copy only if block-layouts are compatible, otherwise continue to fallback
         if (n_bl_dst == n_bl_src && bl_size_dst == bl_size_src) {
           mem::memcpy2D<mem::get_addr_space<self_t>, mem::get_addr_space<RHS>>((void *)data(), bl_str_dst * sizeof(value_type), (void *)rhs.data(),
                                                                                bl_str_src * sizeof(value_type), bl_size_src * sizeof(value_type),
@@ -379,25 +511,20 @@ void assign_from_ndarray(RHS const &rhs) { // FIXME noexcept {
       }
     }
   }
-  if constexpr (mem::on_device<self_t> || mem::on_device<RHS>)
-    NDA_RUNTIME_ERROR << "Fallback to elementwise assignment not implemented for arrays on the GPU";
-
-    // Fallback to elementwise assignment
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-conversion"
-  auto l = [this, &rhs](auto const &...args) { (*this)(args...) = rhs(args...); };
-#pragma GCC diagnostic pop
-  nda::for_each(shape(), l);
+  // otherwise fallback to elementwise assignment
+  if constexpr (mem::on_device<self_t> || mem::on_device<RHS>) {
+    NDA_RUNTIME_ERROR << "Error in assign_from_ndarray: Fallback to elementwise assignment not implemented for arrays/views on the GPU";
+  }
+  nda::for_each(shape(), [this, &rhs](auto const &...args) { (*this)(args...) = rhs(args...); });
 }
 
-// -----------------------------------------------------
-
+// Implementation to fill a view/array with a constant scalar value.
 template <typename Scalar>
 void fill_with_scalar(Scalar const &scalar) noexcept {
-  // we make a special implementation if the array is 1d strided or contiguous
-  if constexpr (has_layout_strided_1d<self_t>) { // possibly contiguous
+  // we make a special implementation if the array is strided in 1d or contiguous
+  if constexpr (has_layout_strided_1d<self_t>) {
     const long L             = size();
-    auto *__restrict const p = data(); // no alias possible here !
+    auto *__restrict const p = data(); // no alias possible here!
     if constexpr (has_contiguous_layout<self_t>) {
       for (long i = 0; i < L; ++i) p[i] = scalar;
     } else {
@@ -406,28 +533,26 @@ void fill_with_scalar(Scalar const &scalar) noexcept {
       for (long i = 0; i < Lstri; i += stri) p[i] = scalar;
     }
   } else {
+    // no compile-time memory layout guarantees
     for (auto &x : *this) x = scalar;
   }
 }
 
-// -----------------------------------------------------
-
+// Implementation of the assignment from a scalar value.
 template <typename Scalar>
 void assign_from_scalar(Scalar const &scalar) noexcept {
-
-  static_assert(!is_const, "Cannot assign to a const view !");
-
+  static_assert(!is_const, "Error in assign_from_ndarray: Cannot assign to a const view");
   if constexpr (Algebra != 'M') {
+    // element-wise assignment for non-matrix algebras
     fill_with_scalar(scalar);
   } else {
-    //  A scalar has to be interpreted as a unit matrix
+    // a scalar has to be interpreted as a unit matrix for matrix algebras (the scalar in the shortest diagonal)
     // FIXME : A priori faster to put 0 everywhere and then change the diag to avoid the if.
-    // FIXME : Benchmark and confirm
+    // FIXME : Benchmark and confirm.
     if constexpr (is_scalar_or_convertible_v<Scalar>)
       fill_with_scalar(0);
     else
-      fill_with_scalar(Scalar{0 * scalar}); //FIXME : improve this
-    // on diagonal only
+      fill_with_scalar(Scalar{0 * scalar}); // FIXME : improve this
     const long imax = std::min(extent(0), extent(1));
     for (long i = 0; i < imax; ++i) operator()(i, i) = scalar;
   }

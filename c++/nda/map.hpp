@@ -14,101 +14,172 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides lazy function calls on arrays/views.
+ */
+
 #pragma once
 
-#include <type_traits>
-#include <tuple>
+#include "./concepts.hpp"
+#include "./layout/range.hpp"
+#include "./macros.hpp"
+#include "./traits.hpp"
 
-#include "concepts.hpp"
-#include "layout/range.hpp"
+#include <cstddef>
+#include <utility>
+#include <tuple>
 
 namespace nda {
 
-  // lazy expression for mapping a function on arrays A
+  // Forward declarations.
   template <typename F, Array... A>
   struct expr_call;
-
-  // impl details
-  template <typename... Char>
-  constexpr char _impl_find_common_algebra(char x0, Char... x) {
-    return (((x == x0) && ...) ? x0 : 'N');
-  }
-
-  // algebra
-  template <typename F, Array... As>
-  constexpr char get_algebra<expr_call<F, As...>> = _impl_find_common_algebra(get_algebra<As>...);
-
-  //----------------------------
 
   template <class F>
   struct mapped;
 
-  // a lazy expression of f(A...) where f is the function to map and A the arrays
-  // e.g. f is sqrt(x) and there is one A, or f is min(x,y) and there are 2 A
-  template <typename F, Array... A>
+  namespace detail {
+
+    // Implementation of the nda::get_algebra trait for function call expressions.
+    template <typename... Char>
+    constexpr char _impl_find_common_algebra(char x0, Char... x) {
+      return (((x == x0) && ...) ? x0 : 'N');
+    }
+
+  } // namespace detail
+
+  /**
+   * @brief Get the resulting algebra of a function call expression involving arrays/views.
+   *
+   * @details If one of the algebras of the arguments is different, the resulting algebra
+   * is 'N'.
+   *
+   * @tparam F Callable object of the expression.
+   * @tparam As nda::Array argument types.
+   */
+  template <typename F, Array... As>
+  constexpr char get_algebra<expr_call<F, As...>> = detail::_impl_find_common_algebra(get_algebra<As>...);
+
+  /**
+   * @brief A lazy function call expression on arrays/views.
+   *
+   * @details The lazy expression call fullfils the nda::Array concept and can therefore be
+   * assigned to other nda::basic_array or nda::basic_array_view objects. For example:
+   *
+   * @code{.cpp}
+   * nda::matrix<int> mat{{1, 2}, {3, 4}};
+   * nda::matrix<int> pmat = nda::pow(mat, 2);
+   * @endcode
+   *
+   * Here, `nda::pow(mat, 2)` return a lazy expression call object which is then used in the
+   * constructor of `pmat`.
+   *
+   * The callable object should take the array/view elements as arguments.
+   *
+   * @tparam F Callable type.
+   * @tparam As nda::Array argument types.
+   */
+  template <typename F, Array... As>
   struct expr_call {
-
+    /// Callable object of the expression.
     F f;
-    std::tuple<const A...> a; // tuple of array (ref) on which f is applied
 
-    private: // FIXME C++20 lambda implementation details
+    /// Tuple containing the nda::Array arguments.
+    std::tuple<const As...> a;
+
+    private:
+    // Implementation of the function call operator.
     template <size_t... Is, typename... Args>
     [[gnu::always_inline]] [[nodiscard]] auto _call(std::index_sequence<Is...>, Args const &...args) const {
-      // In the case that (args...) invokes a slice on the array
-      // we need to return an call_expr on the resulting view
+      // if args contains a range, we need to return an expr_call on the resulting slice
       if constexpr ((is_range_or_ellipsis<Args> or ... or false)) {
         return mapped<F>{f}(std::get<Is>(a)(args...)...);
       } else {
         return f(std::get<Is>(a)(args...)...);
       }
     }
+
+    // Implementation of the subscript operator.
     template <size_t... Is, typename Args>
     [[gnu::always_inline]] auto _call_bra(std::index_sequence<Is...>, Args const &args) const {
       return f(std::get<Is>(a)[args]...);
     }
 
     public:
+    /**
+     * @brief Function call operator.
+     *
+     * @tparam Args Argument types.
+     * @param args Function call arguments (usually multi-dimensional indexes which are passed
+     * to the arrays).
+     * @return The result of the function call (depends on the callable).
+     */
     template <typename... Args>
     auto operator()(Args const &...args) const {
-      return _call(std::make_index_sequence<sizeof...(A)>{}, args...);
+      return _call(std::make_index_sequence<sizeof...(As)>{}, args...);
     }
 
-    // vector interface
-    template <typename Args>
-    auto operator[](Args &&args) const {
-      return _call_bra(std::make_index_sequence<sizeof...(A)>{}, args);
+    /**
+     * @brief Subscript operator.
+     *
+     * @tparam Args Argument types.
+     * @param args Subscript argument (usually 1-dimensional index which is passed to the arrays).
+     * @return The result of the subscript operation (depends on the callable).
+     */
+    template <typename Arg>
+    auto operator[](Arg const &arg) const {
+      return _call_bra(std::make_index_sequence<sizeof...(As)>{}, arg);
     }
 
     // FIXME copy needed for the && case only. Overload ?
+    /**
+     * @brief Get the total size of one of the nda::Array arguments.
+     * @return Number of elements contained in each nda::Array argument.
+     */
     [[nodiscard]] auto shape() const { return std::get<0>(a).shape(); }
 
-    [[nodiscard]] long size() const { return a.size(); }
+    /**
+     * @brief Get the shape of one of the nda::Array arguments.
+     * @return std::array<long, Rank> object specifying the shape of each of the arguments.
+     */
+    [[nodiscard]] long size() const { return std::get<0>(a).size(); }
   };
 
-  /*
-   * The lambda which maps function F onto the array
+  /**
+   * @brief Functor that is returned by the nda::map function.
+   * @tparam F Callable type.
    */
   template <class F>
   struct mapped {
+    /// Callable object.
     F f;
 
-    template <Array A0, Array... A>
-    expr_call<F, A0, A...> operator()(A0 &&a0, A &&...a) const {
-      EXPECTS(((a.shape() == a0.shape()) && ...)); // same shape
-      return {f, {std::forward<A0>(a0), std::forward<A>(a)...}};
+    /**
+     * @brief Function call operator that returns a lazy function call expression.
+     *
+     * @tparam A0 First nda::Array argument type.
+     * @tparam As Rest of the nda::Array argument types.
+     * @param a0 First nda::Array argument.
+     * @param as Rest of the nda::Array arguments.
+     * @return A lazy nda::expr_call object.
+     */
+    template <Array A0, Array... As>
+    expr_call<F, A0, As...> operator()(A0 &&a0, As &&...as) const {
+      EXPECTS(((as.shape() == a0.shape()) && ...)); // same shape
+      return {f, {std::forward<A0>(a0), std::forward<As>(as)...}};
     }
   };
 
   /**
-  * 
-  * Maps a function onto the array (elementwise)
-  *
-  * @tparam F A lambda (do not use function pointers here, make a small lambda it is easier)
-  * @param f : function to be mapped
-  * @return a lambda that accepts array(s) as argument and return a lazy call expressions.
-  *
-  * @example nda_map.cpp
-  */
+   * @brief Create a lazy function call expression on arrays/views.
+   *
+   * @details The callable should take the array/view elements as arguments.
+   *
+   * @tparam F Callable type.
+   * @param f Callable object.
+   * @return A lazy nda::mapped object.
+   */
   template <class F>
   mapped<F> map(F f) {
     return {std::move(f)};

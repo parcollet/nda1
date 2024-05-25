@@ -14,39 +14,80 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides an array adapter class.
+ */
+
 #pragma once
 
-#include "stdutil/array.hpp"
-#include "concepts.hpp"
+#include "./concepts.hpp"
+#include "./stdutil/array.hpp"
+
+#include <array>
+#include <type_traits>
 
 namespace nda {
 
-  /// A pair shape + lambda --> an immutable array
+  /**
+   * @brief Array adapter that consists of a shape and a callable object, which
+   * takes R integers as arguments (just like an nda::basic_array).
+   *
+   * @tparam R Rank of the adapter.
+   * @tparam F Callable type.
+   */
   template <int R, typename F>
   class array_adapter {
-    static_assert(CallableWithLongs<F, R>, "Lambda should be callable with R integers");
+    static_assert(CallableWithLongs<F, R>, "Error in nda::array_adapter: Lambda should be callable with R integers");
 
+    // Shape of the array.
     std::array<long, R> myshape;
+
+    // Callable object.
     F f;
 
     public:
+    /**
+     * @brief Construct a new array adapter object.
+     *
+     * @tparam Int Integer type.
+     * @param shape Shape of the adapater.
+     * @param f Callable object.
+     */
     template <typename Int>
     array_adapter(std::array<Int, R> const &shape, F f) : myshape(stdutil::make_std_array<long>(shape)), f(f) {}
 
-    std::array<long, R> const &shape() const { return myshape; }
+    /**
+     * @brief Get shape of the adapter.
+     * @return std::array object specifying the shape of the adapter.
+     */
+    [[nodiscard]] std::array<long, R> const &shape() const { return myshape; }
+
+    /**
+     * @brief Get the total size of the adapter.
+     * @return Number of elements in the adapter.
+     */
     [[nodiscard]] long size() const { return stdutil::product(myshape); }
 
-    template <typename... Long>
-    auto operator()(long i, Long... is) const {
-      static_assert((std::is_convertible_v<Long, long> and ...), "Arguments must be convertible to long");
-      return f(i, is...);
+    /**
+     * @brief Function call operator simply forwards the arguments to the callable object.
+     *
+     * @tparam Ints Integer types (convertible to long).
+     * @param i0 First argument.
+     * @param is Rest of the arguments.
+     */
+    template <typename... Ints>
+    auto operator()(long i0, Ints... is) const {
+      static_assert((std::is_convertible_v<Ints, long> and ...), "Error in nda::array_adapter: Arguments must be convertible to long");
+      return f(i0, is...);
     }
-  }; // namespace nda
+  };
 
-  // CTAD
+  // Class template argument deduction guides.
   template <auto R, typename Int, typename F>
   array_adapter(std::array<Int, R>, F) -> array_adapter<R, F>;
 
+  /// Specialization of nda::get_algebra for nda::array_adapter.
   template <int R, typename F>
   inline constexpr char get_algebra<array_adapter<R, F>> = 'A';
 

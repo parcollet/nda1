@@ -14,232 +14,533 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides an iterator for nda::basic_array and nda::basic_array_view types.
+ */
+
 #pragma once
 
-#include "stdutil/array.hpp"
+#include "./stdutil/array.hpp"
+
+#include <array>
+#include <cstddef>
+#include <iterator>
 
 namespace nda {
 
-  /*
-   * Iterator on a rectangular grid (in C traversal order)
-   *
-   */
-  // -------------------------------
-  // Rank >1 : general case
-  template <int Rank>
-  class grid_iterator {
-    long stri   = 0;
-    long pos    = 0;
-    long offset = 0;
-    grid_iterator<Rank - 1> it_begin, it_end, it;
+  namespace detail {
 
-    public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type        = long;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = long *;
-    using reference         = long &;
+    // N-dimensional rectangular grid iterator in C traversal order.
+    template <int Rank>
+    class grid_iterator {
+      // Stride or number of elements to skip when incresing the iterator in the
+      // current dimension.
+      long stri = 0;
 
-    grid_iterator() = default;
+      // Position of the iterator in the current dimension.
+      long pos = 0;
 
-    grid_iterator(long const *lengths, long const *strides, bool at_end)
-       : stri(strides[0]),
-         pos(at_end ? lengths[0] : 0),
-         offset(pos * stri),
-         it_begin(lengths + 1, strides + 1, false),
-         it_end(lengths + 1, strides + 1, true),
-         it(it_begin) {} // NB always it_begin, even if at_end. The end iterator correspond to pos = (length -1) + 1, but it is at its *beginning*
+      // Position times the stride in the current dimension.
+      long offset = 0;
 
-    [[nodiscard]] std::array<long, Rank> indices() { return stdutil::front_append(it.indices(), pos); }
+      // Iterator to the beginning of the Rank - 1 dimensional grid (excluding the
+      // current dimension).
+      grid_iterator<Rank - 1> it_begin;
 
-    [[nodiscard]] long operator*() const { return offset + *it; }
-    long operator->() const { return operator*(); }
+      // Iterator to the end of the Rank - 1 dimensional grid (excluding the current
+      // dimension).
+      grid_iterator<Rank - 1> it_end;
 
-    bool operator==(grid_iterator const &other) const { return ((other.pos == pos) and (other.it == it)); }
-    bool operator!=(grid_iterator const &other) const { return not operator==(other); }
-    grid_iterator &operator++() {
-      ++it;
-      if (it == it_end) { //FIXME [[unlikely]]
-        ++pos;
-        offset += stri;
-        it = it_begin;
+      // Iterator to the Rank - 1 dimensional grid (excluding the current dimension).
+      grid_iterator<Rank - 1> it;
+
+      public:
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = long;
+      using difference_type   = std::ptrdiff_t;
+      using pointer           = long *;
+      using reference         = long &;
+
+      // Default constructor.
+      grid_iterator() = default;
+
+      // Construct an iterator from the shape of the grid, the stride of the grid and a
+      // flag indicating if the iterator is at the end.
+      grid_iterator(long const *lengths, long const *strides, bool at_end)
+         : stri(strides[0]),
+           pos(at_end ? lengths[0] : 0),
+           offset(pos * stri),
+           it_begin(lengths + 1, strides + 1, false),
+           it_end(lengths + 1, strides + 1, true),
+           it(it_begin) {}
+
+      // Get the position/multi-dimensional index of the iterator.
+      [[nodiscard]] std::array<long, Rank> indices() { return stdutil::front_append(it.indices(), pos); }
+
+      // Dereference operator returns the sum of the offsets of every dimension
+      // = its linear index.
+      [[nodiscard]] long operator*() const { return offset + *it; }
+
+      // Member access operator returns the sum of the offsets of every dimension
+      // = its linear index.
+      [[nodiscard]] long operator->() const { return operator*(); }
+
+      // True if the positions of the iterators are equal in every dimension, false otherwise.
+      [[nodiscard]] bool operator==(grid_iterator const &rhs) const { return ((rhs.pos == pos) and (rhs.it == it)); }
+
+      // True if the positions of the iterators are not equal in every dimension, false otherwise.
+      [[nodiscard]] bool operator!=(grid_iterator const &rhs) const { return not operator==(rhs); }
+
+      // Prefix increment operator.
+      grid_iterator &operator++() {
+        // increment the iterator of the subgrid
+        ++it;
+
+        // if the iterator of the subgrid is at the end, reset it and increment the current
+        // position and offset
+        if (it == it_end) { //FIXME [[unlikely]]
+          ++pos;
+          offset += stri;
+          it = it_begin;
+        }
+        return *this;
       }
-      return *this;
-    }
 
-    grid_iterator operator++(int) {
-      auto c = *this;
-      ++(*this);
-      return c;
-    }
-  };
+      // Postfix increment operator.
+      grid_iterator operator++(int) {
+        auto c = *this;
+        ++(*this);
+        return c;
+      }
+    };
 
-  // -------------------------------
-  // Rank = 1 is a special case
-  template <>
-  class grid_iterator<1> {
-    long stri   = 0;
-    long pos    = 0;
-    long offset = 0;
+    // Specialization of nda::grid_iterator for 1-dimensional grids.
+    template <>
+    class grid_iterator<1> {
+      // Stride or number of elements to skip when incresing the iterator.
+      long stri = 0;
 
-    public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type        = long;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = long *;
-    using reference         = long &;
+      // Position of the iterator.
+      long pos = 0;
 
-    grid_iterator() = default;
-    grid_iterator(long const *lengths, long const *strides, bool at_end) : stri(strides[0]), pos(at_end ? lengths[0] : 0), offset(pos * stri) {}
+      // Position times the stride.
+      long offset = 0;
 
-    [[nodiscard]] std::array<long, 1> indices() { return {pos}; }
+      public:
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = long;
+      using difference_type   = std::ptrdiff_t;
+      using pointer           = long *;
+      using reference         = long &;
 
-    [[nodiscard]] long operator*() const { return offset; }
-    long operator->() const { return operator*(); }
+      // Default constructor.
+      grid_iterator() = default;
 
-    bool operator==(grid_iterator const &other) const { return (other.pos == pos); }
-    bool operator!=(grid_iterator const &other) const { return (other.pos != pos); }
+      // Construct an iterator from the shape of the grid, the stride of the grid and a flag
+      // indicating if the iterator is at the end.
+      grid_iterator(long const *lengths, long const *strides, bool at_end) : stri(strides[0]), pos(at_end ? lengths[0] : 0), offset(pos * stri) {}
 
-    grid_iterator &operator++() {
-      offset += stri;
-      ++pos;
-      return *this;
-    }
+      // Get the position/index of the iterator.
+      [[nodiscard]] std::array<long, 1> indices() { return {pos}; }
 
-    grid_iterator &operator--() {
-      offset -= stri;
-      --pos;
-      return *this;
-    }
+      // Dereference operator returns the offset = its linear index.
+      [[nodiscard]] long operator*() const { return offset; }
 
-    grid_iterator &operator+=(std::ptrdiff_t n) {
-      offset += n * stri;
-      pos += n;
-      return *this;
-    }
+      // Member access operator returns the offset = its linear index.
+      [[nodiscard]] long operator->() const { return operator*(); }
 
-    // We do not implement the full LegacyRandomAccessIterator here, just what is needed for the array_iterator below.
-    friend grid_iterator operator+(grid_iterator it, std::ptrdiff_t n) { return it += n; }
-    friend std::ptrdiff_t operator-(grid_iterator const &it1, grid_iterator const &it2) { return it1.pos - it2.pos; }
-    friend bool operator<(grid_iterator const &it1, grid_iterator const &it2) { return it1.pos < it2.pos; }
-    friend bool operator>(grid_iterator const &it1, grid_iterator const &it2) { return it1.pos > it2.pos; }
-  };
+      // True if the positions of the iterators are equal, false otherwise.
+      [[nodiscard]] bool operator==(grid_iterator const &rhs) const { return (rhs.pos == pos); }
 
-  //-----------------------------------------------------------------------
+      // True if the positions of the iterators are not equal, false otherwise.
+      [[nodiscard]] bool operator!=(grid_iterator const &rhs) const { return (rhs.pos != pos); }
 
-  // The iterator for the array and array_view container.
-  // Makes an iterator of rank Rank on a pointer of type T.
-  // e.g. for a strided_1d, we use Rank == 1, whatever the real array is
-  // T can be const
+      // Prefix increment operator increments the offset by the stride and the position by one.
+      grid_iterator &operator++() {
+        offset += stri;
+        ++pos;
+        return *this;
+      }
+
+      // Prefix decrement operator decrements the offset by the stride and the position by one.
+      grid_iterator &operator--() {
+        offset -= stri;
+        --pos;
+        return *this;
+      }
+
+      // Compund assignment addition operator increments the offset by n times the stride and
+      // the position by n.
+      grid_iterator &operator+=(std::ptrdiff_t n) {
+        offset += n * stri;
+        pos += n;
+        return *this;
+      }
+
+      // Binary addition of a grid iterator and an integer.
+      [[nodiscard]] friend grid_iterator operator+(grid_iterator it, std::ptrdiff_t n) { return it += n; }
+
+      // Binaray subtraction of two grid iterators.
+      [[nodiscard]] friend std::ptrdiff_t operator-(grid_iterator const &lhs, grid_iterator const &rhs) { return lhs.pos - rhs.pos; }
+
+      // True if the position of the left hand side iterator is less than the position of the
+      // right hand side iterator, false otherwise.
+      [[nodiscard]] friend bool operator<(grid_iterator const &lhs, grid_iterator const &rhs) { return lhs.pos < rhs.pos; }
+
+      // True if the position of the left hand side iterator is greater than the position of
+      // the right hand side iterator, false otherwise.
+      [[nodiscard]] friend bool operator>(grid_iterator const &lhs, grid_iterator const &rhs) { return lhs.pos > rhs.pos; }
+    };
+
+  } // namespace detail
+
+  /**
+   * @brief Iterator for nda::basic_array and nda::basic_array_view types.
+   *
+   * @details It is a LegacyRandomAccessIterator for 1-dimensional and a LegacyForwardIterator
+   * for multi-dimensional arrays/views.
+   *
+   * Given the shape, strides and a pointer to the start of the data, the iterator uses an
+   * nda::detail::grid_iterator to traverse the element in the array/view.
+   *
+   * @note The memory layout is always assumed to be C-style. For other layouts, one has to
+   * permute the given shape and the strides according to the stride order.
+   *
+   * @tparam Rank Number of dimensions of the array.
+   * @tparam T Type of the elements in the array (can be const).
+   * @tparam Pointer Type of the pointer used to access the elements in the array (might be
+   * restricted depending on the accessor).
+   */
   template <int Rank, typename T, typename Pointer>
   class array_iterator {
+    // Pointer to the data (to the first element).
     T *data = nullptr;
-    std::array<long, Rank> len, stri;
-    grid_iterator<Rank> iter;
+
+    // Shape of the array.
+    std::array<long, Rank> len;
+
+    // Strides of the array.
+    std::array<long, Rank> stri;
+
+    // Grid iterator.
+    detail::grid_iterator<Rank> iter;
 
     public:
+    /// Iterator category.
     using iterator_category = std::forward_iterator_tag;
-    using value_type        = T;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = T *;
-    using reference         = T &;
 
+    /// Value type.
+    using value_type = T;
+
+    /// Difference type.
+    using difference_type = std::ptrdiff_t;
+
+    /// Pointer type.
+    using pointer = T *;
+
+    /// Reference type.
+    using reference = T &;
+
+    /// Default constructor.
     array_iterator() = default;
+
+    /**
+     * @brief Construct an iterator from the shape and the strides of an array/view,
+     * a pointer to its data and a flag indicating if the iterator is at the end.
+     *
+     * @param lengths Shape of the array/view.
+     * @param strides Strides of the array/view.
+     * @param start Pointer to the data.
+     * @param at_end Flag indicating if the iterator is at the end.
+     */
     array_iterator(std::array<long, Rank> const &lengths, std::array<long, Rank> const &strides, T *start, bool at_end)
        : data(start), len(lengths), stri(strides), iter(len.data(), stri.data(), at_end) {}
 
+    /**
+     * @brief Get the current position/multi-dimensional index of the iterator.
+     * @return Array containing the current position/multi-dimensional index of the iterator.
+     */
     [[nodiscard]] std::array<long, Rank> indices() { return iter.indices(); }
 
+    /**
+     * @brief Dereference operator.
+     * @return Reference to the element at the position of the iterator.
+     */
     [[nodiscard]] value_type &operator*() const { return ((Pointer)data)[*iter]; }
-    value_type &operator->() const { return operator*(); }
 
+    /**
+     * @brief Member access operator.
+     * @return Reference to the element at the position of the iterator.
+     */
+    [[nodiscard]] value_type &operator->() const { return operator*(); }
+
+    /**
+     * @brief Prefix increment operator.
+     * @return Reference to the current iterator.
+     */
     array_iterator &operator++() {
       ++iter;
       return *this;
     }
 
+    /**
+     * @brief Postfix increment operator.
+     * @return Copy of the current iterator.
+     */
     array_iterator operator++(int) {
       auto c = *this;
       ++iter;
       return c;
     }
 
-    bool operator==(array_iterator const &other) const { return (other.iter == iter); }
-    bool operator!=(array_iterator const &other) const { return (!operator==(other)); }
+    /**
+     * @brief Equal-to operator.
+     * @param rhs Other iterator to compare to.
+     * @return True if the positions of the iterators are equal, false otherwise.
+     */
+    [[nodiscard]] bool operator==(array_iterator const &rhs) const { return (rhs.iter == iter); }
+
+    /**
+     * @brief Not-equal-to operator.
+     * @param rhs Other iterator to compare to.
+     * @return True if the positions of the iterators are not equal, false otherwise.
+     */
+    [[nodiscard]] bool operator!=(array_iterator const &rhs) const { return (!operator==(rhs)); }
   };
 
-  // -------------------------------
-  // 1d case is special : it is a LegacyRandomAccessIterator
+  /**
+   * @brief Specialization of nda::array_iterator for 1-dimensional grids.
+   *
+   * @details It is a LegacyRandomAccessIterator.
+   *
+   * @tparam T Type of the elements in the array (can be const).
+   * @tparam Pointer Type of the pointer used to access the elements in the array (might be
+   * restricted depending on the accessor).
+   */
   template <typename T, typename Pointer>
   class array_iterator<1, T, Pointer> {
+    // Pointer to the data.
     T *data = nullptr;
-    std::array<long, 1> len, stri;
-    grid_iterator<1> iter;
+
+    // Shape of the array.
+    std::array<long, 1> len{};
+
+    // Strides of the array.
+    std::array<long, 1> stri{};
+
+    // Grid iterator.
+    detail::grid_iterator<1> iter;
 
     public:
+    /// Iterator category.
     using iterator_category = std::random_access_iterator_tag;
-    using value_type        = T;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = T *;
-    using reference         = T &;
 
+    /// Value type.
+    using value_type = T;
+
+    /// Difference type.
+    using difference_type = std::ptrdiff_t;
+
+    /// Pointer type.
+    using pointer = T *;
+
+    /// Reference type.
+    using reference = T &;
+
+    /// Default constructor.
     array_iterator() = default;
+
+    /**
+     * @brief Construct an iterator from the shape and the strides of an array/view,
+     * a pointer to its data and a flag indicating if the iterator is at the end.
+     *
+     * @param lengths Shape of the array/view.
+     * @param strides Stride of the array/view.
+     * @param start Pointer to the data.
+     * @param at_end Flag indicating if the iterator is at the end.
+     */
     array_iterator(std::array<long, 1> const &lengths, std::array<long, 1> const &strides, T *start, bool at_end)
        : data(start), len(lengths), stri(strides), iter(len.data(), stri.data(), at_end) {}
 
+    /**
+     * @brief Get the current position/index of the iterator.
+     * @return 1-dimensional array containing the current position/index of the iterator.
+     */
     [[nodiscard]] std::array<long, 1> indices() { return iter.indices(); }
 
+    /**
+     * @brief Dereference operator.
+     * @return Reference to the element at the position of the iterator.
+     */
     [[nodiscard]] T &operator*() const { return ((Pointer)data)[*iter]; }
+
+    /**
+     * @brief Member access operator.
+     * @return Reference to the element at the position of the iterator.
+     */
     T &operator->() const { return operator*(); }
 
+    /**
+     * @brief Prefix increment operator.
+     * @return Reference to the current iterator.
+     */
     array_iterator &operator++() {
       ++iter;
       return *this;
     }
 
+    /**
+     * @brief Postfix increment operator.
+     * @return Copy of the current iterator.
+     */
     array_iterator operator++(int) {
       auto c = *this;
       ++iter;
       return c;
     }
 
+    /**
+     * @brief Prefix decrement operator.
+     * @return Reference to the current iterator.
+     */
     array_iterator &operator--() {
       --iter;
       return *this;
     }
 
+    /**
+     * @brief Postfix decrement operator.
+     * @return Copy of the current iterator.
+     */
     array_iterator operator--(int) {
       auto c = *this;
       --iter;
       return c;
     }
 
-    bool operator==(array_iterator const &other) const { return (other.iter == iter); }
-    bool operator!=(array_iterator const &other) const { return (!operator==(other)); }
+    /**
+     * @brief Equal-to operator.
+     * @param rhs Right hand side operand.
+     * @return True if the positions of the iterators are equal, false otherwise.
+     */
+    [[nodiscard]] bool operator==(array_iterator const &rhs) const { return (rhs.iter == iter); }
 
+    /**
+     * @brief Not-equal-to operator.
+     * @param rhs Right hand side operand.
+     * @return True if the positions of the iterators are not equal, false otherwise.
+     */
+    [[nodiscard]] bool operator!=(array_iterator const &other) const { return (!operator==(other)); }
+
+    /**
+     * @brief Compund assignment addition operator increments the iterator a given number
+     * of times.
+     *
+     * @param n Number of times to increment the iterator.
+     * @return Reference to the current iterator.
+     */
     array_iterator &operator+=(std::ptrdiff_t n) {
       iter += n;
       return *this;
     }
 
+    /**
+     * @brief Compund assignment subtraction operator decrements the iterator a given number
+     * of times.
+     *
+     * @param n Number of times to decrement the iterator.
+     * @return Reference to the current iterator.
+     */
     array_iterator &operator-=(std::ptrdiff_t n) {
       iter += (-n);
       return *this;
     }
 
-    friend array_iterator operator+(std::ptrdiff_t n, array_iterator it) { return it += n; }
-    friend array_iterator operator+(array_iterator it, std::ptrdiff_t n) { return it += n; }
-    friend array_iterator operator-(array_iterator it, std::ptrdiff_t n) { return it -= n; }
+    /**
+     * @brief Binary addition of an integer with an array iterator.
+     *
+     * @param n Integer.
+     * @param it Array iterator.
+     * @return Array iterator incremented n times.
+     */
+    [[nodiscard]] friend array_iterator operator+(std::ptrdiff_t n, array_iterator it) { return it += n; }
 
-    friend std::ptrdiff_t operator-(array_iterator const &it1, array_iterator const &it2) { return it1.iter - it2.iter; }
+    /**
+     * @brief Binary addition of an array iterator with an integer.
+     *
+     * @param it Array iterator.
+     * @param n Integer.
+     * @return Array iterator incremented n times.
+     */
+    [[nodiscard]] friend array_iterator operator+(array_iterator it, std::ptrdiff_t n) { return it += n; }
 
-    T &operator[](std::ptrdiff_t n) { return ((Pointer)data)[*(iter + n)]; }
+    /**
+     * @brief Binary subtraction of an array iterator with an integer.
+     *
+     * @param it Array iterator.
+     * @param n Integer.
+     * @return Array iterator decremented n times.
+     */
+    [[nodiscard]] friend array_iterator operator-(array_iterator it, std::ptrdiff_t n) { return it -= n; }
+
+    /**
+     * @brief Binary subtraction of two array iterators.
+     *
+     * @param lhs Left hand side operand.
+     * @param rhs Right hand side operand.
+     * @return Difference between their positions.
+     */
+    [[nodiscard]] friend std::ptrdiff_t operator-(array_iterator const &lhs, array_iterator const &rhs) { return lhs.iter - rhs.iter; }
+
+    /**
+     * @brief Subscript operator.
+     *
+     * @param n Number of times to increment the iterator before dereferencing it.
+     * @return Reference to the element at the position of the incremented iterator.
+     */
+    [[nodiscard]] T &operator[](std::ptrdiff_t n) { return ((Pointer)data)[*(iter + n)]; }
 
     // FIXME C++20 ? with <=> operator
-    friend bool operator<(array_iterator const &it1, array_iterator const &it2) { return it1.iter < it2.iter; }
-    friend bool operator>(array_iterator const &it1, array_iterator const &it2) { return it1.iter > it2.iter; }
-    friend bool operator<=(array_iterator const &it1, array_iterator const &it2) { return not(it1.iter > it2.iter); }
-    friend bool operator>=(array_iterator const &it1, array_iterator const &it2) { return not(it1.iter < it2.iter); }
+    /**
+     * @brief Less-than comparison operator for two array iterators.
+     *
+     * @param lhs Left hand side operand.
+     * @param rhs Right hand side operand.
+     * @return True if the position of the left hand side iterator is less than the position
+     * of the right hand side iterator, false otherwise.
+     */
+    [[nodiscard]] friend bool operator<(array_iterator const &lhs, array_iterator const &rhs) { return lhs.iter < rhs.iter; }
+
+    /**
+     * @brief Greater-than comparison operator for two array iterators.
+     *
+     * @param lhs Left hand side operand.
+     * @param rhs Right hand side operand.
+     * @return True if the position of the left hand side iterator is greater than the position
+     * of the right hand side iterator, false otherwise.
+     */
+    [[nodiscard]] friend bool operator>(array_iterator const &lhs, array_iterator const &rhs) { return lhs.iter > rhs.iter; }
+
+    /**
+     * @brief Less-than or equal-to comparison operator for two array iterators.
+     *
+     * @param lhs Left hand side operand.
+     * @param rhs Right hand side operand.
+     * @return True if the position of the left hand side iterator is less than or equal to the
+     * position of the right hand side iterator, false otherwise.
+     */
+    [[nodiscard]] friend bool operator<=(array_iterator const &lhs, array_iterator const &rhs) { return not(lhs.iter > rhs.iter); }
+
+    /**
+     * @brief Greater-than or equal-to comparison operator for two array iterators.
+     *
+     * @param lhs Left hand side operand.
+     * @param rhs Right hand side operand.
+     * @return True if the position of the left hand side iterator is greater than or equal to
+     * the position of the right hand side iterator, false otherwise.
+     */
+    [[nodiscard]] friend bool operator>=(array_iterator const &lhs, array_iterator const &rhs) { return not(lhs.iter < rhs.iter); }
   };
 
 } // namespace nda

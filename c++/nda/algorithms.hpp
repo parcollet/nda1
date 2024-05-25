@@ -14,67 +14,96 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides various algorithms to be used with nda::Array objects.
+ */
+
 #pragma once
+
+#include "./concepts.hpp"
+#include "./layout/for_each.hpp"
+#include "./traits.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <functional>
+#include <type_traits>
+#include <utility>
 
 namespace nda {
 
-  // FIXME : CHECK ORDER or the LOOP !
-  // --------------- fold  ------------------------
+  // FIXME : CHECK ORDER of the LOOP !
   /**
-   * @tparam A
-   * @tparam F is a function f(x, r)
-   * @tparam R
-   * @param f
-   * @param a
-   * @param r
+   * @brief Perform a fold operation on the given nda::Array object.
    *
-   * fold computes f(f(r, a(0,0)), a(0,1), ...)  etc
+   * @details It calculates the following (where r is an initial value);
+   *
+   * @code{.cpp}
+   * auto res = f(...f(f(f(r, a(0,...,0)), a(0,...,1)), a(0,...,2)), ...);
+   * @endcode
+   *
+   * @note The array is always traversed in C-order.
+   *
+   * @tparam A nda::Array type.
+   * @tparam F Callable type.
+   * @tparam R Type of the initial value.
+   * @param f Callable object taking two arguments compatible with the initial value
+   * and the array value type.
+   * @param a nda::Array object.
+   * @param r Initial value.
+   * @return Result of the fold operation.
    */
   template <Array A, typename F, typename R>
   auto fold(F f, A const &a, R r) {
+    // cast the initial value to the return type of f to avoid narrowing
     decltype(f(r, get_value_t<A>{})) r2 = r;
-    // to take into account that f may be double,double -> double, while one passes 0 (an int...)
-    // R = int, R2= double in such case, and the result will be a double, or narrowing will occur
     nda::for_each(a.shape(), [&a, &r2, &f](auto &&...args) { r2 = f(r2, a(args...)); });
     return r2;
   }
 
   /**
-   * @tparam A
-   * @tparam F is a function f(x, r)
-   * @param f
-   * @param a
-   *
-   * fold computes f(f(r, a(0,0)), a(0,1), ...)  etc
+   * @brief The same as nda::fold, except that the initial value is a default constructed
+   * value type of the array.
    */
   template <Array A, typename F>
   auto fold(F f, A const &a) {
     return fold(std::move(f), a, get_value_t<A>{});
   }
 
-  // --------------- applications of fold -----------------------
-
-  /// Returns true iif at least one element of the array is true
-  /// \ingroup Algorithms
+  /**
+   * @brief Does any of the elements of the array evaluate to true?
+   *
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return True if at least one element of the array evaluates to true, false otherwise.
+   */
   template <Array A>
   bool any(A const &a) {
-    static_assert(std::is_same_v<get_value_t<A>, bool>, "OOPS");
+    static_assert(std::is_same_v<get_value_t<A>, bool>, "Error in nda::any: Value type of the array must be bool");
     return fold([](bool r, auto const &x) -> bool { return r or bool(x); }, a, false);
   }
 
-  /// Returns true iif all elements of the array are true
-  /// \ingroup Algorithms
+  /**
+   * @brief Do all elements of the array evaluate to true?
+   *
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return True if all elements of the array evaluate to true, false otherwise.
+   */
   template <Array A>
   bool all(A const &a) {
-    static_assert(std::is_same_v<get_value_t<A>, bool>, "OOPS");
+    static_assert(std::is_same_v<get_value_t<A>, bool>, "Error in nda::all: Value type of the array must be bool");
     return fold([](bool r, auto const &x) -> bool { return r and bool(x); }, a, true);
   }
 
   /**
-   * @tparam A Anything modeling NdArray
-   * @param a The object of type A
-   * @return The maximum element of A
-   * \ingroup Algorithms
+   * @brief Find the maximum element of an array.
+   *
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return Maximum element of the array.
    */
   template <Array A>
   auto max_element(A const &a) {
@@ -87,10 +116,11 @@ namespace nda {
   }
 
   /**
-   * @tparam A Anything modeling NdArray
-   * @param a The object of type A
-   * @return The minimum element of A
-   * \ingroup Algorithms
+   * @brief Find the minimum element of an array.
+   *
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return Minimum element of the array.
    */
   template <Array A>
   auto min_element(A const &a) {
@@ -102,13 +132,13 @@ namespace nda {
        a, get_first_element(a));
   }
 
-  // FIXME in matrix functions ?
-
-  // --------------- Computation of the matrix norm ------------------------
-
+  // FIXME in matrix functions?
   /**
-   * @tparam A Anything modeling the ArrayOfRank<2> concept
-   * @param m The object of type A
+   * @brief Calculate the Frobenius norm of a 2-dimensional array.
+   *
+   * @tparam A nda::ArrayOfRank<2> type.
+   * @param a Array object.
+   * @return Frobenius norm of the array/matrix.
    */
   template <ArrayOfRank<2> A>
   double frobenius_norm(A const &a) {
@@ -121,12 +151,11 @@ namespace nda {
   }
 
   /**
-   * Return the sum of all array elements added to value_t{0}
+   * @brief Sum all the elements of an nda::Array object.
    *
-   * @tparam A Anything modeling NdArray
-   * @param a The object of type A
-   * @return The sum of all elements of a 
-   * \ingroup Algorithms
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return Sum of all elements.
    */
   template <Array A>
   auto sum(A const &a)
@@ -136,12 +165,11 @@ namespace nda {
   }
 
   /**
-   * Return the product of all array elements multiplied with value_t{1}
+   * @brief Multiply all the elements of an nda::Array object.
    *
-   * @tparam A Anything modeling NdArray
-   * @param a The object of type A
-   * @return The product of all elements of a
-   * \ingroup Algorithms
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return Product of all elements.
    */
   template <Array A>
   auto product(A const &a)

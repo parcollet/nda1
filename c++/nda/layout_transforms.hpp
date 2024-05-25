@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2024 Simons Foundation
+// Copyright (c) 2019-2023 Simons Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,24 +14,61 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides functions to transform the memory layout of an nda::basic_array
+ * or nda::basic_array_view.
+ */
+
 #pragma once
 
-#include "group_indices.hpp"
-#include "map.hpp"
+#include "./concepts.hpp"
+#include "./declarations.hpp"
+#include "./group_indices.hpp"
+#include "./layout/idx_map.hpp"
+#include "./layout/permutation.hpp"
+#include "./layout/policies.hpp"
+#include "./map.hpp"
+#include "./stdutil/array.hpp"
+#include "./traits.hpp"
+
+#include <array>
+#include <concepts>
+#include <type_traits>
+#include <utility>
+
+#ifndef NDEBUG
+#include <numeric>
+#endif // NDEBUG
 
 namespace nda {
 
-  // A general function that maps any transform of the layout onto the basic_array_view
+  /**
+   * @brief Transform the memory layout of an nda::basic_array or nda::basic_array_view.
+   *
+   * @tparam A nda::MemoryArray type.
+   * @tparam NewLayoutType nda::idx_map type.
+   * @param a Array/View to transform.
+   * @param new_layout New memory layout.
+   * @return If the input is an rvalue array, return a new array with the given layout.
+   * Otherwise, return a view with the given layout.
+   */
   template <MemoryArray A, typename NewLayoutType>
-  auto map_layout_transform(A &&a, NewLayoutType const &new_layout) {
-    using A_t                     = std::remove_reference_t<A>;
-    using layout_policy           = typename details::layout_to_policy<NewLayoutType>::type;
+  auto map_layout_transform([[maybe_unused]] A &&a, [[maybe_unused]] NewLayoutType const &new_layout) {
+    using A_t = std::remove_reference_t<A>;
+
+    // layout policy of transformed array/view
+    using layout_policy = typename detail::layout_to_policy<NewLayoutType>::type;
+
+    // algebra of transformed array/view
     static constexpr auto algebra = (NewLayoutType::rank() == get_rank<A> ? get_algebra<A> : 'A');
-    if constexpr (is_regular_v<A> and !std::is_reference_v<A>) { // basic_array rvalue
-      using container_policy_t = typename A_t::container_policy_t;
-      return basic_array<typename A_t::value_type, NewLayoutType::rank(), layout_policy, algebra, container_policy_t>{new_layout,
-                                                                                                                      std::forward<A>(a).storage()};
+
+    if constexpr (is_regular_v<A> and !std::is_reference_v<A>) {
+      // return a transformed array if the given type is an rvalue array
+      using array_t = basic_array<typename A_t::value_type, NewLayoutType::rank(), layout_policy, algebra, typename A_t::container_policy_t>;
+      return array_t{new_layout, std::forward<A>(a).storage()};
     } else {
+      // otherwise return a transformed view
       using value_t         = std::conditional_t<std::is_const_v<A_t>, const typename A_t::value_type, typename A_t::value_type>;
       using accessor_policy = typename get_view_t<A>::accessor_policy_t;
       using owning_policy   = typename get_view_t<A>::owning_policy_t;
@@ -39,56 +76,93 @@ namespace nda {
     }
   }
 
-  // --------------- reshape ------------------------
-
-  template <MemoryArray A, std::integral Int, auto newRank>
-  auto reshape(A &&a, std::array<Int, newRank> const &new_shape) {
-    using layout_t = typename std::decay_t<A>::layout_policy_t::template mapping<newRank>;
+  /**
+   * @brief Reshape an nda::basic_array or nda::basic_array_view.
+   *
+   * @tparam A nda::MemoryArray type.
+   * @tparam Int Integral type.
+   * @tparam R Number of dimensions of the new shape.
+   * @param a Array/View to reshape.
+   * @param new_shape Shape of the reshaped array/view.
+   * @return An array/view with the new shape.
+   */
+  template <MemoryArray A, std::integral Int, auto R>
+  auto reshape(A &&a, std::array<Int, R> const &new_shape) {
+    // check size and contiguity of new shape
     EXPECTS_WITH_MESSAGE(a.size() == (std::accumulate(new_shape.cbegin(), new_shape.cend(), Int{1}, std::multiplies<>{})),
-                         "Reshape : the new shape has a incorrect number of elements");
-    EXPECTS_WITH_MESSAGE(a.indexmap().is_contiguous(), "reshape only works with contiguous data");
+                         "Error in nda::reshape: New shape has an incorrect number of elements");
+    EXPECTS_WITH_MESSAGE(a.indexmap().is_contiguous(), "Error in nda::reshape: Only contiguous arrays/views are supported");
 
+    // restrict supported layouts (why?)
     using A_t = std::remove_cvref_t<A>;
-    static_assert(A_t::is_stride_order_C() or A_t::is_stride_order_Fortran() or newRank == 1, "Reshape incompatible with non-standard memory order");
+    static_assert(A_t::is_stride_order_C() or A_t::is_stride_order_Fortran() or R == 1,
+                  "Error in nda::reshape: Only C or Fortran layouts are supported");
 
+    // prepare new idx_map
+    using layout_t = typename std::decay_t<A>::layout_policy_t::template mapping<R>;
     return map_layout_transform(std::forward<A>(a), layout_t{stdutil::make_std_array<long>(new_shape)});
   }
 
+  /**
+   * @brief Reshape an nda::basic_array or nda::basic_array_view.
+   *
+   * @tparam A nda::MemoryArray type.
+   * @tparam Ints Integral types
+   * @param a Array/View to reshape.
+   * @param is Extents of the new shape.
+   * @return An array/view with the new shape.
+   */
   template <MemoryArray A, std::integral... Ints>
   auto reshape(A &&a, Ints... is) {
     return reshape(std::forward<A>(a), std::array<long, sizeof...(Ints)>{static_cast<long>(is)...});
   }
 
+  /// @deprecated Use nda::reshape instead.
   template <MemoryArray A, std::integral Int, auto newRank>
   [[deprecated("Please use reshape(arr, shape) instead")]] auto reshaped_view(A &&a, std::array<Int, newRank> const &new_shape) {
     return reshape(std::forward<A>(a), new_shape);
   }
 
-  // --------------- flatten ------------------------
-
+  /**
+   * @brief Flatten an nda::basic_array or nda::basic_array_view to a 1-dimensional
+   * array/view by reshaping it.
+   *
+   * @tparam A nda::MemoryArray type.
+   * @param a Array/View to flatten.
+   * @return An 1-dimensional array/view with the same size as original array/view.
+   */
   template <MemoryArray A>
   auto flatten(A &&a) {
     return reshape(std::forward<A>(a), std::array{a.size()});
   }
 
-  // --------------- permuted_indices_view------------------------
-
+  /**
+   * @brief Permute the indices/dimensions of an nda::basic_array or nda::basic_array_view.
+   *
+   * @details It calls the nda::idx_map::transpose method of the nda::idx_map of the
+   * array/view.
+   *
+   * @tparam Permutation Permutation encoded as an integer to apply to the indices.
+   * @tparam A nda::MemoryArray type.
+   * @param a Array/View to permute.
+   * @return An array/view with permuted indices/dimensions.
+   */
   template <uint64_t Permutation, MemoryArray A>
   auto permuted_indices_view(A &&a) {
     return map_layout_transform(std::forward<A>(a), a.indexmap().template transpose<Permutation>());
   }
 
-  // ---------------  transpose ------------------------
-
   /**
-   * Perform transposition on the memory layout of the MemoryArray.
-   * No operation is performed in memory.
-   * For expression-calls with a single argument perform transposition
-   * on the underlying array.
+   * @brief Transpose the memory layout of an nda::MemoryArray or an nda::expr_call.
    *
-   * @tparam The type of the array or expression
-   * @param The array or expression
-   * @return A view with reversed index order
+   * @details For nda::MemoryArray types, it calls nda::permuted_indices_view with the
+   * reverse identity permutation. For nda::expr_call types, it calls nda::map with the
+   * transposed array.
+   *
+   * @tparam A nda::MemoryArray or nda::expr_call type.
+   * @param a Array/View or expression call.
+   * @return An array/view with transposed memory layout or a new nda::expr_call with the
+   * transposed array as the argument.
    */
   template <typename A>
   auto transpose(A &&a)
@@ -97,12 +171,20 @@ namespace nda {
     if constexpr (MemoryArray<A>) {
       return permuted_indices_view<encode(nda::permutations::reverse_identity<get_rank<A>>())>(std::forward<A>(a));
     } else { // expr_call
-      static_assert(std::tuple_size_v<decltype(a.a)> == 1, "Cannot transpose expr_call with more than one array argument");
+      static_assert(std::tuple_size_v<decltype(a.a)> == 1, "Error in nda::transpose: Cannot transpose expr_call with more than one array argument");
       return map(a.f)(transpose(std::get<0>(std::forward<A>(a).a)));
     }
   }
 
-  // Transposed_view swap two indices
+  /**
+   * @brief Transpose two indices/dimensions of an nda::basic_array or nda::basic_array_view.
+   *
+   * @tparam I First index/dimension to transpose.
+   * @tparam J Second index/dimension to transpose.
+   * @tparam A nda::MemoryArray type.
+   * @param a Array/View to transpose.
+   * @return An array/view with transposed indices/dimensions.
+   */
   template <int I, int J, MemoryArray A>
   auto transposed_view(A &&a)
     requires(is_regular_or_view_v<A>)
@@ -110,48 +192,66 @@ namespace nda {
     return permuted_indices_view<encode(permutations::transposition<get_rank<A>>(I, J))>(std::forward<A>(a));
   }
 
-  // --------------- Grouping indices------------------------
-
-  // FIXME : write the doc
   // FIXME : use "magnetic" placeholder
-
-  template <MemoryArray A, typename... IntSequences>
-  auto group_indices_view(A &&a, IntSequences...) {
-    return map_layout_transform(std::forward<A>(a), group_indices_layout(a.indexmap(), IntSequences{}...));
+  /**
+   * @brief Create a new nda::basic_array or nda::basic_array_view by grouping indices together
+   * of a given array/view.
+   *
+   * @details The resulting array/view has the same number of dimensions as given index groups.
+   *
+   * It can be used as follows:
+   *
+   * @code{.cpp}
+   * auto view = nda::group_indices_view(arr, idx_group<0, 1>, idx_group<2, 3>);
+   * @endcode
+   *
+   * In this examples a 4-dimensional array is transformed into a 2-dimensional array by grouping
+   * the first and the last two indices together.
+   *
+   * @tparam A nda::MemoryArray type.
+   * @tparam IdxGrps Groups of indices.
+   * @param a Array/View to transform.
+   * @return An array/view with grouped indices.
+   */
+  template <MemoryArray A, typename... IdxGrps>
+  auto group_indices_view(A &&a, IdxGrps...) {
+    return map_layout_transform(std::forward<A>(a), group_indices_layout(a.indexmap(), IdxGrps{}...));
   }
 
-  // --------------- Reinterpretation------------------------
+  namespace detail {
 
-  namespace impl {
-
+    // Append N fast dimensions to a given stride order.s
     template <int N, auto R>
-    constexpr std::array<int, R + N> complete_stride_order_with_fast(std::array<int, R> const &a) {
+    constexpr std::array<int, R + N> complete_stride_order_with_fast(std::array<int, R> const &order) {
       auto r = stdutil::make_initialized_array<R + N>(0);
-      for (int i = 0; i < R; ++i) r[i] = a[i];
+      for (int i = 0; i < R; ++i) r[i] = order[i];
       for (int i = 0; i < N; ++i) r[R + i] = R + i;
       return r;
     }
-  } // namespace impl
 
-  // Take an array or view and add N dimensions of size 1 in the fastest indices
+  } // namespace detail
+
+  /**
+   * @brief Add N dimensions of size 1 to a given nda::basic_array or nda::basic_array_view.
+   *
+   * @tparam N Number of dimensions to add.
+   * @tparam A nda::MemoryArray type.
+   * @param a Array/View to transform.
+   * @return An array/view with N dimensions of size 1 added to the original array/view.
+   */
   template <int N, typename A>
   auto reinterpret_add_fast_dims_of_size_one(A &&a)
     requires(nda::is_regular_or_view_v<A>)
   {
-
     auto const &lay = a.indexmap();
     using lay_t     = std::decay_t<decltype(lay)>;
 
-    static constexpr uint64_t new_stride_order_encoded = encode(impl::complete_stride_order_with_fast<N>(lay_t::stride_order));
-    // (lay_t::stride_order_encoded == 0 ? 0 : encode(impl::complete_stride_order_with_fast<N>(lay_t::stride_order)));
-
+    static constexpr uint64_t new_stride_order_encoded   = encode(detail::complete_stride_order_with_fast<N>(lay_t::stride_order));
     static constexpr uint64_t new_static_extents_encoded = encode(stdutil::join(lay_t::static_extents, stdutil::make_initialized_array<N>(0)));
-    //   (lay_t::static_extents_encoded == 0 ? 0 : encode(stdutil::join(lay_t::static_extents, stdutil::make_initialized_array<N>(0))));
-
     using new_lay_t = idx_map<get_rank<A> + N, new_static_extents_encoded, new_stride_order_encoded, lay_t::layout_prop>;
 
-    auto shap1111 = stdutil::make_initialized_array<N>(1l);
-    return map_layout_transform(std::forward<A>(a), new_lay_t{stdutil::join(lay.lengths(), shap1111), stdutil::join(lay.strides(), shap1111)});
+    auto ones_n = stdutil::make_initialized_array<N>(1l);
+    return map_layout_transform(std::forward<A>(a), new_lay_t{stdutil::join(lay.lengths(), ones_n), stdutil::join(lay.strides(), ones_n)});
   }
 
 } // namespace nda

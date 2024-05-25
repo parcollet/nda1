@@ -14,23 +14,47 @@
 //
 // Authors: Dominik Kiese, Miguel Morales, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides basic functions to create and manipulate arrays and views.
+ */
+
 #pragma once
 
-#include "basic_array.hpp"
-#include "traits.hpp"
+#include "./clef/clef.hpp"
+#include "./declarations.hpp"
+#include "./exceptions.hpp"
+#include "./layout/for_each.hpp"
+#include "./mem/address_space.hpp"
+#include "./traits.hpp"
+
+#include <itertools/itertools.hpp>
+
+#include <array>
+#include <concepts>
+#include <optional>
+#include <random>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace nda {
 
-  // --------------------------- zeros ------------------------
-
-  /// Make an array of the given dimensions and zero-initialized values / memory.
-  /// Return a scalar for the case of rank zero.
-  /// For a more specific array type consider using basic_array<...>::zeros
+  /**
+   * @brief Make an array of the given shape on the given address space and zero-initialize it.
+   *
+   * @details For a more specific array type consider using nda::basic_array::zeros.
+   *
+   * @tparam T Value type of the array.
+   * @tparam AdrSp Address space of the array.
+   * @tparam Int Integer type.
+   * @tparam Rank Rank of the array.
+   * @param shape Shape of the array.
+   * @return Zero-initialized nda::array or nda::cuarray or scalar if Rank == 0.
+   */
   template <typename T, mem::AddressSpace AdrSp = mem::Host, std::integral Int, auto Rank>
   auto zeros(std::array<Int, Rank> const &shape) {
     static_assert(AdrSp != mem::None);
-
-    // For Rank == 0 we should return the underlying scalar_t
     if constexpr (Rank == 0)
       return T{};
     else if constexpr (AdrSp == mem::Host)
@@ -39,39 +63,67 @@ namespace nda {
       return cuarray<T, Rank>::zeros(shape);
   }
 
-  ///
+  /**
+   * @brief Make an array of the given shape on the given address space and zero-initialize it.
+   *
+   * @details For a more specific array type consider using nda::basic_array::zeros.
+   *
+   * @tparam T Value type of the array.
+   * @tparam AdrSp Address space of the array.
+   * @tparam Ints Integer types.
+   * @param is Extent (number of elements) along each dimension.
+   * @return Zero-initialized nda::array or nda::cuarray or scalar if no arguments are given.
+   */
   template <typename T, mem::AddressSpace AdrSp = mem::Host, std::integral... Ints>
-  auto zeros(Ints... i) {
-    return zeros<T, AdrSp>(std::array<long, sizeof...(Ints)>{static_cast<long>(i)...});
+  auto zeros(Ints... is) {
+    return zeros<T, AdrSp>(std::array<long, sizeof...(Ints)>{static_cast<long>(is)...});
   }
 
-  // --------------------------- ones ------------------------
-
-  /// Make an array of the given dimensions holding 'scalar ones'.
-  /// Return a scalar for the case of rank zero.
-  /// For a more specific array type consider using basic_array<...>::ones
+  /**
+   * @brief Make an array of the given shape and one-initialize it.
+   *
+   * @details For a more specific array type consider using nda::basic_array::ones.
+   *
+   * @tparam T Value type of the array.
+   * @tparam Int Integer type.
+   * @tparam Rank Rank of the array.
+   * @param shape Shape of the array.
+   * @return One-initialized nda::array or scalar if Rank == 0.
+   */
   template <typename T, std::integral Int, auto Rank>
   auto ones(std::array<Int, Rank> const &shape)
     requires(nda::is_scalar_v<T>)
   {
-    // For Rank == 0 we should return the underlying scalar_t
     if constexpr (Rank == 0)
       return T{1};
     else { return array<T, Rank>::ones(shape); }
   }
 
-  ///
+  /**
+   * @brief Make an array with the given dimensions and one-initialize it.
+   *
+   * @details For a more specific array type consider using nda::basic_array::ones.
+   *
+   * @tparam T Value type of the array.
+   * @tparam Ints Integer types.
+   * @param is Extent (number of elements) along each dimension.
+   * @return One-initialized nda::array or scalar if no arguments are given.
+   */
   template <typename T, std::integral... Ints>
-  auto ones(Ints... i) {
-    return ones<T>(std::array<long, sizeof...(Ints)>{i...});
+  auto ones(Ints... is) {
+    return ones<T>(std::array<long, sizeof...(Ints)>{is...});
   }
 
-  // --------------------------- arange ------------------------
-
-  /// Make a one-dimensional array holding integer values
-  /// evenly spaced in a given interval [start, stop)
-  /// Values are separated by an optional step-size
-  /// that can be negative
+  /**
+   * @brief Make a 1-dimensional integer array and initialize it with values of a given
+   * nda::range.
+   *
+   * @tparam Int Integer type/Value type of the created array.
+   * @param first First value of the range.
+   * @param last Last value of the range.
+   * @param step Step size of the range.
+   * @return 1-dimensional integer nda::array.
+   */
   template <std::integral Int = long>
   auto arange(long first, long last, long step = 1) {
     auto r = range(first, last, step);
@@ -80,22 +132,35 @@ namespace nda {
     return a;
   }
 
+  /**
+   * @brief Make a 1-dimensional integer array and initialize it with values of a given
+   * nda::range with a step size of 1 and a starting value of 0.
+   *
+   * @tparam Int Integer type/Value type of the created array.
+   * @param last Last value of the range.
+   * @return 1-dimensional integer nda::array holding values from 0 to last-1.
+   */
   template <std::integral Int = long>
   auto arange(long last) {
     return arange<Int>(0, last);
   }
 
-  // --------------------------- rand ------------------------
-
-  /// Create an array the given dimensions and populate it with random
-  /// samples from a uniform distribution over [0, 1).
-  /// Return a scalar for the case of rank zero.
-  /// For a more specific array type consider using basic_array<...>::rand
+  /**
+   * @brief Make an array of the given shape and initialize it with random values from the
+   * uniform distribution over [0, 1).
+   *
+   * @details For a more specific array type consider using nda::basic_array::rand.
+   *
+   * @tparam RealType Value type of the array.
+   * @tparam Int Integer type.
+   * @tparam Rank Rank of the array.
+   * @param shape Shape of the array.
+   * @return Random-initialized nda::array or scalar if Rank == 0.
+   */
   template <typename RealType = double, std::integral Int, auto Rank>
   auto rand(std::array<Int, Rank> const &shape)
     requires(std::is_floating_point_v<RealType>)
   {
-    // For Rank == 0 we should return a scalar
     if constexpr (Rank == 0) {
       auto static gen  = std::mt19937{};
       auto static dist = std::uniform_real_distribution<>{0.0, 1.0};
@@ -105,112 +170,146 @@ namespace nda {
     }
   }
 
-  ///
+  /**
+   * @brief Make an array of the given dimensions and initialize it with random values from the
+   * uniform distribution over [0, 1).
+   *
+   * @details For a more specific array type consider using nda::basic_array::rand.
+   *
+   * @tparam RealType Value type of the array.
+   * @tparam Ints Integer types.
+   * @param is Extent (number of elements) along each dimension.
+   * @return Random-initialized nda::array or scalar if no arguments are given.
+   */
   template <typename RealType = double, std::integral... Ints>
-  auto rand(Ints... i) {
-    return rand<RealType>(std::array<long, sizeof...(Ints)>{i...});
+  auto rand(Ints... is) {
+    return rand<RealType>(std::array<long, sizeof...(Ints)>{is...});
   }
 
-  // --------------------------- dim helpers ------------------------
-
-  /// Return the first array dimension
-  /// @tparam A Type modeling NdArray
-  /// @param a Object
-  /// @return The first dimension. Equivalent to a.extent(0) and a.shape()[0]
+  /**
+   * @brief Get the extent of the first dimension of the array.
+   *
+   * @details Equivalent to `a.extent(0)` and `a.shape()[0]`.
+   *
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return Extent of the first dimension.
+   */
   template <Array A>
   long first_dim(A const &a) {
     return a.extent(0);
   }
 
-  /// Return the second array dimension
-  /// @tparam A Type modeling NdArray
-  /// @param a Object
-  /// @return The second dimension. Equivalent to a.extent(1) and a.shape()[1]
+  /**
+   * @brief Get the extent of the second dimension of the array.
+   *
+   * @details Equivalent to `a.extent(1)` and `a.shape()[1]`.
+   *
+   * @tparam A nda::Array type.
+   * @param a nda::Array object.
+   * @return Extent of the second dimension.
+   */
   template <Array A>
   long second_dim(A const &a) {
     return a.extent(1);
   }
 
-  // --------------------------- make_regular ------------------------
-
   /**
-   * Return a basic_array if A fullfills the Array concept
-   * and is not regular, else forward the object without modifications
+   * @brief Make a given object regular.
    *
-   * @tparam A
-   * @param x
+   * @details The return type of this function depends on the input type `A`:
+   * - If `A` is an nda::Array and not regular, then the return type is nda::basic_array.
+   * - If `A` has a nested type regular_t which is not the same as `A`, then the return type
+   * is `A::regular_t`.
+   * - Otherwise, the input type is simply forwarded.
+   *
+   * @note Rvalue reference will be moved, while lvalue reference will be copied.
+   *
+   * @tparam A Input type.
+   * @param a Input object to make regular.
+   * @return Regular object.
    */
   template <typename A, typename A_t = std::decay_t<A>>
-  decltype(auto) make_regular(A &&x) {
+  decltype(auto) make_regular(A &&a) {
     if constexpr (Array<A> and not is_regular_v<A>) {
-      return basic_array{std::forward<A>(x)};
+      return basic_array{std::forward<A>(a)};
     } else if constexpr (requires { typename A_t::regular_t; }) {
       if constexpr (not std::is_same_v<A_t, typename A_t::regular_t>)
-        return typename A_t::regular_t{std::forward<A>(x)};
+        return typename A_t::regular_t{std::forward<A>(a)};
       else
-        return std::forward<A>(x);
+        return std::forward<A>(a);
     } else {
-      return std::forward<A>(x);
+      return std::forward<A>(a);
     }
   }
 
-  // --------------------- to_host, to_device, to_unified ------------------
-
   /**
-   * Given a MemoryArray, create a basic_array on the host.
-   * If A is already on the host simply forward the argument.
+   * @brief Convert an nda::MemoryArray to its regular type on host memory.
    *
-   * @tparam A A type fulfilling the MemoryArray concept
-   * @param x The value to be converted
+   * @details If the input object is already on host memory, simply forward the argument
+   * (independent of its type).
+   *
+   * @tparam A nda::MemoryArray type.
+   * @param a nda::MemoryArray object.
+   * @return (Regular) object on host memory.
    */
   template <MemoryArray A>
-  decltype(auto) to_host(A &&x) {
+  decltype(auto) to_host(A &&a) {
     if constexpr (not mem::on_host<A>) {
-      return get_regular_host_t<A>{std::forward<A>(x)};
+      return get_regular_host_t<A>{std::forward<A>(a)};
     } else {
-      return std::forward<A>(x);
+      return std::forward<A>(a);
     }
   }
 
   /**
-   * Given a MemoryArray, create a basic_array on the device.
-   * If A is already on the device simply forward the argument.
+   * @brief Convert an nda::MemoryArray to its regular type on device memory.
    *
-   * @tparam A A type fulfilling the MemoryArray concept
-   * @param x The value to be converted
+   * @details If the input object is already on device memory, simply forward the argument
+   * (independent of its type).
+   *
+   * @tparam A nda::MemoryArray type.
+   * @param a nda::MemoryArray object.
+   * @return (Regular) object on device memory.
    */
   template <MemoryArray A>
-  decltype(auto) to_device(A &&x) {
+  decltype(auto) to_device(A &&a) {
     if constexpr (not mem::on_device<A>) {
-      return get_regular_device_t<A>{std::forward<A>(x)};
+      return get_regular_device_t<A>{std::forward<A>(a)};
     } else {
-      return std::forward<A>(x);
+      return std::forward<A>(a);
     }
   }
 
   /**
-   * Given a MemoryArray, create a basic_array with unified memory.
-   * If A is already has unified memory simply forward the argument.
+   * @brief Convert an nda::MemoryArray to its regular type on unified memory.
    *
-   * @tparam A A type fulfilling the MemoryArray concept
-   * @param x The value to be converted
+   * @details If the input object is already on unified memory, simply forward the argument
+   * (independent of its type).
+   *
+   * @tparam A nda::MemoryArray type.
+   * @param a nda::MemoryArray object.
+   * @return (Regular) object on unified memory.
    */
   template <MemoryArray A>
-  decltype(auto) to_unified(A &&x) {
+  decltype(auto) to_unified(A &&a) {
     if constexpr (not mem::on_unified<A>) {
-      return get_regular_unified_t<A>{std::forward<A>(x)};
+      return get_regular_unified_t<A>{std::forward<A>(a)};
     } else {
-      return std::forward<A>(x);
+      return std::forward<A>(a);
     }
   }
 
-  // --------------------------- resize_or_check_if_view------------------------
-
-  /** 
-   * Resize if A is a container, or assert that the view has the right dimension if A is view
+  /**
+   * @brief Resize a given regular array to the given shape or check if a given view as the
+   * correct shape.
    *
-   * @tparam A
-   * @param a A container or a view
+   * @details Regular types are resized (if necessary) while views are checked for the correct
+   * shape. Throws an exception if the shape of the view does not match the given shape.
+   *
+   * @tparam A Type of the object.
+   * @param a Object to resize or check.
+   * @param sha New shape.
    */
   template <typename A>
   void resize_or_check_if_view(A &a, std::array<long, A::rank> const &sha)
@@ -220,100 +319,212 @@ namespace nda {
     if constexpr (is_regular_v<A>) {
       a.resize(sha);
     } else {
-      NDA_RUNTIME_ERROR << "Size mismatch : view class shape = " << a.shape() << " expected " << sha;
+      NDA_RUNTIME_ERROR << "Error in nda::resize_or_check_if_view: Size mismatch: " << a.shape() << " != " << sha;
     }
   }
 
-  // --------------- make_const_view------------------------
-
-  /// Make a view const
-  template <typename T, int R, typename L, char Algebra, typename CP>
-  basic_array_view<T const, R, L, Algebra> make_const_view(basic_array<T, R, L, Algebra, CP> const &a) {
+  /**
+   * @brief Make an nda::basic_array_view with a const value type from a given nda::basic_array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Rank of the array.
+   * @tparam LP Layout policy of the array.
+   * @tparam A Algebra of the array.
+   * @tparam CP Container policy of the array.
+   *
+   * @param a nda::basic_array object.
+   * @return nda::basic_array_view object with a const value type.
+   */
+  template <typename T, int R, typename LP, char A, typename CP>
+  basic_array_view<T const, R, LP, A> make_const_view(basic_array<T, R, LP, A, CP> const &a) {
     return {a};
   }
 
-  template <typename T, int R, typename L, char Algebra, typename AP, typename OP>
-  basic_array_view<T const, R, L, Algebra, AP, OP> make_const_view(basic_array_view<T, R, L, Algebra, AP, OP> const &a) {
+  /**
+   * @brief Make an nda::basic_array_view with a const value type from a given nda::basic_array_view.
+   *
+   * @tparam T Value type of the view.
+   * @tparam R Rank of the view.
+   * @tparam LP Layout policy of the view.
+   * @tparam Algebra Algebra of the view.
+   * @tparam AP Accessor policy of the view.
+   * @tparam OP Owning policy of the view.
+   *
+   * @param a nda::basic_array_view object.
+   * @return nda::basic_array_view object with a const value type.
+   */
+  template <typename T, int R, typename LP, char A, typename AP, typename OP>
+  basic_array_view<T const, R, LP, A, AP, OP> make_const_view(basic_array_view<T, R, LP, A, AP, OP> const &a) {
     return {a};
   }
 
-  // --------------- make_array_view------------------------
-
-  template <typename T, int R, typename L, char Algebra, typename ContainerPolicy>
-  array_view<T, R> make_array_view(basic_array<T, R, L, Algebra, ContainerPolicy> const &a) {
+  /**
+   * @brief Make an nda::array_view of a given nda::basic_array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Rank of the array.
+   * @tparam LP Layout policy of the array.
+   * @tparam A Algebra of the array.
+   * @tparam CP Container policy of the array.
+   *
+   * @param a nda::basic_array object.
+   * @return nda::array_view object.
+   */
+  template <typename T, int R, typename LP, char A, typename CP>
+  array_view<T, R> make_array_view(basic_array<T, R, LP, A, CP> const &a) {
     return {a};
   }
 
-  template <typename T, int R, typename L, char Algebra, typename AccessorPolicy, typename OwningPolicy>
-  array_view<T, R> make_array_view(basic_array_view<T, R, L, Algebra, AccessorPolicy, OwningPolicy> const &a) {
+  /**
+   * @brief Make an nda::array_view of a given nda::basic_array_view.
+   *
+   * @tparam T Value type of the view.
+   * @tparam R Rank of the view.
+   * @tparam LP Layout policy of the view.
+   * @tparam A Algebra of the view.
+   * @tparam AP Accessor policy of the view.
+   * @tparam OP Owning policy of the view.
+   *
+   * @param a nda::basic_array_view object.
+   * @return nda::array_view object.
+   */
+  template <typename T, int R, typename LP, char A, typename AP, typename OP>
+  array_view<T, R> make_array_view(basic_array_view<T, R, LP, A, AP, OP> const &a) {
     return {a};
   }
 
-  // --------------- make_array_const_view------------------------
-
-  template <typename T, int R, typename L, char Algebra, typename ContainerPolicy>
-  array_const_view<T, R> make_array_const_view(basic_array<T, R, L, Algebra, ContainerPolicy> const &a) {
+  /**
+   * @brief Make an nda::array_const_view of a given nda::basic_array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Rank of the array.
+   * @tparam LP Layout policy of the array.
+   * @tparam A Algebra of the array.
+   * @tparam CP Container policy of the array.
+   *
+   * @param a nda::basic_array object.
+   * @return nda::array_const_view object.
+   */
+  template <typename T, int R, typename LP, char A, typename CP>
+  array_const_view<T, R> make_array_const_view(basic_array<T, R, LP, A, CP> const &a) {
     return {a};
   }
 
-  template <typename T, int R, typename L, char Algebra, typename AccessorPolicy, typename OwningPolicy>
-  array_const_view<T, R> make_array_const_view(basic_array_view<T, R, L, Algebra, AccessorPolicy, OwningPolicy> const &a) {
+  /**
+   * @brief Make an nda::array_const_view of a given nda::basic_array_view.
+   *
+   * @tparam T Value type of the view.
+   * @tparam R Rank of the view.
+   * @tparam LP Layout policy of the view.
+   * @tparam A Algebra of the view.
+   * @tparam AP Accessor policy of the view.
+   * @tparam OP Owning policy of the view.
+   *
+   * @param a nda::basic_array_view object.
+   * @return nda::array_const_view object.
+   */
+  template <typename T, int R, typename LP, char A, typename AP, typename OP>
+  array_const_view<T, R> make_array_const_view(basic_array_view<T, R, LP, A, AP, OP> const &a) {
     return {a};
   }
 
-  // --------------- make_matrix_view------------------------
-
-  template <typename T, int R, typename L, char Algebra, typename ContainerPolicy>
-  matrix_view<T, L> make_matrix_view(basic_array<T, R, L, Algebra, ContainerPolicy> const &a) {
+  /**
+   * @brief Make an nda::matrix_view of a given nda::basic_array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Rank of the array.
+   * @tparam LP Layout policy of the array.
+   * @tparam A Algebra of the array.
+   * @tparam CP Container policy of the array.
+   *
+   * @param a nda::basic_array object.
+   * @return nda::matrix_view object.
+   */
+  template <typename T, int R, typename LP, char A, typename CP>
+  matrix_view<T, LP> make_matrix_view(basic_array<T, R, LP, A, CP> const &a) {
     return {a};
   }
 
-  template <typename T, int R, typename L, char Algebra, typename AccessorPolicy, typename OwningPolicy>
-  matrix_view<T, L> make_matrix_view(basic_array_view<T, R, L, Algebra, AccessorPolicy, OwningPolicy> const &a) {
+  /**
+   * @brief Make an nda::matrix_view of a given nda::basic_array_view.
+   *
+   * @tparam T Value type of the view.
+   * @tparam R Rank of the view.
+   * @tparam LP Layout policy of the view.
+   * @tparam A Algebra of the view.
+   * @tparam AP Accessor policy of the view.
+   * @tparam OP Owning policy of the view.
+   *P
+   * @param a nda::basic_array_view object.
+   * @return nda::matrix_view object.
+   */
+  template <typename T, int R, typename LP, char A, typename AP, typename OP>
+  matrix_view<T, LP> make_matrix_view(basic_array_view<T, R, LP, A, AP, OP> const &a) {
     return {a};
   }
 
-  /*  template <typename T, int R, typename L, char Algebra, typename ContainerPolicy>*/
-  //matrix_view<T const, L> make_matrix_const_view(basic_array<T, R, L, Algebra, ContainerPolicy> const &a) {
-  //return {a};
-  //}
-
-  //template <typename T, int R, typename L, char Algebra, typename AccessorPolicy, typename OwningPolicy>
-  //matrix_view<T const, L> make_matrix_const_view(basic_array_view<T, R, L, Algebra, AccessorPolicy, OwningPolicy> const &a) {
-  //return {a};
-  //}
-
-  // --------------- operator == ---------------------
-
-  /// True iif all elements are equal.
-  template <Array A, Array B>
-  bool operator==(A const &a, B const &b) {
-    // FIXME not implemented in clang .. readd when done for better error message
+  /**
+   * @brief Equal-to comparison operator for two nda::Array objects.
+   *
+   * @tparam LHS nda::Array type of left hand side.
+   * @tparam RHS nda::Array type of right hand side.
+   * @param lhs Left hand side operand.
+   * @param rhs Right hand side operand.
+   * @return True if all elements are equal, false otherwise.
+   */
+  template <Array LHS, Array RHS>
+  bool operator==(LHS const &lhs, RHS const &rhs) {
+    // FIXME not implemented in clang
 #ifndef __clang__
-    static_assert(std::equality_comparable_with<get_value_t<A>, get_value_t<B>>, "A == B is only defined when their element can be compared");
+    static_assert(std::equality_comparable_with<get_value_t<A>, get_value_t<B>>,
+                  "Error in nda::operator==: Only defined when elements are comparable");
 #endif
-    if (a.shape() != b.shape()) return false;
+    if (lhs.shape() != rhs.shape()) return false;
     bool r = true;
-    nda::for_each(a.shape(), [&](auto &&...x) { r &= (a(x...) == b(x...)); });
+    nda::for_each(lhs.shape(), [&](auto &&...x) { r &= (lhs(x...) == rhs(x...)); });
     return r;
   }
 
-  /// -- Value-comparison with 1D Contiguous Ranges
-
-  template <ArrayOfRank<1> A, std::ranges::contiguous_range R>
-  bool operator==(A const &a, R const &r) {
-    return a == basic_array_view{r};
+  /**
+   * @brief Equal-to comparison operator for a 1-dimensional nda::Array and a
+   * std::ranges::contiguous_range.
+   *
+   * @tparam LHS nda::Array type of left hand side.
+   * @tparam RHS std::ranges::contiguous_range type of rhs.
+   * @param lhs Left hand side operand.
+   * @param rhs Right hand side operand.
+   * @return True if all elements are equal, false otherwise.
+   */
+  template <ArrayOfRank<1> LHS, std::ranges::contiguous_range RHS>
+  bool operator==(LHS const &lhs, RHS const &rhs) {
+    return lhs == basic_array_view{rhs};
   }
 
-  template <std::ranges::contiguous_range R, ArrayOfRank<1> A>
-  bool operator==(R const &r, A const &a) {
-    return a == r;
+  /**
+   * @brief Equal-to comparison operator for a std::ranges::contiguous_range and a
+   * 1-dimensional nda::Array.
+   *
+   * @tparam LHS std::ranges::contiguous_range type of left hand side.
+   * @tparam RHS nda::Array type of right hand side.
+   * @param lhs Left hand side operand.
+   * @param rhs Right hand side operand.
+   * @return True if all elements are equal, false otherwise.
+   */
+  template <std::ranges::contiguous_range LHS, ArrayOfRank<1> RHS>
+  bool operator==(LHS const &lhs, RHS const &rhs) {
+    return rhs == lhs;
   }
 
-  // ------------------------------- auto_assign --------------------------------------------
-
+  /**
+   * @brief Overload of nda::clef::clef_auto_assign function for nda::Array objects.
+   *
+   * @tparam A nda::Array type.
+   * @tparam F Callable type.
+   * @param a nda::Array object.
+   * @param f Callable object.
+   */
   template <Array A, typename F>
-  void clef_auto_assign(A &&a, F &&f) {
+  void clef_auto_assign(A &&a, F &&f) { // NOLINT (Should we forward the references?)
     nda::for_each(a.shape(), [&a, &f](auto &&...x) {
       if constexpr (clef::is_function<std::decay_t<decltype(f(x...))>>) {
         clef_auto_assign(a(x...), f(x...));
@@ -323,86 +534,76 @@ namespace nda {
     });
   }
 
-  // ------------------------------- get_block_layout --------------------------------------------
-
   /**
-   * If the array is block-strided, return the number of blocks,
-   * their size and the stride
+   * @brief Check if a given nda::MemoryArray has a block-strided layout.
    *
-   * An array is block-strided if its data in memory is laid out as
-   * contiguous blocks of the same size repeated with a single stride
-   * in memory
+   * @details If the array is block-strided, return the number of blocks, their size and
+   * the stride.
    *
-   * We check this by asserting that (s=strides, l=lengths)
-   * - there is at most one strided index m with
-   *   s_m != s_{m+1}*l_{m+1}
-   * - all other indices are 'contiguous': s_i = s_{i+1}*l_{i+1}
+   * An array is considered to be block-strided if its data in memory is laid out as contiguous
+   * blocks of the same size (> 1) repeated with a single stride in memory.
    *
-   * Example of a block-strided layout with n_blocks=4, block_size=4
-   * and block_stride=6 (x: data, _: other memory):
-   *   xxxx__xxxx__xxxx__xxxx__
+   * A block-strided array has at most 1 non-contiguous index `m`, i.e.
+   * `strides[order[m]] != strides[order[m+1]] * shape[order[m+1]]`.
    *
-   * @tparam A Type of the memory array
-   * @param a The array
-   * @return Iff block-strided return the tuple of: {n_blocks, block_size, block_stride}
+   * @tparam A nda::MemoryArray type.
+   * @param a Array object.
+   * @return An optional tuple (if block-strided) containing the number of blocks, their size
+   * and the stride between blocks.
    */
   template <MemoryArray A>
   std::optional<std::tuple<int, int, int>> get_block_layout(A const &a) {
-
     EXPECTS(!a.empty());
+    auto const &shape   = a.indexmap().lengths();
+    auto const &strides = a.indexmap().strides();
+    auto const &order   = a.indexmap().stride_order;
 
-    auto const &l = a.indexmap().lengths();
-    auto const &s = a.indexmap().strides();
-    auto const &i = a.indexmap().stride_order;
-
-    int data_size  = l[i[0]] * s[i[0]];
+    int data_size  = shape[order[0]] * strides[order[0]];
     int block_size = data_size;
     int block_str  = data_size;
     int n_blocks   = 1;
 
     for (auto n : range(A::rank)) {
-      auto inner_size = (n == A::rank - 1) ? 1 : s[i[n + 1]] * l[i[n + 1]];
-      if (s[i[n]] != inner_size) {
+      auto inner_size = (n == A::rank - 1) ? 1 : strides[order[n + 1]] * shape[order[n + 1]];
+      if (strides[order[n]] != inner_size) {
         if (block_size < data_size) // second strided dimension
           return {};
         // found a strided dimension with (assumed) contiguous inner blocks
         n_blocks   = a.size() / inner_size;
         block_size = inner_size;
-        block_str  = s[i[n]];
+        block_str  = strides[order[n]];
       }
     }
     ASSERT(n_blocks * block_size == a.size());
-    ASSERT(n_blocks * block_str == l[i[0]] * s[i[0]]);
+    ASSERT(n_blocks * block_str == shape[order[0]] * strides[order[0]]);
     return std::make_tuple(n_blocks, block_size, block_str);
   }
 
-  // ------------------------------- concatenate --------------------------------------------
-
   /**
-   * Join a sequence of arrays along an existing axis.
+   * @brief Join a sequence of nda::Array types along an existing axis.
    *
-   * The arrays must have the same value_type and also shape,
-   * except in the dimension corresponding to axis (the first, by default).
+   * @details The arrays must have the same value type and also shape, except in the dimension
+   * corresponding to the given axis (the first, by default).
    *
-   * @tparam Axis The axis along which to concatenate (default: 0)
-   * @tparam A0 Type of the first array
-   * @tparam A Types of the subsequent arrays
-   * @param a0 The first array
-   * @param a  The subsequent arrays
-   * @return New array with the concatenated data
+   * @tparam Axis The axis (dimension) along which to concatenate (default: 0).
+   * @tparam A0 nda::Array type.
+   * @tparam As nda::Array types.
+   * @param a0 First array object.
+   * @param as Remaining array objects.
+   * @return New nda::Array with the concatenated data.
    */
-  template <size_t Axis = 0, Array A0, Array... A>
-  auto concatenate(A0 const &a0, A const &...a) {
+  template <size_t Axis = 0, Array A0, Array... As>
+  auto concatenate(A0 const &a0, As const &...as) {
     // sanity checks
     auto constexpr rank = A0::rank;
     static_assert(Axis < rank);
-    static_assert(((rank == A::rank) and ... and true));
-    static_assert(((std::is_same_v<get_value_t<A0>, get_value_t<A>>) and ... and true));
-    for (auto ax [[maybe_unused]] : range(rank)) { EXPECTS(ax == Axis or ((a0.extent(ax) == a.extent(ax)) and ... and true)); }
+    static_assert(have_same_rank_v<A0, As...>);
+    static_assert(have_same_value_type_v<A0, As...>);
+    for (auto ax [[maybe_unused]] : range(rank)) { EXPECTS(ax == Axis or ((a0.extent(ax) == as.extent(ax)) and ... and true)); }
 
     // construct concatenated array
     auto new_shape  = a0.shape();
-    new_shape[Axis] = (a.extent(Axis) + ... + new_shape[Axis]);
+    new_shape[Axis] = (as.extent(Axis) + ... + new_shape[Axis]);
     auto new_array  = array<get_value_t<A0>, rank>(new_shape);
 
     // slicing helper function
@@ -413,11 +614,12 @@ namespace nda {
 
     // initialize concatenated array
     long offset = 0;
-    for (auto const &a_view : {basic_array_view(a0), basic_array_view(a)...}) {
+    for (auto const &a_view : {basic_array_view(a0), basic_array_view(as)...}) {
       slice_Axis(new_array, range(offset, offset + a_view.extent(Axis))) = a_view;
       offset += a_view.extent(Axis);
     }
 
     return new_array;
   };
+
 } // namespace nda
