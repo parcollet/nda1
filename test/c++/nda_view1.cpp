@@ -27,7 +27,7 @@ TEST(View, ChangeData) { //NOLINT
 
   auto v = a(_, 1, 2);
 
-  EXPECT_EQ((nda::slice_static::slice_layout_prop(1, true, std::array<bool, 3>{1, 0, 0}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous,
+  EXPECT_EQ((nda::slice_static::detail::slice_layout_prop(1, true, std::array<bool, 3>{1, 0, 0}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous,
                                                   128, 0)),
             nda::layout_prop_e::strided_1d);
 
@@ -59,7 +59,7 @@ TEST(RawPointers, add) { //NOLINT
   std::vector<long> v1(10), v2(10), vr(10, -1);
   for (int i = 0; i < 10; ++i) {
     v1[i] = i;
-    v2[i] = 10 * i;
+    v2[i] = 10l * i;
   }
 
   nda::array_view<long const, 2> a({3, 3}, v1.data());

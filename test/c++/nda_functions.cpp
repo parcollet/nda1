@@ -89,7 +89,7 @@ TEST(reshape, checkView) { //NOLINT
 //================================================
 
 TEST(GroupIndices, check) { //NOLINT
-  nda::details::is_partition_of_indices<4>(std::array{0, 1}, std::array{2, 3});
+  nda::detail::is_partition_of_indices<4>(std::array{0, 1}, std::array{2, 3});
 }
 
 TEST(GroupIndices, v1) { //NOLINT

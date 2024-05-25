@@ -18,6 +18,7 @@
 
 #include <nda/clef/clef.hpp>
 #include <nda/clef/io.hpp>
+#include <complex>
 #include <sstream>
 #include <string>
 

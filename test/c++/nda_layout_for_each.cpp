@@ -24,26 +24,26 @@
 TEST(NDA, ForEachIndexFromStrideOrder) {
   constexpr auto order_arr  = std::array{1, 2, 0};
   constexpr auto order_code = nda::encode(order_arr);
-  static_assert(nda::details::index_from_stride_order<3>(order_code, 0) == 1);
-  static_assert(nda::details::index_from_stride_order<3>(order_code, 1) == 2);
-  static_assert(nda::details::index_from_stride_order<3>(order_code, 2) == 0);
-  EXPECT_EQ(nda::details::index_from_stride_order<3>(order_code, 0), 1);
-  EXPECT_EQ(nda::details::index_from_stride_order<3>(order_code, 1), 2);
-  EXPECT_EQ(nda::details::index_from_stride_order<3>(order_code, 2), 0);
+  static_assert(nda::detail::index_from_stride_order<3>(order_code, 0) == 1);
+  static_assert(nda::detail::index_from_stride_order<3>(order_code, 1) == 2);
+  static_assert(nda::detail::index_from_stride_order<3>(order_code, 2) == 0);
+  EXPECT_EQ(nda::detail::index_from_stride_order<3>(order_code, 0), 1);
+  EXPECT_EQ(nda::detail::index_from_stride_order<3>(order_code, 1), 2);
+  EXPECT_EQ(nda::detail::index_from_stride_order<3>(order_code, 2), 0);
 }
 
 TEST(NDA, ForEachGetExtent) {
   constexpr auto shape_arr  = std::array{2, 3, 4};
   constexpr auto shape_code = nda::encode(shape_arr);
   constexpr auto zeros      = nda::stdutil::make_initialized_array<std::size(shape_arr)>(0l);
-  static_assert(nda::details::get_extent<0, 3, shape_code>(zeros) == 2);
-  static_assert(nda::details::get_extent<1, 3, shape_code>(zeros) == 3);
-  static_assert(nda::details::get_extent<2, 3, shape_code>(zeros) == 4);
+  static_assert(nda::detail::get_extent<0, 3, shape_code>(zeros) == 2);
+  static_assert(nda::detail::get_extent<1, 3, shape_code>(zeros) == 3);
+  static_assert(nda::detail::get_extent<2, 3, shape_code>(zeros) == 4);
 
   auto shape_dyn = shape_arr;
-  auto e1        = nda::details::get_extent<0, 3, 0>(shape_dyn);
-  auto e2        = nda::details::get_extent<1, 3, 0>(shape_dyn);
-  auto e3        = nda::details::get_extent<2, 3, 0>(shape_dyn);
+  auto e1        = nda::detail::get_extent<0, 3, 0>(shape_dyn);
+  auto e2        = nda::detail::get_extent<1, 3, 0>(shape_dyn);
+  auto e3        = nda::detail::get_extent<2, 3, 0>(shape_dyn);
   EXPECT_EQ(e1, 2);
   EXPECT_EQ(e2, 3);
   EXPECT_EQ(e3, 4);

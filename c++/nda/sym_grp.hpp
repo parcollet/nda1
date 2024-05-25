@@ -280,7 +280,7 @@ namespace nda {
       for (long i : range(vec.size())) {
         for (auto const &[lin_idx, op] : sym_classes[i]) { std::apply(a, a.indexmap().to_idx(lin_idx)) = op(vec[i]); }
       }
-    };
+    }
 
     /// Default constructor for a symmetry group.
     sym_grp() = default;

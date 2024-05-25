@@ -23,7 +23,7 @@
 
 auto _   = nda::range::all;
 auto ___ = nda::ellipsis{};
-using nda::slice_static::slice_stride_order;
+using nda::slice_static::slice_idx_map;
 
 using namespace nda;
 
@@ -90,7 +90,7 @@ TEST(idxstat, slicemat) { // NOLINT
 
   idx_map<2, 0, C_stride_order<2>, layout_prop_e::none> i1{{10, 10}};
 
-  auto [offset2, i2] = slice_stride_order(i1, range(0, 2), 2);
+  auto [offset2, i2] = slice_idx_map(i1, range(0, 2), 2);
 
   static_assert(decltype(i2)::layout_prop == layout_prop_e::strided_1d, "000");
 }
@@ -101,7 +101,7 @@ TEST(idxstat, slice) { // NOLINT
 
   idx_map<3, 0, C_stride_order<3>, layout_prop_e::none> i1{{1, 2, 3}};
 
-  auto [offset2, i2] = slice_stride_order(i1, 0, _, 2);
+  auto [offset2, i2] = slice_idx_map(i1, 0, _, 2);
 
   idx_map<1, 0, C_stride_order<1>, layout_prop_e::strided_1d> c2{{2}, {3}};
 
@@ -110,7 +110,7 @@ TEST(idxstat, slice) { // NOLINT
   EXPECT_TRUE(i2 == c2); //NOLINT
   EXPECT_EQ(offset2, 2); //NOLINT
 
-  auto [offset3, i3] = slice_stride_order(i1, _, _, _);
+  auto [offset3, i3] = slice_idx_map(i1, _, _, _);
   EXPECT_TRUE(i3 == i1); //NOLINT
   EXPECT_EQ(offset3, 0); //NOLINT
 }
@@ -119,10 +119,10 @@ TEST(idxstat, slice) { // NOLINT
 
 TEST(idxstat, ellipsis) { // NOLINT
 
-  EXPECT_EQ(16, encode(nda::slice_static::sliced_mem_stride_order(std::array<int, 3>{0, 1, 2}, std::array<int, 2>{1, 2})));
+  EXPECT_EQ(16, encode(nda::slice_static::detail::slice_stride_order(std::array<int, 3>{0, 1, 2}, std::array<int, 2>{1, 2})));
 
   idx_map<3, 0, C_stride_order<3>, layout_prop_e::none> i1{{1, 2, 3}};
-  auto [offset2, i2] = slice_stride_order(i1, 0, ___);
+  auto [offset2, i2] = slice_idx_map(i1, 0, ___);
 
   idx_map<2, 0, C_stride_order<2>, layout_prop_e::none> c2{{2, 3}, {3, 1}};
 
@@ -131,7 +131,7 @@ TEST(idxstat, ellipsis) { // NOLINT
   EXPECT_TRUE(i2 == c2); //NOLINT
   EXPECT_EQ(offset2, 0); //NOLINT
 
-  auto [offset3, i3] = slice_stride_order(i1, ___);
+  auto [offset3, i3] = slice_idx_map(i1, ___);
   EXPECT_TRUE(i3 == i1); //NOLINT
   EXPECT_EQ(offset3, 0); //NOLINT
 }
@@ -143,7 +143,7 @@ TEST(idxstat, ellipsis2) { // NOLINT
   idx_map<5, 0, C_stride_order<5>, layout_prop_e::none> i1{{1, 2, 3, 4, 5}};
   std::cerr << i1 << std::endl;
 
-  auto [offset2, i2] = slice_stride_order(i1, 0, ___, 3, 2);
+  auto [offset2, i2] = slice_idx_map(i1, 0, ___, 3, 2);
   idx_map<2, 0, C_stride_order<2>, layout_prop_e::none> c2{{2, 3}, {60, 20}};
 
   std::cerr << i2 << std::endl;

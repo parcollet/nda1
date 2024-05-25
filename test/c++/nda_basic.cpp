@@ -75,13 +75,13 @@ TEST(Assign, Strided) { //NOLINT
 
   // P =0 to force out of the first test of slice_layout_prop. We want to test the real algorithm
   EXPECT_EQ(
-     nda::slice_static::slice_layout_prop(0, true, std::array<bool, 3>{1, 0, 0}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous, 128, 0),
+     nda::slice_static::detail::slice_layout_prop(0, true, std::array<bool, 3>{1, 0, 0}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous, 128, 0),
      nda::layout_prop_e::strided_1d);
   EXPECT_EQ(
-     nda::slice_static::slice_layout_prop(0, true, std::array<bool, 3>{0, 1, 0}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous, 128, 0),
+     nda::slice_static::detail::slice_layout_prop(0, true, std::array<bool, 3>{0, 1, 0}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous, 128, 0),
      nda::layout_prop_e::strided_1d);
   EXPECT_EQ(
-     nda::slice_static::slice_layout_prop(0, true, std::array<bool, 3>{0, 0, 1}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous, 128, 0),
+     nda::slice_static::detail::slice_layout_prop(0, true, std::array<bool, 3>{0, 0, 1}, std::array<int, 3>{0, 1, 2}, nda::layout_prop_e::contiguous, 128, 0),
      nda::layout_prop_e::contiguous);
 
   static_assert(nda::get_layout_info<decltype(A(1, 3, _))>.prop == nda::layout_prop_e::contiguous);

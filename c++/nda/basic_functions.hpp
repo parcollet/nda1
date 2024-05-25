@@ -476,7 +476,7 @@ namespace nda {
   bool operator==(LHS const &lhs, RHS const &rhs) {
     // FIXME not implemented in clang
 #ifndef __clang__
-    static_assert(std::equality_comparable_with<get_value_t<A>, get_value_t<B>>,
+    static_assert(std::equality_comparable_with<get_value_t<LHS>, get_value_t<RHS>>,
                   "Error in nda::operator==: Only defined when elements are comparable");
 #endif
     if (lhs.shape() != rhs.shape()) return false;

@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2024 Simons Foundation
+// Copyright (c) 2019-2021 Simons Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,126 +14,154 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides convenient tools for testing nda::basic_array and nda::basic_array_view
+ * objects with googletest.
+ */
+
 #pragma once
 
 #ifndef NDA_DEBUG
 #define NDA_DEBUG
 #endif
 
-#include "nda/basic_array.hpp"
+#include "./nda.hpp"
+
+#include <gtest/gtest.h>
+
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
-#include <gtest/gtest.h> // NOLINT
 
-/*#if H5_VERSION_GE(1, 8, 9)*/
-//#include <h5/serialization.hpp>
-//#endif
-
-//using dcomplex = std::complex<double>;
-
-// Complex are close
+/**
+ * @brief Check the absolute difference of two (complex) numbers.
+ *
+ * @tparam X Type of the first number.
+ * @tparam Y Type of the second number.
+ * @param x First number.
+ * @param y Second number.
+ * @param precision Required precision for the comparison to be considered successful.
+ * @return ::testing::AssertionSuccess() if the absolute difference is less than the given
+ * precision, ::testing::AssertionFailure() otherwise.
+ */
 template <typename X, typename Y>
 ::testing::AssertionResult complex_are_close(X const &x, Y const &y, double precision = 1.e-10) {
   using std::abs;
   if (abs(x - y) < precision)
     return ::testing::AssertionSuccess();
   else
-    return ::testing::AssertionFailure() << "abs(x-y) = " << abs(x - y) << "\n X = " << x << "\n Y = " << y;
+    return ::testing::AssertionFailure() << "abs(x - y) = " << abs(x - y) << "\n x = " << x << "\n y = " << y;
 }
 
+// Macro that uses complex_are_close.
 #define EXPECT_COMPLEX_NEAR(X, ...) EXPECT_TRUE(complex_are_close(X, __VA_ARGS__))
 
-// Arrays are equal
+/**
+ * @brief Check that two arrays/views are equal, i.e. that they have the same shape and the
+ * same elements.
+ *
+ * @tparam X Type of the first array/view.
+ * @tparam Y Type of the second array/view.
+ * @param x First array/view.
+ * @param y Second array/view.
+ * @return ::testing::AssertionSuccess() if the arrays/view have the same shape and the same
+ * elements, ::testing::AssertionFailure() otherwise.
+ */
 template <typename X, typename Y>
 ::testing::AssertionResult array_are_equal(X const &x, Y const &y) {
-  if (x.shape() != y.shape()) return ::testing::AssertionFailure() << "Comparing two arrays of different size " << "\n X = " << x << "\n Y = " << y;
+  if (x.shape() != y.shape())
+    return ::testing::AssertionFailure() << "Comparing two arrays of different size "
+                                         << "\n X = " << x << "\n Y = " << y;
   if (x == y)
     return ::testing::AssertionSuccess();
   else
     return ::testing::AssertionFailure() << "Arrays have different elements\n X = " << x << "\n Y = " << y;
 }
 
+// Macros that use array_are_equal.
 #define EXPECT_EQ_ARRAY(X, Y) EXPECT_TRUE(array_are_equal(X, Y));
 #define EXPECT_ARRAY_EQ(X, Y) EXPECT_TRUE(array_are_equal(X, Y));
 
-// Arrays are close
+/**
+ * @brief Check that two arrays/views are close, i.e. that they have the same shape and that
+ * the largest element of their absolute difference is less than a given precision.
+ *
+ * @tparam X Type of the first array/view.
+ * @tparam Y Type of the second array/view.
+ * @param x First array/view.
+ * @param y Second array/view.
+ * @param precision Required precision for the comparison to be considered successful.
+ * @return ::testing::AssertionSuccess() if the arrays/view have the same shape and largest
+ * element of their absolute difference is less than a given precision.
+ * ::testing::AssertionFailure() otherwise.
+ */
 template <typename X, typename Y>
-::testing::AssertionResult array_are_close(X const &x1, Y const &y1, double precision = 1.e-10) {
-  nda::array<nda::get_value_t<X>, nda::get_rank<X>> x = x1;
-  nda::array<nda::get_value_t<X>, nda::get_rank<X>> y = y1;
+::testing::AssertionResult array_are_close(X const &x, Y const &y, double precision = 1.e-10) {
+  nda::array<nda::get_value_t<X>, nda::get_rank<X>> x_reg = x;
+  nda::array<nda::get_value_t<X>, nda::get_rank<X>> y_reg = y;
 
-  if (x.shape() != y.shape()) return ::testing::AssertionFailure() << "Comparing two arrays of different size " << "\n X = " << x << "\n Y = " << y;
+  // check their shapes
+  if (x_reg.shape() != y_reg.shape())
+    return ::testing::AssertionFailure() << "Comparing two arrays of different size "
+                                         << "\n X = " << x_reg << "\n Y = " << y_reg;
 
-  // both x, y are contiguous, I check with basic tools instead of max_element(abs(x - y))
-  if (x.size() == 0) return ::testing::AssertionSuccess();
-  auto xx      = make_regular(x);
-  auto yy      = make_regular(y);
-  auto maxdiff = max_element(abs(make_regular(xx - yy)));
+  // empty arrays are considered equal
+  if (x_reg.size() == 0) return ::testing::AssertionSuccess();
+
+  // check their difference
+  const auto maxdiff = max_element(abs(make_regular(x_reg - y_reg)));
   if (maxdiff < precision)
     return ::testing::AssertionSuccess();
   else
-    return ::testing::AssertionFailure() << "max_element(abs(x-y)) = " << maxdiff << "\n X = " << x << "\n Y = " << y;
+    return ::testing::AssertionFailure() << "max_element(abs(X - Y)) = " << maxdiff << "\n X = " << x_reg << "\n Y = " << y_reg;
 }
 
+// Macro that uses array_are_close.
 #define EXPECT_ARRAY_NEAR(X, ...) EXPECT_TRUE(array_are_close(X, __VA_ARGS__))
 
-// Arrays is almost 0
+/**
+ * @brief Check that an array/view is close to zero, i.e. that its largest absolute element
+ * is less than 1e-10.
+ *
+ * @tparam X Type of the array/view.
+ * @param x Array/View.
+ * @return ::testing::AssertionSuccess() if the absolute value of every element is less than
+ * 1e-10. ::testing::AssertionFailure() otherwise.
+ */
 template <typename X>
-::testing::AssertionResult array_almost_zero(X const &x1) {
-  double precision                                    = 1.e-10;
-  nda::array<nda::get_value_t<X>, nda::get_rank<X>> x = x1;
+::testing::AssertionResult array_almost_zero(X const &x) {
+  nda::array<nda::get_value_t<X>, nda::get_rank<X>> x_reg = x;
 
-  if (x.size() == 0 || max_element(abs(x)) < precision)
+  constexpr double eps = 1.e-10;
+  const auto maxdiff   = max_element(abs(x_reg));
+  if (x_reg.size() == 0 || maxdiff < eps)
     return ::testing::AssertionSuccess();
   else
-    return ::testing::AssertionFailure() << "max_element(abs(x-y)) = " << max_element(abs(x)) << "\n X = " << x;
+    return ::testing::AssertionFailure() << "max_element(abs(X)) = " << maxdiff << "\n X = " << x_reg;
 }
 
+// Macro that uses array_almost_zero.
 #define EXPECT_ARRAY_ZERO(X) EXPECT_TRUE(array_almost_zero(X))
-//
+
+/**
+ * @brief Check that that two generic objects are close, i.e. that their absolute difference is
+ * less than 1e-12.
+ *
+ * @tparam X Type of the first object.
+ * @tparam Y Type of the second object.
+ * @param x First object.
+ * @param y Second object.
+ * @return ::testing::AssertionSuccess() if the absolute value of their difference is less than
+ * 1e-12. ::testing::AssertionFailure() otherwise.
+ */
 template <typename X, typename Y>
 ::testing::AssertionResult generic_are_near(X const &x, Y const &y) {
   double precision = 1.e-12;
   using std::abs;
   if (abs(x - y) > precision)
-    return ::testing::AssertionFailure() << "X = " << x << " and Y = " << y << " are different. \n Difference is : " << abs(x - y);
+    return ::testing::AssertionFailure() << "X = " << x << " and Y = " << y << " are different. \n Difference is: " << abs(x - y);
   return ::testing::AssertionSuccess();
 }
+
 #define EXPECT_CLOSE(X, Y) EXPECT_TRUE(generic_are_near(X, Y));
-
-// ------------------  HDF5 --------------------
-//
-// We serialize to H5, deserialize, compare
-
-//template <typename T> T rw_h5(T const &x, std::string filename = "ess", std::string name = "x") {
-
-//namespace h5 = h5;
-//T y; // must be default constructible
-
-//{
-//h5::file file(filename + ".h5", 'w');
-//h5_write(file, name, x);
-//}
-
-//{
-//h5::file file(filename + ".h5", 'r');
-//h5_read(file, name, y);
-//}
-
-//#if H5_VERSION_GE(1, 8, 9)
-
-////#define TRIQS_TEST_USE_H5_SERIA
-//#ifdef TRIQS_TEST_USE_H5_SERIA
-
-//std::cerr << "Checking H5 serialization/deserialization of \n " << triqs::utility::demangle(typeid(x).name()) << std::endl;
-//auto s  = h5::serialize(x);
-//T x2    = h5::deserialize<T>(s);
-//auto s2 = h5::serialize(x);
-//std::cerr << "Length of serialization string " << first_dim(s) << std::endl;
-//EXPECT_EQ_ARRAY(s, s2); // << "Test h5 save, load, save, compare has failed !";
-//#endif
-
-//#endif
-
-//return y;
-//}
