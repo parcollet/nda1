@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 Simons Foundation
+// Copyright (c) 2024 Simons Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,27 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Authors: Olivier Parcollet, Nils Wentzell
+// Authors: Thomas Hahn
 
 /**
  * @file
- * @brief Provides missing concepts for older compiler versions.
+ * @brief Includes all stdutil relevant headers.
  */
 
 #pragma once
 
-#include <version>
-
-// libcpp below 13 has incomplete <concepts>
-#if defined(_LIBCPP_VERSION) and _LIBCPP_VERSION < 13000
-
-#include <type_traits>
-
-namespace std {
-
-  template <class T>
-  concept integral = std::is_integral_v<T>;
-
-} // namespace std
-
-#endif
+#include "./stdutil/array.hpp"
+#include "./stdutil/complex.hpp"
+#include "./stdutil/concepts.hpp"

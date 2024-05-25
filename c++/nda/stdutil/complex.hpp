@@ -14,6 +14,11 @@
 //
 // Authors: Sergei Iskakov, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides additional operators for std::complex and other arithmetic types.
+ */
+
 #ifndef STDUTILS_COMPLEX_H
 #define STDUTILS_COMPLEX_H
 
@@ -23,9 +28,11 @@
 
 using namespace std::literals::complex_literals;
 
-namespace std { // has to be in the right namespace for ADL !
+namespace std { // has to be in the right namespace for ADL
 
+// define operators (+,-,*,/) for std::complex and various other arithmetic types
 #define IMPL_OP(OP)                                                                                                                                  \
+  /** @brief Implementation of `operatorOP` for std::complex and some other arithmetic type. */                                                      \
   template <typename T, typename U>                                                                                                                  \
     requires(std::is_arithmetic_v<T> and std::is_arithmetic_v<U> and std::common_with<T, U>)                                                         \
   auto operator OP(std::complex<T> const &x, U y) {                                                                                                  \
@@ -33,6 +40,7 @@ namespace std { // has to be in the right namespace for ADL !
     return C(x.real(), x.imag()) OP C(y);                                                                                                            \
   }                                                                                                                                                  \
                                                                                                                                                      \
+  /** @brief Implementation of `operatorOP` for some other arithmetic type and std::complex. */                                                      \
   template <typename T, typename U>                                                                                                                  \
     requires(std::is_arithmetic_v<T> and std::is_arithmetic_v<U> and std::common_with<T, U>)                                                         \
   auto operator OP(T x, std::complex<U> const &y) {                                                                                                  \
@@ -40,16 +48,21 @@ namespace std { // has to be in the right namespace for ADL !
     return C(x) OP C(y.real(), y.imag());                                                                                                            \
   }                                                                                                                                                  \
                                                                                                                                                      \
+  /** @brief Implementation of `operatorOP` for two std::complex types with different value types. */                                                \
   template <typename T, typename U>                                                                                                                  \
     requires(std::is_arithmetic_v<T> and std::is_arithmetic_v<U> and std::common_with<T, U> and !std::is_same_v<T, U>)                               \
   auto operator OP(std::complex<T> const &x, std::complex<U> const &y) {                                                                             \
     using C = std::complex<std::common_type_t<T, U>>;                                                                                                \
     return C(x.real(), x.imag()) OP C(y.real(), y.imag());                                                                                           \
   }
+
   IMPL_OP(+)
   IMPL_OP(-)
   IMPL_OP(*)
   IMPL_OP(/)
+
 #undef IMPL_OP
+
 } // namespace std
-#endif
+
+#endif // STDUTILS_COMPLEX_H

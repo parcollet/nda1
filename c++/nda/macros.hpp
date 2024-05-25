@@ -14,24 +14,33 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Macros used in the nda library.
+ */
+
 #ifndef _CCQ_MACROS_GUARD_H
 #define _CCQ_MACROS_GUARD_H
 
 // CCQ, TRIQS general macros
 // GUARD IT do not use pragma once
-// hence one can simply include them in every projects
+// hence one can simply include them in every project
 
-// --- Stringify macros -----
+// ---------------- Stringify ----------------
 
 #define AS_STRING(...) AS_STRING2(__VA_ARGS__)
 #define AS_STRING2(...) #__VA_ARGS__
 
+// ---------------- Print ----------------
+
 #define PRINT(X) std::cerr << AS_STRING(X) << " = " << X << "      at " << __FILE__ << ":" << __LINE__ << '\n'
 #define NDA_PRINT(X) std::cerr << AS_STRING(X) << " = " << X << "      at " << __FILE__ << ":" << __LINE__ << '\n'
 
-// -----------------------------------------------------------
+// ---------------- Inline ----------------
 
 #define FORCEINLINE __inline__ __attribute__((always_inline))
+
+// ---------------- Debugging ----------------
 
 #ifdef NDEBUG
 
@@ -44,6 +53,7 @@
 
 #else
 
+#include <exception>
 #include <iostream>
 
 #define EXPECTS(X)                                                                                                                                   \
@@ -81,6 +91,6 @@
     std::terminate();                                                                                                                                \
   }
 
-#endif
+#endif // NDEBUG
 
-#endif
+#endif // _CCQ_MACROS_GUARD_H

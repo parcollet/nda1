@@ -16,22 +16,46 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides utility functions for std::array.
+ */
+
 #ifndef STDUTILS_ARRAY_H
 #define STDUTILS_ARRAY_H
 
 #include <array>
-#include <utility>
-#include <vector>
-#include <string>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+#include <utility>
 
-namespace std {
+namespace std { // has to be in the right namespace for ADL
 
+  /**
+   * @brief Write a std::array to an output stream.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Size of the array.
+   * @param out std::ostream to stream into.
+   * @param a std::array to be written.
+   * @return Reference to the std::ostream.
+   */
   template <typename T, size_t R>
   std::ostream &operator<<(std::ostream &out, std::array<T, R> const &a) {
     return out << to_string(a);
   }
 
+  /**
+   * @brief Get a string representation of a std::array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Size of the array.
+   * @param a Input std::array.
+   * @return std::string representation of the array.
+   */
   template <typename T, size_t R>
   std::string to_string(std::array<T, R> const &a) {
     std::stringstream fs;
@@ -41,29 +65,62 @@ namespace std {
     return fs.str();
   }
 
-  // ------------- basic arithmetic --------------------------------------
-
+  /**
+   * @brief Add two std::array objects element-wise.
+   *
+   * @tparam T Value type of the arrays.
+   * @tparam R Size of the arrays.
+   * @param lhs Left hand side std::array operand.
+   * @param rhs Right hand side std::array operand.
+   * @return std::array containing the element-wise sum.
+   */
   template <typename T, size_t R>
-  constexpr std::array<T, R> operator+(std::array<T, R> const &a1, std::array<T, R> const &a2) {
-    std::array<T, R> res; // = make_initialized_array<R>(T{});
-    for (int i = 0; i < R; ++i) res[i] = a1[i] + a2[i];
-    return res;
-  }
-
-  template <typename T, size_t R>
-  constexpr std::array<T, R> operator-(std::array<T, R> const &a1, std::array<T, R> const &a2) {
-    std::array<T, R> res; // FIXME MOVE THIS = make_initialized_array<R>(T{});
-    for (int i = 0; i < R; ++i) res[i] = a1[i] - a2[i];
-    return res;
-  }
-
-  template <typename T, size_t R>
-  constexpr std::array<T, R> operator*(std::array<T, R> const &a1, std::array<T, R> const &a2) {
+  constexpr std::array<T, R> operator+(std::array<T, R> const &lhs, std::array<T, R> const &rhs) {
     std::array<T, R> res;
-    for (int i = 0; i < R; ++i) res[i] = a1[i] * a2[i];
+    for (int i = 0; i < R; ++i) res[i] = lhs[i] + rhs[i];
     return res;
   }
 
+  /**
+   * @brief Subtract two std::array objects element-wise.
+   *
+   * @tparam T Value type of the arrays.
+   * @tparam R Size of the arrays.
+   * @param lhs Left hand side std::array operand.
+   * @param rhs Right hand side std::array operand.
+   * @return std::array containing the element-wise difference.
+   */
+  template <typename T, size_t R>
+  constexpr std::array<T, R> operator-(std::array<T, R> const &lhs, std::array<T, R> const &rhs) {
+    std::array<T, R> res;
+    for (int i = 0; i < R; ++i) res[i] = lhs[i] - rhs[i];
+    return res;
+  }
+
+  /**
+   * @brief Multiply two std::array objects element-wise.
+   *
+   * @tparam T Value type of the arrays.
+   * @tparam R Size of the arrays.
+   * @param lhs Left hand side std::array operand.
+   * @param rhs Right hand side std::array operand.
+   * @return std::array containing the element-wise product.
+   */
+  template <typename T, size_t R>
+  constexpr std::array<T, R> operator*(std::array<T, R> const &lhs, std::array<T, R> const &rhs) {
+    std::array<T, R> res;
+    for (int i = 0; i < R; ++i) res[i] = lhs[i] * rhs[i];
+    return res;
+  }
+
+  /**
+   * @brief Negate a std::array element-wise (unary minus).
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Size of the array.
+   * @param a std::array operand.
+   * @return std::array containing the element-wise negation.
+   */
   template <typename T, size_t R>
   constexpr std::array<T, R> operator-(std::array<T, R> const &a) {
     std::array<T, R> res;
@@ -71,6 +128,15 @@ namespace std {
     return res;
   }
 
+  /**
+   * @brief Multiply a scalar and a std::array element-wise.
+   *
+   * @tparam T Value type of the array/scalar.
+   * @tparam R Size of the array.
+   * @param s Scalar value.
+   * @param a std::array operand.
+   * @return std::array containing the product of each element with the scalar.
+   */
   template <typename T, size_t R>
   constexpr std::array<T, R> operator*(T s, std::array<T, R> const &a) {
     std::array<T, R> res;
@@ -80,46 +146,56 @@ namespace std {
 
 } // namespace std
 
-// ===============================================
-
 namespace nda::stdutil {
 
-  namespace impl {
+  namespace detail {
+
+    // Helper function to create a std::array filled with a constant value.
     template <typename T, size_t... Is>
     constexpr std::array<T, sizeof...(Is)> make_initialized_array(T v, std::index_sequence<Is...>) {
-      return {(Is ? v : v)...};
-    } // always v, just a trick to have the pack
-  } // namespace impl
+      return {(Is ? v : v)...}; // NOLINT (always v, just a trick to have the pack)
+    }
+
+  } // namespace detail
 
   /**
-   * @tparam R
-   * @tparam T
-   * make a std::array<T, R> initialized to v
+   * @brief Create a new std::array object initialized with a specific value.
+   *
+   * @tparam R Size of the array.
+   * @tparam T Value type of the array.
+   * @param v Value to initialize the std::array with.
+   * @return std::array initialized with the constant value.
    */
   template <size_t R, typename T>
   constexpr std::array<T, R> make_initialized_array(T v) {
-    return impl::make_initialized_array(v, std::make_index_sequence<R>{});
+    return detail::make_initialized_array(v, std::make_index_sequence<R>{});
   }
 
   /**
-   * @tparam T  T must be constructible from U
-   * @tparam U
-   * @tparam R
-   * make a std::array<T, R> initialized to v
+   * @brief Convert a std::array with value type `U` to a std::array with value type `T`.
+   *
+   * @tparam T Value type of the target array.
+   * @tparam U Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @return std::array with the same values as the input array and value type `T`.
    */
   template <typename T, typename U, size_t R>
   constexpr std::array<T, R> make_std_array(std::array<U, R> const &a) {
-    static_assert(std::is_constructible_v<T, U>, "make_std_array : T must be constructible from U, Cf doc");
+    static_assert(std::is_constructible_v<T, U>, "Error in nda::stdutil::make_std_array: T must be constructible from U");
     std::array<T, R> result = make_initialized_array<R>(T{});
     for (int u = 0; u < R; ++u) result[u] = a[u];
     return result;
   }
 
   /**
-  * Convert a std::array to a
-  * @tparam T
-  * @param a std::array to convert
-  */
+   * @brief Convert a std::array to a std::vector.
+   *
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @return std::vector of the same size and with the same values as the input array.
+   */
   template <typename T, size_t R>
   constexpr std::vector<T> to_vector(std::array<T, R> const &a) {
     std::vector<T> V(R);
@@ -128,12 +204,14 @@ namespace nda::stdutil {
   }
 
   /**
-   * Make a new std::array by appending one element at the end
-   * @tparam T
-   * @tparam U Must be convertible to T
-   * @param a The array
-   * @param x Element to append
-   * @return A new std::array with the element appended at the end
+   * @brief Make a new std::array by appending one element at the end to an existing std::array.
+   *
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @tparam U Type of the element to append (must be convertible to `T`).
+   * @param a Input std::array.
+   * @param x Element to append.
+   * @return A copy of the input array with the additional element appended at the end.
    */
   template <typename T, auto R, typename U>
   constexpr std::array<T, R + 1> append(std::array<T, R> const &a, U const &x) {
@@ -144,12 +222,14 @@ namespace nda::stdutil {
   }
 
   /**
-   * Make a new std::array by appending one element at the front
-   * @tparam T
-   * @tparam U Must be convertible to T
-   * @param a The ar/ay
-   * @param x Element to append
-   * @return A new std::array with the element appended at the front
+   * @brief Make a new std::array by prepending one element at the front to an existing std::array.
+   *
+   * @tparam T Value type of the input array.
+   * @tparam U Type of the element to prepend (must be convertible to `T`).
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @param x Element to prepend.
+   * @return A copy of the input array with the additonal element prepended at the front.
    */
   template <typename T, typename U, size_t R>
   constexpr std::array<T, R + 1> front_append(std::array<T, R> const &a, U const &x) {
@@ -160,10 +240,12 @@ namespace nda::stdutil {
   }
 
   /**
-   * Make a new std::array by removing one element at the end
-   * @tparam T
-   * @param a The array
-   * @return A new std::array with the element less at the end
+   * @brief Make a new std::array by popping the last element of an existing std::array.
+   *
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @return A copy of the input array with the last element removed.
    */
   template <typename T, size_t R>
   constexpr std::array<T, R - 1> pop(std::array<T, R> const &a) {
@@ -173,24 +255,28 @@ namespace nda::stdutil {
   }
 
   /**
-   * Make a new std::array by removing one element at the front
-   * @tparam T
-   * @param a The array
-   * @return A new std::array with the element less at the front
+   * @brief Make a new std::array by popping the last `N` elements of an existing std::array.
+   *
+   * @tparam N Number of elements to pop.
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @return A copy of the input array with the last `N` elements removed.
    */
   template <int N, typename T, size_t R>
   constexpr std::array<T, R - N> mpop(std::array<T, R> const &a) {
     std::array<T, R - N> res = make_initialized_array<R - N>(T{});
-    ;
     for (int i = 0; i < R - N; ++i) res[i] = a[i];
     return res;
   }
 
   /**
-   * Make a new std::array by removing one element at the front
-   * @tparam T
-   * @param a The array
-   * @return A new std::array with the element less at the front
+   * @brief Make a new std::array by popping the first element of an existing std::array.
+   *
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @return A copy of the input array with the first element removed.
    */
   template <typename T, size_t R>
   constexpr std::array<T, R - 1> front_pop(std::array<T, R> const &a) {
@@ -200,10 +286,13 @@ namespace nda::stdutil {
   }
 
   /**
-   * Make a new std::array by removing one element at the front
-   * @tparam T
-   * @param a The array
-   * @return A new std::array with the element less at the front
+   * @brief Make a new std::array by popping the first `N` elements of an existing std::array.
+   *
+   * @tparam N Number of elements to pop.
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input array.
+   * @return A copy of the input array with the first `N` elements removed.
    */
   template <int N, typename T, size_t R>
   constexpr std::array<T, R - N> front_mpop(std::array<T, R> const &a) {
@@ -213,11 +302,15 @@ namespace nda::stdutil {
   }
 
   /**
-   * Join two arrays
-   * @tparam T
-   * @param a1
-   * @param a2
-   * @return the concatenation of [a1, a2]
+   * @brief Make a new std::array by joining two existing std::array objects.
+   *
+   * @tparam T Value type of the arrays.
+   * @tparam R1 Size of the input array #1.
+   * @tparam R2 Size of the input array #2.
+   * @param a1 Input std::array #1.
+   * @param a2 Input std::array #2.
+   * @return Array of size `R1 + R2` containing the elements of the first array followed by
+   * the elements of the second array.
    */
   template <typename T, size_t R1, size_t R2>
   constexpr std::array<T, R1 + R2> join(std::array<T, R1> const &a1, std::array<T, R2> const &a2) {
@@ -228,12 +321,14 @@ namespace nda::stdutil {
   }
 
   /**
-   * Sum of elements
-   * @tparam T
-   * @param a
-   * @return The sum of elements in the array. If R = 0, return T{}
+   * @brief Calculate the sum of all elements in a std::array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Size of the array.
+   * @param a Input std::array.
+   * @return Sum of all the elements of the input array. If its size is zero, return a default
+   * constructed object of type `T`.
    */
-  // ------------- sum --------------------------------------
   template <typename T, size_t R>
   constexpr auto sum(std::array<T, R> const &a) {
     if constexpr (R == 0)
@@ -246,29 +341,34 @@ namespace nda::stdutil {
   }
 
   /**
-   * Product of elements
-   * @tparam T
-   * @param a
-   * @return The product of elements in the array
+   * @brief Calculate the product of all elements in a std::array.
+   *
+   * @tparam T Value type of the array.
+   * @tparam R Size of the array.
+   * @param a Input std::array.
+   * @return Product of all elements in the input array.
    */
-  // ------------- product --------------------------------------
   template <typename T, size_t R>
   constexpr auto product(std::array<T, R> const &a) {
-    static_assert(R > 0, "Product of elements in std::array<T, R> only defined for R > 0");
+    static_assert(R > 0, "Error in nda::stdutil::product: Only defined for R > 0");
     auto res = a[0];
     for (int i = 1; i < R; ++i) res *= a[i];
     return res;
   }
 
   /**
-   * Dot product of two arrays.
-   * @tparam T
-   * @tparam U
-   * @param a1
-   * @param a2
-   * @return The dot product to whatever type T*U is promoted to. If R = 0, return T{}
+   * @brief Calculate the dot product of two std::array objects.
+   *
+   * @warning This function simply calculates the sum of the element-wise products of the two arrays.
+   * For arrays with complex numbers, this might not be what you expect from a dot product.
+   *
+   * @tparam T Value type of input array #1.
+   * @tparam U Value type of input array #2.
+   * @tparam R Size of the input arrays.
+   * @param a1 Input array #1.
+   * @param a2 Input array #2.
+   * @return Dot product.
    */
-  // ------------- dot --------------------------------------
   template <typename T, typename U, size_t R>
   constexpr auto dot_product(std::array<T, R> const &a1, std::array<U, R> const &a2) {
     if constexpr (R == 0)
@@ -282,4 +382,4 @@ namespace nda::stdutil {
 
 } // namespace nda::stdutil
 
-#endif
+#endif // STDUTILS_ARRAY_H
