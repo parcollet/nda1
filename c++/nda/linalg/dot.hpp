@@ -32,7 +32,17 @@
 namespace nda {
 
   /**
+   * @addtogroup linalg_tools
+   * @{
+   */
+
+  /**
    * @brief Compute the dot product of two real arrays/views.
+   *
+   * @details It is generic in the sense that it allows the input arrays to belong to a different nda::mem::AddressSpace
+   * (as long as they are compatible).
+   *
+   * If possible, it uses nda::blas::dot, otherwise it calls nda::blas::dot_generic.
    *
    * @tparam X Type of the left hand side array/view.
    * @tparam Y Type of the right hand side array/view.
@@ -72,6 +82,11 @@ namespace nda {
   /**
    * @brief Compute the dot product of two complex arrays/views.
    *
+   * @details It is generic in the sense that it allows the input arrays to belong to a different nda::mem::AddressSpace
+   * (as long as they are compatible).
+   *
+   * If possible, it uses nda::blas::dotc, otherwise it calls nda::blas::dotc_generic.
+   *
    * @tparam X Type of the left hand side array/view.
    * @tparam Y Type of the right hand side array/view.
    * @param x Left hand side array/view.
@@ -106,5 +121,7 @@ namespace nda {
       return blas::dotc_generic(x, y);
     }
   }
+
+  /** @} */
 
 } // namespace nda

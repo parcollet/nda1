@@ -32,20 +32,24 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup layout_utils
+   * @{
+   */
+
   /// Using declaration for itertools::range.
   using itertools::range;
 
   /**
    * @brief Mimics Python's `...` syntax.
    *
-   * @details While itertools's `range::all_t` mimics Python's `:`, `ellipsis` mimics
-   * Python's `...`. It is repeated as much as necessary to match the number of dimensions
-   * of an array/view when used to access elements/slices.
+   * @details While itertools's `range::all_t` mimics Python's `:`, `ellipsis` mimics Python's `...`. It is repeated as
+   * much as necessary to match the number of dimensions of an array/view when used to access elements/slices.
    */
   struct ellipsis : range::all_t {};
 
   /**
-   * @brief Write range::all_t to a std::ostream as `_`.
+   * @brief Write `nda::range::all_t` to a std::ostream as `_`.
    *
    * @param os Output stream.
    * @return Reference to the output stream.
@@ -65,10 +69,12 @@ namespace nda {
   constexpr bool ellipsis_is_present = is_any_of<ellipsis, std::remove_cvref_t<Args>...>;
 
   /**
-   * @brief Constexpr variable that is true if the type `T` is either an nda::range, an
-   * nda::range::all_t or an nda::ellipsis.
+   * @brief Constexpr variable that is true if the type `T` is either an `nda::range`, an `nda::range::all_t` or an
+   * nda::ellipsis.
    */
   template <typename T>
   constexpr bool is_range_or_ellipsis = is_any_of<std::remove_cvref_t<T>, range, range::all_t, ellipsis>;
+
+  /** @} */
 
 } // namespace nda

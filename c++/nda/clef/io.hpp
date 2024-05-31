@@ -32,6 +32,11 @@
 namespace nda::clef {
 
   /**
+   * @addtogroup clef_utils
+   * @{
+   */
+
+  /**
    * @brief Print an nda::clef::placeholder to a std::ostream.
    *
    * @tparam N Integer label of the placeholder.
@@ -56,7 +61,7 @@ namespace nda::clef {
     return out << wrapper.get();
   }
 
-  /// Overload of nda::clef::variadic_print for the case of an empty list of arguments.
+  // Overload of nda::clef::variadic_print for the case of an empty list of arguments.
   inline std::ostream &variadic_print(std::ostream &out) { return out; }
 
   /**
@@ -112,7 +117,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::tag::unary_op expression to std::ostream.
+   * @brief Print an nda::clef::tags::unary_op expression to std::ostream.
    *
    * @tparam Tag Type of the unary operation.
    * @tparam L Type of the child expression.
@@ -121,12 +126,13 @@ namespace nda::clef {
    * @return Reference to the std::ostream.
    */
   template <typename Tag, typename L>
-  std::enable_if_t<std::is_base_of_v<tags::unary_op, Tag>, std::ostream &> operator<<(std::ostream &sout, expr<Tag, L> const &ex) {
+    requires std::is_base_of_v<tags::unary_op, Tag>
+  std::ostream &operator<<(std::ostream &sout, expr<Tag, L> const &ex) {
     return sout << "(" << Tag::name() << " " << std::get<0>(ex.childs) << ")";
   }
 
   /**
-   * @brief Print an nda::clef::tag::binary expression to std::ostream.
+   * @brief Print an nda::clef::tags::binary_op expression to std::ostream.
    *
    * @tparam Tag Type of the binary operation.
    * @tparam L Type of the child expression #1.
@@ -136,12 +142,13 @@ namespace nda::clef {
    * @return Reference to the std::ostream.
    */
   template <typename Tag, typename L, typename R>
-  std::enable_if_t<std::is_base_of_v<tags::binary_op, Tag>, std::ostream &> operator<<(std::ostream &sout, expr<Tag, L, R> const &ex) {
+    requires std::is_base_of_v<tags::binary_op, Tag>
+  std::ostream &operator<<(std::ostream &sout, expr<Tag, L, R> const &ex) {
     return sout << "(" << std::get<0>(ex.childs) << " " << Tag::name() << " " << std::get<1>(ex.childs) << ")";
   }
 
   /**
-   * @brief Print an nda::clef::tag::if_else expression to std::ostream.
+   * @brief Print an nda::clef::tags::if_else expression to std::ostream.
    *
    * @tparam C Type of the condition expression.
    * @tparam A Type of the return type when the condition is true.
@@ -156,7 +163,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::tag::function expression to std::ostream.
+   * @brief Print an nda::clef::tags::function expression to std::ostream.
    *
    * @tparam Ts Types of the arguments of the function.
    * @param sout std::ostream object to print to.
@@ -172,7 +179,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print a general nda::clef::tag::subscript expression to std::ostream.
+   * @brief Print a general nda::clef::tags::subscript expression to std::ostream.
    *
    * @tparam Ts Types of the subscript arguments.
    * @param sout std::ostream object to print to.
@@ -188,7 +195,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::tag::terminal expression to std::ostream.
+   * @brief Print an nda::clef::tags::terminal expression to std::ostream.
    *
    * @tparam T Type of the terminal child node.
    * @param sout std::ostream object to print to.
@@ -201,7 +208,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::tag::subscript expression to std::ostream.
+   * @brief Print an nda::clef::tags::subscript expression to std::ostream.
    *
    * @tparam T Type of the child node.
    * @param sout std::ostream object to print to.
@@ -214,7 +221,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::tag::negate expression to std::ostream.
+   * @brief Print an nda::clef::tags::negate expression to std::ostream.
    *
    * @tparam T Type of the child node.
    * @param sout std::ostream object to print to.
@@ -241,5 +248,7 @@ namespace nda::clef {
     variadic_print(sout, placeholder<Is>()...);
     return sout << ") --> " << f.obj;
   }
+
+  /** @} */
 
 } // namespace nda::clef

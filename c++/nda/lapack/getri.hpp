@@ -37,21 +37,21 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `getri` routine.
    *
    * @details Computes the inverse of a matrix using the LU factorization computed by `getrf`.
    *
-   * This method inverts \f$ \mathbf{U} \f$ and then computes \f$ \mathrm{inv}(\mathbf{A}) \f$
-   * by solving the system \f$ \mathrm{inv}(\mathbf{A}) L = \mathrm{inv}(\mathbf{U}) \f$  for
-   * \f$ \mathrm{inv}(\mathbf{A}) \f$.
+   * This method inverts \f$ \mathbf{U} \f$ and then computes \f$ \mathrm{inv}(\mathbf{A}) \f$ by solving the system
+   * \f$ \mathrm{inv}(\mathbf{A}) L = \mathrm{inv}(\mathbf{U}) \f$ for \f$ \mathrm{inv}(\mathbf{A}) \f$.
    *
    * @tparam A nda::MemoryMatrix type.
    * @tparam IPIV nda::MemoryVector type.
-   * @param a Input/output matrix. On entry, the factors \f$ \mathbf{L} \f$ and \f$ \mathbf{U} \f$
-   * from the factorization \f$ \mathbf{A} = \mathbf{P L U} \f$ as computed by `getrf`. On exit,
-   * if `INFO = 0`, the inverse of the original matrix \f$ \mathbf{A} \f$.
-   * @param ipiv Input vector. The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i of the
-   * matrix was interchanged with row IPIV(i).
+   * @param a Input/output matrix. On entry, the factors \f$ \mathbf{L} \f$ and \f$ \mathbf{U} \f$ from the
+   * factorization \f$ \mathbf{A} = \mathbf{P L U} \f$ as computed by `getrf`. On exit, if `INFO == 0`, the inverse of
+   * the original matrix \f$ \mathbf{A} \f$.
+   * @param ipiv Input vector. The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i of the matrix was
+   * interchanged with row `ipiv(i)`.
    * @return Integer return code from the LAPACK call.
    */
   template <MemoryMatrix A, MemoryVector IPIV>

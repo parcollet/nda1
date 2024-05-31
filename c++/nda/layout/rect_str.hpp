@@ -38,9 +38,16 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup layout_idx
+   * @{
+   */
+
+  /// @cond
   // Forward declaration.
   template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp>
   class rect_str;
+  /// @endcond
 
   namespace detail {
 
@@ -58,8 +65,8 @@ namespace nda {
   } // namespace detail
 
   /**
-   * @brief Layout that specifies how to map multi-dimensional indices including possible
-   * string indices to a linear/flat index.
+   * @brief Layout that specifies how to map multi-dimensional indices including possible string indices to a
+   * linear/flat index.
    *
    * @details It extends the functionality of nda::idx_map by supporting string indices.
    *
@@ -95,12 +102,12 @@ namespace nda {
     /**
      * @brief Get the string indices.
      *
-     * @details If the string indices are not yet initialized, they are initialized with
-     * the default values, i.e. "0", "1", "2", ..., and so on.
+     * @details If the string indices are not yet initialized, they are initialized with the default values, i.e. "0",
+     * "1", "2", ..., and so on.
      *
      * @return String indices.
      */
-    nda::array<nda::array<std::string, 1>, 1> const &get_string_indices() const {
+    auto const &get_string_indices() const {
       if (not s_indices) {
         // string indices are not initialized
         auto ind = ind_t(Rank);
@@ -118,18 +125,14 @@ namespace nda {
     template <typename T>
     static constexpr int argument_is_allowed_for_call = base_t::template argument_is_allowed_for_call<T> or std::is_constructible_v<std::string, T>;
 
-    /**
-     * @brief Alias template to check if type `T` can be used to either access a specific
-     * element or a slice of elements.
-     */
+    /// Alias template to check if type `T` can be used to either access a specific element or a slice of elements.
     template <typename T>
     static constexpr int argument_is_allowed_for_call_or_slice =
        base_t::template argument_is_allowed_for_call_or_slice<T> or std::is_constructible_v<std::string, T>;
 
     /**
      * @brief Default constructor.
-     * @details The string indices are not initialized and the underlying nda::idx_map is
-     * default constructed.
+     * @details The string indices are not initialized and the underlying nda::idx_map is default constructed.
      */
     rect_str() = default;
 
@@ -142,8 +145,7 @@ namespace nda {
     /**
      * @brief Construct an nda::rect_str from a given nda::idx_map and string indices.
      *
-     * @warning The shape of the string indices is not checked to be consistent with the
-     * shape of the nda::idx_map.
+     * @warning The shape of the string indices is not checked to be consistent with the shape of the nda::idx_map.
      *
      * @param idxm nda::idx_map object.
      * @param str_indices String indices.
@@ -151,8 +153,7 @@ namespace nda {
     rect_str(base_t const &idxm, ind_t const &str_indices) noexcept : base_t{idxm}, s_indices{std::make_shared<ind_t>(std::move(str_indices))} {}
 
     /**
-     * @brief Construct an nda::rect_str from another nda::rect_str with different layout
-     * properties.
+     * @brief Construct an nda::rect_str from another nda::rect_str with different layout properties.
      *
      * @tparam LP Layout properties of the other nda::rect_str.
      * @param rstr Other nda::rect_str object.
@@ -162,8 +163,7 @@ namespace nda {
        : base_t{rstr}, s_indices{std::make_shared<ind_t>(rstr.get_string_indices())} {}
 
     /**
-     * @brief Construct an nda::rect_str from another nda::rect_str with different layout
-     * properties and static extents.
+     * @brief Construct an nda::rect_str from another nda::rect_str with different layout properties and static extents.
      *
      * @tparam SE Static extents of the other nda::rect_str.
      * @tparam LP Layout properties of the other nda::rect_str.
@@ -197,7 +197,7 @@ namespace nda {
     /**
      * @brief Construct an nda::rect_str from an array with its dynamic extents.
      * @details The missing extents are taken from the static extents.
-     * @param shape Array containing the dynamic extents only.
+     * @param shape sta::array containing the dynamic extents only.
      */
     rect_str(std::array<long, n_dynamic_extents> const &shape) noexcept
       requires((n_dynamic_extents != Rank) and (n_dynamic_extents != 0))
@@ -216,8 +216,7 @@ namespace nda {
     rect_str &operator=(rect_str &&) = default;
 
     private:
-    // Convert a given string argument into a corresponding index. If the argument is not a string,
-    // it is returned as is.
+    // Convert a given string argument into a corresponding index. If the argument isn't a string, it is returned as is.
     template <typename T>
     auto peel_string(int pos, T const &arg) const {
       if constexpr (not std::is_constructible_v<std::string, T>)
@@ -244,7 +243,7 @@ namespace nda {
     /**
      * @brief Function call operator to map a given multi-dimensional index to a linear index.
      *
-     * @details See also nda::idx_map::operator().
+     * @details See also nda::idx_map.
      *
      * @tparam Args Types of the arguments.
      * @param args Multi-dimensional index, including possible string indices.
@@ -265,8 +264,7 @@ namespace nda {
       // type of sliced nda::rect_str
       using new_rect_str_t = typename detail::rect_str_from_base<std::decay_t<decltype(idxm2)>>::type;
 
-      // if the string indices have not been intialized, simply return a new nda::rect_str
-      // with the sliced nda::idx_map
+      // if the string indices have not been intialized, simply return a new nda::rect_str with the sliced nda::idx_map
       if (not s_indices) return std::make_pair(offset, new_rect_str_t{idxm2});
 
       // otherwise slice the string indices as well (not optimized but simple)
@@ -285,14 +283,13 @@ namespace nda {
     /**
      * @brief Get a new nda::rect_str by taking a slice of the current one.
      *
-     * @warning nda::ellipsis that cover more than one dimension will not work properly.
-     * Use nda::range::all_t instead.
+     * @warning nda::ellipsis that cover more than 1 dimension will not work properly. Use `nda::range::all_t` instead.
      *
      * @tparam Args Types of the arguments.
-     * @param args Multi-dimensional index consisting of strings, `long`, nda::range,
-     * nda::range::all_t or nda::ellipsis objects.
-     * @return A std::pair containing the offset in memory, i.e. the flat index of the first
-     * element of the slice and the new nda::rect_str.
+     * @param args Multi-dimensional index consisting of strings, `long`, `nda::range`, `nda::range::all_t` or
+     * nda::ellipsis objects.
+     * @return A std::pair containing the offset in memory, i.e. the flat index of the first element of the slice and
+     * the new nda::rect_str.
      */
     template <typename... Args>
     auto slice(Args const &...args) const {
@@ -303,8 +300,7 @@ namespace nda {
      * @brief Equal-to operator for two nda::rect_str objects.
      *
      * @param rhs Right hand side nda::rect_str operand.
-     * @return True if the underlying nda::idx_map and the string indices are equal,
-     * false otherwise.
+     * @return True if the underlying nda::idx_map and the string indices are equal, false otherwise.
      */
     bool operator==(rect_str const &rhs) const {
       return base_t::operator==(rhs) and (!s_indices or !rhs.s_indices or (*s_indices == *(rhs.s_indices)));
@@ -319,17 +315,15 @@ namespace nda {
     bool operator!=(rect_str const &rhs) { return !(operator==(rhs)); }
 
     /**
-     * @brief Create a new nda::rect_str by permuting the indices/dimensions with a given
-     * permutation.
+     * @brief Create a new nda::rect_str by permuting the indices/dimensions with a given permutation.
      *
-     * @details Let `A` be the current and `A'` the new, permuted map. `P` is the given
-     * permutation. We define the permuted nda::rect_str `A'` to be the one with the
-     * following properties:
-     * - `A'(i_0,...,i_{n-1}) = A(i_{P[0]},...,i_{P[n-1]})`
-     * - `A'.lengths()[k] == A.lengths()[P^{-1}[k]]`
-     * - `A'.strides()[k] == A.strides()[P^{-1}[k]]`
-     * - The stride order of `A'` is the composition of `P` and the stride order of `A`
-     * (note that the stride order itself is a permutation).
+     * @details Let `A` be the current and ``A'`` the new, permuted map. `P` is the given permutation. We define the
+     * permuted nda::rect_str ``A'`` to be the one with the following properties:
+     * - ``A'(i_0,...,i_{n-1}) = A(i_{P[0]},...,i_{P[n-1]})``
+     * - ``A'.lengths()[k] == A.lengths()[P^{-1}[k]]``
+     * - ``A'.strides()[k] == A.strides()[P^{-1}[k]]``
+     * - The stride order of ``A'`` is the composition of `P` and the stride order of `A` (note that the stride order
+     * itself is a permutation).
      *
      * @tparam Permutation Permutation to apply.
      * @return New nda::rect_str with permuted indices.
@@ -353,9 +347,18 @@ namespace nda {
     }
   };
 
+  /** @} */
+
+  /**
+   * @addtogroup layout_pols
+   * @{
+   */
+
+  /// @cond
   // Forward declarations.
   struct C_stride_layout_str;
   struct F_stride_layout_str;
+  /// @endcond
 
   /**
    * @brief Contigous layout policy with C-order (row-major order) and possible string indices.
@@ -374,9 +377,7 @@ namespace nda {
   };
 
   /**
-   * @brief Contigous layout policy with Fortran-order (column-major order) and possible
-   * string indices.
-   *
+   * @brief Contigous layout policy with Fortran-order (column-major order) and possible string indices.
    * @details The first dimension varies the fastest, the last dimension varies the slowest.
    */
   struct F_layout_str {
@@ -392,9 +393,7 @@ namespace nda {
   };
 
   /**
-   * @brief Strided (non-contiguous) layout policy with C-order (row-major order) and
-   * possible string indices.
-   *
+   * @brief Strided (non-contiguous) layout policy with C-order (row-major order) and possible string indices.
    * @details The last dimension varies the fastest, the first dimension varies the slowest.
    */
   struct C_stride_layout_str {
@@ -410,9 +409,7 @@ namespace nda {
   };
 
   /**
-   * @brief Strided (non-contiguous) layout policy with Fortran-order (column-major order)
-   * and possible string indices.
-   *
+   * @brief Strided (non-contiguous) layout policy with Fortran-order (column-major order) and possible string indices.
    * @details The first dimension varies the fastest, the last dimension varies the slowest.
    */
   struct F_stride_layout_str {
@@ -469,5 +466,7 @@ namespace nda {
     };
 
   } // namespace detail
+
+  /** @} */
 
 } // namespace nda

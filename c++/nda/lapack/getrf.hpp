@@ -33,28 +33,28 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `getrf` routine.
    *
-   * @details Computes an LU factorization of a general M-by-N matrix A using partial
-   * pivoting with row interchanges.
+   * @details Computes an LU factorization of a general m-by-n matrix \f$ \mathbf{A} \f$ using partial pivoting with row
+   * interchanges.
    *
    * The factorization has the form
    * \f[
    *   \mathbf{A} = \mathbf{P L U}
    * \f]
-   * where \f$ \mathbf{P} \f$ is a permutation matrix, \f$ \mathbf{L} \f$ is lower triangular
-   * with unit diagonal elements (lower trapezoidal if m > n), and \f$ \mathbf{U} \f$ is upper
-   * triangular (upper trapezoidal if m < n).
+   * where \f$ \mathbf{P} \f$ is a permutation matrix, \f$ \mathbf{L} \f$ is lower triangular with unit diagonal
+   * elements (lower trapezoidal if `m > n`), and \f$ \mathbf{U} \f$ is upper triangular (upper trapezoidal if `m < n`).
    *
    * This is the right-looking Level 3 BLAS version of the algorithm.
    *
    * @tparam A nda::MemoryMatrix type.
    * @tparam IPIV nda::MemoryVector type.
-   * @param a Input/output matrix. On entry, the M-by-N matrix to be factored. On exit, the
-   * factors \f$ \mathbf{L} \f$ and \f$ \mathbf{U} \f$ from the factorization \f$ \mathbf{A} =
-   * \mathbf{P L U} \f$; the unit diagonal elements of \f$ \mathbf{L} \f$ are not stored.
-   * @param tau Output vector.The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i of
-   * the matrix was interchanged with row IPIV(i).
+   * @param a Input/output matrix. On entry, the m-by-n matrix to be factored. On exit, the factors \f$ \mathbf{L} \f$
+   * and \f$ \mathbf{U} \f$ from the factorization \f$ \mathbf{A} = \mathbf{P L U} \f$; the unit diagonal elements of
+   * \f$ \mathbf{L} \f$ are not stored.
+   * @param tau Output vector. The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i of the matrix was
+   * interchanged with row `ipiv(i)`.
    * @return Integer return code from the LAPACK call.
    */
   template <MemoryMatrix A, MemoryVector IPIV>

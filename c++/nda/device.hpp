@@ -35,8 +35,13 @@
 namespace nda {
 
   /**
-   * @brief Trigger a compilation error in case GPU specific functionality is used without
-   * configuring the project with GPU support.
+   * @addtogroup mem_utils
+   * @{
+   */
+
+  /**
+   * @brief Trigger a compilation error in case GPU specific functionality is used without configuring the project with
+   * GPU support.
    */
   template <bool flag = false>
   void compile_error_no_gpu() {
@@ -96,8 +101,7 @@ namespace nda {
   inline auto cucplx(std::complex<double> c) { return cuDoubleComplex{c.real(), c.imag()}; }
 
   /**
-   * @brief Reinterpret a pointer to a `std::complex<double>` as a pointer to a
-   * `cuDoubleComplex`.
+   * @brief Reinterpret a pointer to a `std::complex<double>` as a pointer to a `cuDoubleComplex`.
    *
    * @param c Pointer to a `std::complex<double>`.
    * @return Pointer to a `cuDoubleComplex` at the same address.
@@ -105,8 +109,7 @@ namespace nda {
   inline auto *cucplx(std::complex<double> *c) { return reinterpret_cast<cuDoubleComplex *>(c); } // NOLINT
 
   /**
-   * @brief Reinterpret a pointer to a `const std::complex<double>` as a pointer to a
-   * `const cuDoubleComplex`.
+   * @brief Reinterpret a pointer to a `const std::complex<double>` as a pointer to a `const cuDoubleComplex`.
    *
    * @param c Pointer to a `const std::complex<double>`.
    * @return Pointer to a `const cuDoubleComplex` at the same address.
@@ -114,8 +117,8 @@ namespace nda {
   inline auto *cucplx(std::complex<double> const *c) { return reinterpret_cast<const cuDoubleComplex *>(c); } // NOLINT
 
   /**
-   * @brief Reinterpret a pointer to a pointer to a `std::complex<double>` as a pointer
-   * to a pointer to a `cuDoubleComplex`.
+   * @brief Reinterpret a pointer to a pointer to a `std::complex<double>` as a pointer to a pointer to a
+   * `cuDoubleComplex`.
    *
    * @param c Pointer to a pointer to a `std::complex<double>`.
    * @return Pointer to a pointer to a `cuDoubleComplex` at the same address.
@@ -123,8 +126,8 @@ namespace nda {
   inline auto **cucplx(std::complex<double> **c) { return reinterpret_cast<cuDoubleComplex **>(c); } // NOLINT
 
   /**
-   * @brief Reinterpret a pointer to a pointer to a `const std::complex<double>` as a
-   * pointer to a pointer to a `const cuDoubleComplex`.
+   * @brief Reinterpret a pointer to a pointer to a `const std::complex<double>` as a pointer to a pointer to a
+   * `const cuDoubleComplex`.
    *
    * @param c Pointer to a pointer to a `const std::complex<double>`.
    * @return Pointer to a pointer to a `const cuDoubleComplex` at the same address.
@@ -143,5 +146,7 @@ namespace nda {
   static constexpr bool have_cuda = false;
 
 #endif // NDA_HAVE_CUDA
+
+  /** @} */
 
 } // namespace nda

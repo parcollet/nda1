@@ -28,6 +28,11 @@
 
 namespace nda::clef {
 
+  /**
+   * @addtogroup clef_expr
+   * @{
+   */
+
 #define CLEF_MAKE_STD_FNT_LAZY(name)                                                                                                                 \
   using std::name;                                                                                                                                   \
   /** @brief Lazy version of std::name. */                                                                                                           \
@@ -50,5 +55,7 @@ namespace nda::clef {
   CLEF_MAKE_STD_FNT_LAZY(floor)
   CLEF_MAKE_STD_FNT_LAZY(pow)
   CLEF_MAKE_STD_FNT_LAZY(conj)
+
+  /** @} */
 
 } // namespace nda::clef

@@ -43,22 +43,25 @@
 namespace nda::blas {
 
   /**
-   * @brief Implements a batched version of nda::blas::gemm taking vectors of matrices
-   * as arguments.
+   * @addtogroup linalg_blas
+   * @{
+   */
+
+  /**
+   * @brief Implements a batched version of nda::blas::gemm taking vectors of matrices as arguments.
    *
-   * @details This routine is a batched version of nda::blas::gemm, performing multiple
-   * `gemm` operations in a single call. Each `gemm` operation perform a matrix-matrix
-   * product with general matrices.
+   * @details This routine is a batched version of nda::blas::gemm, performing multiple `gemm` operations
+   * in a single call. Each `gemm` operation performs a matrix-matrix product with general matrices.
    *
    * @tparam VBATCH Allow for variable sized matrices.
    * @tparam A nda::Matrix type.
    * @tparam B nda::Matrix type.
    * @tparam C nda::MemoryMatrix type.
-   * @param alpha Scalar constant.
-   * @param va Vector of input matrices.
-   * @param vb Vector of input matrices.
-   * @param beta Scalar constant.
-   * @param vc Vector of input/output matrices.
+   * @param alpha Input scalar.
+   * @param va std::vector of input matrices.
+   * @param vb std::vector of input matrices.
+   * @param beta Input scalar.
+   * @param vc std::vector of input/output matrices.
    */
   template <bool VBATCH = false, Matrix A, Matrix B, MemoryMatrix C>
     requires((MemoryMatrix<A> or is_conj_array_expr<A>) and (MemoryMatrix<B> or is_conj_array_expr<B>)
@@ -186,11 +189,11 @@ namespace nda::blas {
    * @tparam A nda::Matrix type.
    * @tparam B nda::Matrix type.
    * @tparam C nda::MemoryMatrix type.
-   * @param alpha Scalar constant.
-   * @param va Vector of input matrices.
-   * @param vb Vector of input matrices.
-   * @param beta Scalar constant.
-   * @param vc Vector of input/output matrices.
+   * @param alpha Input scalar.
+   * @param va std::vector of input matrices.
+   * @param vb std::vector of input matrices.
+   * @param beta Input scalar.
+   * @param vc std::vector of input/output matrices.
    */
   template <Matrix A, Matrix B, MemoryMatrix C>
   void gemm_vbatch(get_value_t<A> alpha, std::vector<A> const &va, std::vector<B> const &vb, get_value_t<A> beta, std::vector<C> &vc) {
@@ -208,10 +211,10 @@ namespace nda::blas {
    * @tparam A nda::ArrayOfRank<3> type.
    * @tparam B nda::ArrayOfRank<3> type.
    * @tparam C nda::ArrayOfRank<3> type.
-   * @param alpha Scalar constant.
+   * @param alpha Input scalar.
    * @param a 3-dimensional input array.
    * @param b 3-dimensional input array.
-   * @param beta Scalar constant.
+   * @param beta Input scalar.
    * @param c 3-dimensional input/output array.
    */
   template <ArrayOfRank<3> A, ArrayOfRank<3> B, MemoryArrayOfRank<3> C>
@@ -274,5 +277,7 @@ namespace nda::blas {
       }
     }
   }
+
+  /** @} */
 
 } // namespace nda::blas

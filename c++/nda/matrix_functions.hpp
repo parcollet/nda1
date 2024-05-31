@@ -39,12 +39,17 @@
 namespace nda {
 
   /**
+   * @addtogroup av_factories
+   * @{
+   */
+
+  /**
    * @brief Create an identity nda::matrix with ones on the diagonal.
    *
-   * @tparam S Scalar value type of the matrix.
+   * @tparam S nda::Scalar value type of the matrix.
    * @tparam Int Integral type.
    * @param dim Dimension of the square matrix.
-   * @return Identity nda::matrix of size dim x dim.
+   * @return Identity nda::matrix of size `dim x dim`.
    */
   template <Scalar S, std::integral Int = long>
   auto eye(Int dim) {
@@ -54,6 +59,7 @@ namespace nda {
   }
 
   /**
+   * @ingroup av_math
    * @brief Get the trace of a 2-dimensional array/view.
    *
    * @tparam M nda::ArrayOfRank<2> type.
@@ -71,7 +77,11 @@ namespace nda {
   }
 
   /**
+   * @ingroup av_math
    * @brief Get the conjugate transpose of 2-dimensional array/view.
+   *
+   * @details It first calls nda::transpose and then the lazy nda::conj function in case the array/view is complex
+   * valued.
    *
    * @tparam M nda::ArrayOfRank<2> type.
    * @param m 2-dimensional array/view.
@@ -86,11 +96,11 @@ namespace nda {
   }
 
   /**
-   * @brief Get a view on the diagonal of a 2-dimensional array/view.
+   * @brief Get a view of the diagonal of a 2-dimensional array/view.
    *
    * @tparam M nda::MemoryArrayOfRank<2> type.
    * @param m 2-dimensional array/view.
-   * @return A vector view on the diagonal of the array/view.
+   * @return A view with the 'V' algebra of the diagonal of the array/view.
    */
   template <MemoryArrayOfRank<2> M>
   ArrayOfRank<1> auto diagonal(M &m) {
@@ -104,8 +114,8 @@ namespace nda {
   /**
    * @brief Get a new nda::matrix with the given values on the diagonal.
    *
-   * @tparam V nda::ArrayOfRank<1> or std::ranges::contiguous_range type.
-   * @param v 1-dimensional array/view containing the diagonal values.
+   * @tparam V nda::ArrayOfRank<1> or `std::ranges::contiguous_range` type.
+   * @param v 1-dimensional array/view/container containing the diagonal values.
    * @return nda::matrix with the given values on the diagonal.
    */
   template <typename V>
@@ -125,8 +135,8 @@ namespace nda {
    *
    * @details This is a more restricted implementation then nda::concatenate. It is only for 2D arrays/views.
    *
-   * Given a an array A of size n x q and an array B of size p x q, the function returns a new array C of size (n + p) x q
-   * such that `C(range(0, n), range::all) == A` and `C(range(n, n + p), range::all) == B` is true.
+   * Given a an array A of size `n x q` and an array B of size `p x q`, the function returns a new array C of size
+   * `(n + p) x q` such that `C(range(0, n), range::all) == A` and `C(range(n, n + p), range::all) == B` is true.
    *
    * @tparam A nda::ArrayOfRank<2> type.
    * @tparam B nda::ArrayOfRank<2> type.
@@ -148,5 +158,7 @@ namespace nda {
     res(range(n, n + p), range::all) = b;
     return res;
   }
+
+  /** @} */
 
 } // namespace nda

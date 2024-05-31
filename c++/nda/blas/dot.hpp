@@ -37,6 +37,11 @@
 namespace nda::blas {
 
   /**
+   * @addtogroup linalg_blas
+   * @{
+   */
+
+  /**
    * @brief Interface to the BLAS `dot` routine.
    *
    * @details This function forms the dot product of two vectors. It calculates
@@ -165,9 +170,7 @@ namespace nda::blas {
   } // namespace detail
 
   /**
-   * @brief Dot product of two vectors/scalars.
-   *
-   * @details Generic implementation of nda::blas::dot for types not supported by BLAS/LAPACK.
+   * @brief Generic implementation of nda::blas::dot for types not supported by BLAS/LAPACK.
    *
    * @tparam X Vector/Scalar type.
    * @tparam Y Vector/Scalar type.
@@ -185,9 +188,7 @@ namespace nda::blas {
   }
 
   /**
-   * @brief Dot product of two vectors/scalars.
-   *
-   * @details Generic implementation of nda::blas::dotc for types not supported by BLAS/LAPACK.
+   * @brief Generic implementation of nda::blas::dotc for types not supported by BLAS/LAPACK.
    *
    * @tparam X Vector/Scalar type.
    * @tparam Y Vector/Scalar type.
@@ -203,5 +204,7 @@ namespace nda::blas {
       return detail::_dot_impl<true>(x, y);
     }
   }
+
+  /** @} */
 
 } // namespace nda::blas

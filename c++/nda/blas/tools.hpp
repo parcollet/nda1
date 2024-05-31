@@ -32,18 +32,26 @@
 
 namespace nda {
 
-  /// Alias for std::complex<double> type.
+  /**
+   * @ingroup linalg_blas
+   * @brief Alias for `std::complex<double>` type.
+   */
   using dcomplex = std::complex<double>;
 
 } // namespace nda
 
 namespace nda::blas {
 
+  /**
+   * @addtogroup linalg_blas
+   * @{
+   */
+
   /// Constexpr variable that is true if the given type is a conjugate lazy expression.
   template <typename A>
   static constexpr bool is_conj_array_expr = false;
 
-  // Specialization of nda::blas::is_conj_array_expr for the conjugate lazy expressions.
+  /// Specialization of nda::blas::is_conj_array_expr for the conjugate lazy expressions.
   template <MemoryArray A>
   static constexpr bool is_conj_array_expr<expr_call<conj_f, A>> = true;
 
@@ -73,8 +81,11 @@ namespace nda::blas {
   }();
 
   /**
-   * @brief Variable template that determines the blas matrix operation tag ('N','T','C')
-   * based on the given boolean values for conjugation and transposition.
+   * @brief Variable template that determines the BLAS matrix operation tag ('N','T','C')
+   * based on the given boolean flags for conjugation and transposition.
+   *
+   * @tparam conj Boolean flag for conjugation.
+   * @tparam transpose Boolean flag for transposition.
    */
   template <bool conj, bool transpose>
   const char get_op = []() {
@@ -91,7 +102,7 @@ namespace nda::blas {
    * @brief Get the leading dimension in LAPACK jargon of an nda::MemoryMatrix.
    *
    * @tparam A nda::MemoryMatrix type.
-   * @param a Matrix object.
+   * @param a nda::MemoryMatrix object.
    * @return Leading dimension.
    */
   template <MemoryMatrix A>
@@ -103,12 +114,14 @@ namespace nda::blas {
    * @brief Get the number of columns in LAPACK jargon of an nda::MemoryMatrix.
    *
    * @tparam A nda::MemoryMatrix type.
-   * @param a Matrix object.
+   * @param a nda::MemoryMatrix object.
    * @return Number of columns.
    */
   template <MemoryMatrix A>
   int get_ncols(A const &a) {
     return a.shape()[has_F_layout<A> ? 1 : 0];
   }
+
+  /** @} */
 
 } // namespace nda::blas

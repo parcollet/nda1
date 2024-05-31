@@ -37,6 +37,11 @@
 namespace nda {
 
   /**
+   * @addtogroup av_sym
+   * @{
+   */
+
+  /**
    * @brief A structure to capture combinations of complex conjugation and sign flip operations.
    */
   struct operation {
@@ -49,9 +54,8 @@ namespace nda {
     /**
      * @brief Multiplication operator for two operations.
      *
-     * @details The sign flip (complex conjugation) operation is set to true in the resulting
-     * product iff one of the two (exlusive or!) input operations has the sign flip (complex
-     * conjugation) operation set to true.
+     * @details The sign flip (complex conjugation) operation is set to true in the resulting product iff one of the two
+     * (exlusive or!) input operations has the sign flip (complex conjugation) operation set to true.
      *
      * @param rhs Right hand side operation.
      * @return The resulting operation.
@@ -73,8 +77,7 @@ namespace nda {
   };
 
   /**
-   * @brief Check if a multi-dimensional index is valid, i.e. not out of bounds, w.r.t. to a given
-   * nda::Array object.
+   * @brief Check if a multi-dimensional index is valid, i.e. not out of bounds, w.r.t. to a given nda::Array object.
    *
    * @tparam A nda::Array type.
    * @param a nda::Array object.
@@ -92,15 +95,13 @@ namespace nda {
   /**
    * @brief Concept defining a symmetry in nda.
    *
-   * @details A symmetry consists of a callable type that can be called with a multi-dimensional index
-   * with the same rank as a given array type and returns a tuple with a new multi-dimensional index
-   * and an nda::operation.
+   * @details A symmetry consists of a callable type that can be called with a multi-dimensional index with the same
+   * rank as a given array type and returns a tuple with a new multi-dimensional index and an nda::operation.
    *
-   * The returned index corresponds to an element which is related to the element at the input index
-   * by the symmetry.
+   * The returned index corresponds to an element which is related to the element at the input index by the symmetry.
    *
-   * The returned operation describes how the values of the elements are related, i.e. either via a
-   * sign flip, a complex conjugation, or both.
+   * The returned operation describes how the values of the elements are related, i.e. either via a sign flip, a complex
+   * conjugation, or both.
    *
    * @tparam F Callable type.
    * @tparam A nda::Array type.
@@ -114,9 +115,8 @@ namespace nda {
   /**
    * @brief Concept defining an initializer function.
    *
-   * @details An initializer function consists of a callable type that can be called with a
-   * multi-dimensional index with the same rank as a given array type and returns a an object
-   * of the same type as the value type of the array.
+   * @details An initializer function consists of a callable type that can be called with a multi-dimensional index with
+   * the same rank as a given array type and returns a an object of the same type as the value type of the array.
    *
    * @tparam F Callable type.
    * @tparam A nda::Array type.
@@ -130,13 +130,12 @@ namespace nda {
   /**
    * @brief Class representing a symmetry group.
    *
-   * @details A symmetry group detects and stores all different symmetry classes associated with
-   * a given nda::Array object.
+   * @details A symmetry group detects and stores all different symmetry classes associated with a given nda::Array
+   * object.
    *
-   * A symmetry class is simply a set of all the elements of the array that are related to each other
-   * by some symmetry. The elements in a symmetry class have all the same values except for a possible
-   * sign flip or complex conjugation, i.e. an nda::operation. The symmetry classes form a partition
-   * of all the elements of the array.
+   * A symmetry class is simply a set of all the elements of the array that are related to each other by some symmetry.
+   * The elements in a symmetry class have all the same values except for a possible sign flip or complex conjugation,
+   * i.e. an nda::operation. The symmetry classes form a partition of all the elements of the array.
    *
    * @tparam F nda::NdaSymmetry type.
    * @tparam A nda::Array type.
@@ -154,35 +153,34 @@ namespace nda {
     /// Symmetry class type.
     using sym_class_t = std::span<sym_idx_t>;
 
-    /// Mulit-dimensional index type.
+    /// Multi-dimensional index type.
     using arr_idx_t = std::array<long, static_cast<std::size_t>(ndims)>;
 
     private:
-    // Vector containing the different symmetry classes.
+    // std::vector containing the different symmetry classes.
     std::vector<sym_class_t> sym_classes;
 
-    // Vector of the size of the input array to store the elements of the symmetry classes
-    // in a contiguous block of memory.
+    // std::vector of the size of the input array to store the elements of the symmetry classes.
     std::vector<sym_idx_t> data;
 
     public:
     /**
      * @brief Get the symmetry classes.
-     * @return Vector containing the individual classes.
+     * @return std::vector containing the individual classes.
      */
     [[nodiscard]] std::vector<sym_class_t> const &get_sym_classes() const { return sym_classes; }
 
     /**
      * @brief Get the number of symmetry classes.
-     * @return Number of detected symmetry classes
+     * @return Number of detected symmetry classes.
      */
     [[nodiscard]] long num_classes() const { return sym_classes.size(); }
 
     /**
      * @brief Initialize an nda::Array using an nda::NdaInitFunc.
      *
-     * @details The nda::NdaInitFunc object is evaluated only once per symmetry class. The result is
-     * then assigned to all elements in the symmetry class after applying the nda::operation.
+     * @details The nda::NdaInitFunc object is evaluated only once per symmetry class. The result is then assigned to
+     * all elements in the symmetry class after applying the nda::operation.
      *
      * @tparam H Callable type of nda::NdaInitFunc.
      * @param a nda::Array object to be initialized.
@@ -217,11 +215,10 @@ namespace nda {
     }
 
     /**
-     * @brief Symmetrize an array and return the maximum symmetry violation and its corresponding
-     * array index.
+     * @brief Symmetrize an array and return the maximum symmetry violation and its corresponding array index.
      *
-     * @note This actually requires the definition of an inverse operation but with the current
-     * implementation, all operations are self-inverse (sign flip and complex conjugation).
+     * @note This actually requires the definition of an inverse operation but with the current implementation, all
+     * operations are self-inverse (sign flip and complex conjugation).
      *
      * @param a nda::Array object to be symmetrized.
      * @return Maximum symmetry violation and corresponding array index.
@@ -259,7 +256,7 @@ namespace nda {
      * @brief Reduce an nda::Array to its representative data using symmetries.
      *
      * @param a nda::Array object.
-     * @return Vector of data values for the representative elements of each symmetry class.
+     * @return std::vector of data values for the representative elements of each symmetry class.
      */
     [[nodiscard]] std::vector<get_value_t<A>> get_representative_data(A const &a) const {
       long len = sym_classes.size();
@@ -269,10 +266,10 @@ namespace nda {
     }
 
     /**
-     * @brief Initialize a multidimensional array from its representative data using symmetries.
+     * @brief Initialize a multi-dimensional array from its representative data using symmetries.
      *
      * @param a nda::Array object to be initialized.
-     * @param vec Vector of data values for the representative elements of each symmetry class.
+     * @param vec std::vector of data values for the representative elements of each symmetry class.
     */
     template <typename V>
     void init_from_representative_data(A &a, V const &vec) const {
@@ -288,9 +285,8 @@ namespace nda {
     /**
      * @brief Construct a symmetry group for a given array and a list of its symmetries.
      *
-     * @details It uses nda::for_each to loop over all possible multi-dimensional indices
-     * of the given array and applies the symmetries to each index to generate the different
-     * symmetry classes.
+     * @details It uses nda::for_each to loop over all possible multi-dimensional indices of the given array and applies
+     * the symmetries to each index to generate the different symmetry classes.
      *
      * @param a nda::Array object.
      * @param sym_list List of symmetries containing nda::NdaSymmetry objects.
@@ -331,8 +327,8 @@ namespace nda {
     // Implementation of the actual symmetry reduction algorithm.
     long long iterate(std::array<long, static_cast<std::size_t>(get_rank<A>)> const &idx, operation const &op, array<bool, ndims> &checked,
                       std::vector<F> const &sym_list, long const max_length, long excursion_length = 0) {
-      // count the number of new indices found by recursively applying the symmetries
-      // to the current index and to the newly found indices
+      // count the number of new indices found by recursively applying the symmetries to the current index and to the
+      // newly found indices
       long long segment_length = 0;
 
       // loop over all symmetries
@@ -351,8 +347,8 @@ namespace nda {
             // add it to the symmetry class
             data.emplace_back(std::apply(checked.indexmap(), idxp), opp);
 
-            // increment the segment length for the current index and recursively call the function with
-            // the new index and the excursion length reset to zero
+            // increment the segment length for the current index and recursively call the function with the new index
+            // and the excursion length reset to zero
             segment_length += iterate(idxp, opp, checked, sym_list, max_length) + 1;
           }
         } else if (excursion_length < max_length) {
@@ -362,10 +358,12 @@ namespace nda {
         }
       }
 
-      // return the final value of the local segment length, which will be added
-      // to the segments length higher up in the recursive call tree
+      // return the final value of the local segment length, which will be added to the segments length higher up in the
+      // recursive call tree
       return segment_length;
     }
   };
+
+  /** @} */
 
 } // namespace nda

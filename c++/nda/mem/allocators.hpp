@@ -49,7 +49,12 @@
 
 namespace nda::mem {
 
-  /// Memory block consiting of a pointer and its size.
+  /**
+   * @addtogroup mem_allocators
+   * @{
+   */
+
+  /// Memory block consisting of a pointer and its size.
   struct blk_t {
     /// Pointer to the memory block.
     char *ptr = nullptr;
@@ -60,7 +65,7 @@ namespace nda::mem {
 
   /**
    * @brief Custom allocator that uses nda::mem::malloc to allocate memory.
-   * @tparam AdrSp nda::mem::AdressSpace in which the memory is allocated.
+   * @tparam AdrSp nda::mem::AddressSpace in which the memory is allocated.
    */
   template <AddressSpace AdrSp = Host>
   class mallocator {
@@ -80,7 +85,7 @@ namespace nda::mem {
     /// Default move assignment operator.
     mallocator &operator=(mallocator &&) = default;
 
-    /// Address space in which the memory is allocated.
+    /// nda::mem::AddressSpace in which the memory is allocated.
     static constexpr auto address_space = AdrSp;
 
     /**
@@ -95,7 +100,7 @@ namespace nda::mem {
      * @brief Allocate memory and set it to zero.
      *
      * @details The behavior depends on the address space:
-     * - It uses std::calloc for nda::mem::Host.
+     * - It uses std::calloc for `Host` nda::mem::AddressSpace.
      * - Otherwise it uses nda::mem::malloc and nda::mem::memset.
      *
      * @param s Size in bytes of the memory to allocate.
@@ -119,13 +124,12 @@ namespace nda::mem {
   };
 
   /**
-   * @brief Custom allocator that allocates a bucket of memory on the heap consisting of
-   * 64 chunks.
+   * @brief Custom allocator that allocates a bucket of memory on the heap consisting of 64 chunks.
    *
-   * @details The allocator keeps track of which chunks are free using a bitmask. Once all
-   * chunks have been allocated, it will call std::abort on any further allocation requests.
+   * @details The allocator keeps track of which chunks are free using a bitmask. Once all chunks have been allocated,
+   * it will call std::abort on any further allocation requests.
    *
-   * @note Only works with nda::mem::Host.
+   * @note Only works with `Host` nda::mem::AddressSpace.
    *
    * @tparam ChunkSize Size of the chunks in bytes.
    */
@@ -144,7 +148,7 @@ namespace nda::mem {
     /// Total size of the bucket in bytes.
     static constexpr int TotalChunkSize = 64 * ChunkSize;
 
-    /// Only nda::mem::Host is supported for this allocator.
+    /// Only `Host` nda::mem::AddressSpace is supported for this allocator.
     static constexpr auto address_space = Host;
 
 #ifdef NDA_USE_ASAN
@@ -169,7 +173,7 @@ namespace nda::mem {
     /**
      * @brief Allocate a chunk of memory in the bucket and update the bitmask.
      *
-     * @param s Size in bytes of the returned memory block (has to be < ChunkSize).
+     * @param s Size in bytes of the returned memory block (has to be < `ChunkSize`).
      * @return nda::mem::blk_t memory block.
      */
     blk_t allocate(size_t s) noexcept {
@@ -192,7 +196,7 @@ namespace nda::mem {
     /**
      * @brief Allocate a chunk of memory in the bucket, set it to zero and update the bitmask.
      *
-     * @param s Size in bytes of the returned memory block.
+     * @param s Size in bytes of the returned memory block (has to be < `ChunkSize`).
      * @return nda::mem::blk_t memory block.
      */
     blk_t allocate_zero(size_t s) noexcept {
@@ -227,7 +231,7 @@ namespace nda::mem {
 
     /**
      * @brief Get a pointer to the start of the bucket.
-     * @return Pointer to the bucket with the lowest memory address.
+     * @return Pointer to the chunk with the lowest memory address.
      */
     [[nodiscard]] const char *data() const noexcept { return p; }
 
@@ -249,10 +253,10 @@ namespace nda::mem {
   /**
    * @brief Custom allocator that uses multiple nda::mem::bucket allocators.
    *
-   * @details It uses a std::vector of bucket allocators. When all buckets in the vector
-   * are full, it simply adds a new one at the end.
+   * @details It uses a std::vector of bucket allocators. When all buckets in the vector are full, it simply adds a new
+   * one at the end.
    *
-   * @note Only works with nda::mem::AddressSpace::Host.
+   * @note Only works with `Host` nda::mem::AddressSpace.
    *
    * @tparam ChunkSize Size of the chunks in bytes.
    */
@@ -267,8 +271,7 @@ namespace nda::mem {
     // Iterator to the current bucket in use.
     typename std::vector<b_t>::iterator bu;
 
-    // Find a bucket with a free chunk, otherwise create a new one and insert it at the
-    // correct position.
+    // Find a bucket with a free chunk, otherwise create a new one and insert it at the correct position.
     [[gnu::noinline]] void find_non_full_bucket() {
       bu = std::find_if(bu_vec.begin(), bu_vec.end(), [](auto const &b) { return !b.is_full(); });
       if (bu != bu_vec.end()) return;
@@ -278,7 +281,7 @@ namespace nda::mem {
     }
 
     public:
-    /// Only nda::mem::Host is supported for this allocator.
+    /// Only `Host` nda::mem::AddressSpace is supported for this allocator.
     static constexpr auto address_space = Host;
 
     /// Default constructor.
@@ -297,10 +300,9 @@ namespace nda::mem {
     multi_bucket &operator=(multi_bucket &&) = default;
 
     /**
-     * @brief Allocate a chunk of memory in the current bucket or find a new one if the
-     * current one is full.
+     * @brief Allocate a chunk of memory in the current bucket or find a new one if the current one is full.
      *
-     * @param s Size in bytes of the returned memory block.
+     * @param s Size in bytes of the returned memory block (has to be < `ChunkSize`).
      * @return nda::mem::blk_t memory block.
      */
     blk_t allocate(size_t s) noexcept {
@@ -309,10 +311,10 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Allocate a chunk of memory in the current bucket or find a new one if the
-     * current one is full and set it to zero.
+     * @brief Allocate a chunk of memory in the current bucket or find a new one if the current one is full and set it
+     * to zero.
      *
-     * @param s Size in bytes of the returned memory block.
+     * @param s Size in bytes of the returned memory block (has to be < `ChunkSize`).
      * @return nda::mem::blk_t memory block.
      */
     blk_t allocate_zero(size_t s) noexcept {
@@ -324,8 +326,8 @@ namespace nda::mem {
     /**
      * @brief Deallocate a chunk of memory from the bucket to which it belongs.
      *
-     * @details If the bucket is empty after deallocation and it is not the only one,
-     * it is removed from the vector of buckets.
+     * @details If the bucket is empty after deallocation and it is not the only one, it is removed from the vector of
+     * buckets.
      *
      * @param b nda::mem::blk_t memory block to deallocate.
      */
@@ -351,14 +353,14 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Check if the nda::multi_bucket is empty.
+     * @brief Check if the current allocator is empty.
      * @return True if there is only one bucket in the vector and it is empty.
      */
     [[nodiscard]] bool empty() const noexcept { return bu_vec.size() == 1 && bu_vec[0].empty(); }
 
     /**
      * @brief Get the bucket vector.
-     * @return Vector with all the bucket allocators currently in use.
+     * @return std::vector with all the bucket allocators currently in use.
      */
     [[nodiscard]] auto const &buckets() const noexcept { return bu_vec; }
 
@@ -376,14 +378,14 @@ namespace nda::mem {
   };
 
   /**
-   * @brief Custom allocator that dispatches memory allocation to one of two allocators
-   * based on the size of the memory block to be allocated.
+   * @brief Custom allocator that dispatches memory allocation to one of two allocators based on the size of the memory
+   * block to be allocated.
    *
-   * @note Only works if both allocators have the same nda::mem:AddressSpace.
+   * @note Only works if both allocators have the same nda::mem::AddressSpace.
    *
    * @tparam Threshold Size in bytes that determines which allocator to use.
-   * @tparam A Allocator for small memory blocks.
-   * @tparam B Allocator for big memory blocks.
+   * @tparam A nda::mem::Allocator for small memory blocks.
+   * @tparam B nda::mem::Allocator for big memory blocks.
    */
   template <size_t Threshold, Allocator A, Allocator B>
   class segregator {
@@ -396,7 +398,7 @@ namespace nda::mem {
     public:
     static_assert(A::address_space == B::address_space);
 
-    /// Address space in which the memory is allocated.
+    /// nda::mem::AddressSpace in which the memory is allocated.
     static constexpr auto address_space = A::address_space;
 
     /// Default constructor.
@@ -415,8 +417,8 @@ namespace nda::mem {
     segregator &operator=(segregator &&) = default;
 
     /**
-     * @brief Allocate memory using the small allocator if the size is less than or equal
-     * to the threshold, otherwise use the big allocator.
+     * @brief Allocate memory using the small allocator if the size is less than or equal to the `Threshold`, otherwise
+     * use the big allocator.
      *
      * @param s Size in bytes of the memory to allocate.
      * @return nda::mem::blk_t memory block.
@@ -424,8 +426,8 @@ namespace nda::mem {
     blk_t allocate(size_t s) noexcept { return s <= Threshold ? small.allocate(s) : big.allocate(s); }
 
     /**
-     * @brief Allocate memory and set the memory to zero using the small allocator if the
-     * size is less than or equal to the threshold, otherwise use the big allocator.
+     * @brief Allocate memory and set the memory to zero using the small allocator if the size is less than or equal to
+     * the `Threshold`, otherwise use the big allocator.
      *
      * @param s Size in bytes of the memory to allocate.
      * @return nda::mem::blk_t memory block.
@@ -433,8 +435,8 @@ namespace nda::mem {
     blk_t allocate_zero(size_t s) noexcept { return s <= Threshold ? small.allocate_zero(s) : big.allocate_zero(s); }
 
     /**
-     * @brief Deallocate memory using the small allocator if the size is less than or equal
-     * to the threshold, otherwise use the big allocator.
+     * @brief Deallocate memory using the small allocator if the size is less than or equal to the `Threshold`,
+     * otherwise use the big allocator.
      *
      * @param b nda::mem::blk_t memory block to deallocate.
      */
@@ -452,11 +454,11 @@ namespace nda::mem {
   /**
    * @brief Wrap an allocator to check for memory leaks.
    *
-   * @details It simply keeps track of the memory currently being used by the allocator,
-   * i.e. the total memory allocated minus the total memory deallocated, which should never
-   * be smaller than zero and should be exactly zero when the allocator is destroyed.
+   * @details It simply keeps track of the memory currently being used by the allocator, i.e. the total memory allocated
+   * minus the total memory deallocated, which should never be smaller than zero and should be exactly zero when the
+   * allocator is destroyed.
    *
-   * @tparam A nda::Allocator type to wrap.
+   * @tparam A nda::mem::Allocator type to wrap.
    */
   template <Allocator A>
   class leak_check : A {
@@ -464,7 +466,7 @@ namespace nda::mem {
     long memory_used = 0;
 
     public:
-    /// Address space in which the memory is allocated.
+    /// nda::mem::AddressSpace in which the memory is allocated.
     static constexpr auto address_space = A::address_space;
 
     /// Default constructor.
@@ -484,7 +486,7 @@ namespace nda::mem {
 
     /**
      * @brief Destructor that checks for memory leaks.
-     * @details Aborts the program in debug mode if there is a memory leak.
+     * @details In debug mode, it aborts the program if there is a memory leak.
      */
     ~leak_check() {
       if (!empty()) {
@@ -521,7 +523,7 @@ namespace nda::mem {
 
     /**
      * @brief Deallocate memory and update the total memory used.
-     * @details Aborts the program in debug mode if the total memory used is smaller than zero.
+     * @details In debug mode, it aborts the program if the total memory used is smaller than zero.
      * @param b nda::mem::blk_t memory block to deallocate.
      */
     void deallocate(blk_t b) noexcept {
@@ -559,12 +561,11 @@ namespace nda::mem {
   /**
    * @brief Wrap an allocator to gather statistics about memory allocation.
    *
-   * @details It gathers a histogram of the different allocation sizes. The histogram is
-   * a std::vector of size 65, where element \f$ i \in \{0,...,63\} \f$ contains the number
-   * of allocations with a size in the range \f$ [2^{64-i-1}, 2^{64-i}) \f$ and the last
-   * element contains the number of allocations of size zero.
+   * @details It gathers a histogram of the different allocation sizes. The histogram is a std::vector of size 65, where
+   * element \f$ i \in \{0,...,63\} \f$ contains the number of allocations with a size in the range
+   * \f$ [2^{64-i-1}, 2^{64-i}) \f$ and the last element contains the number of allocations of size zero.
    *
-   * @tparam A nda::Allocator type to wrap.
+   * @tparam A nda::mem::Allocator type to wrap.
    */
   template <Allocator A>
   class stats : A {
@@ -572,7 +573,7 @@ namespace nda::mem {
     std::vector<uint64_t> hist = std::vector<uint64_t>(65, 0);
 
     public:
-    /// Address space in which the memory is allocated.
+    /// nda::mem::AddressSpace in which the memory is allocated.
     static constexpr auto address_space = A::address_space;
 
     /// Default constructor.
@@ -651,5 +652,7 @@ namespace nda::mem {
       for (int i = 0; i < 64; ++i) { os << "[2^" << i << ", 2^" << i + 1 << "): " << hist[63 - i] << "\n"; }
     }
   };
+
+  /** @} */
 
 } // namespace nda::mem

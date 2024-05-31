@@ -18,8 +18,7 @@
 
 /**
  * @file
- * @brief Provides a way to check the bounds when accessing elements/slices of an
- * array or a view.
+ * @brief Provides a way to check the bounds when accessing elements/slices of an array or a view.
  */
 
 #pragma once
@@ -92,17 +91,16 @@ namespace nda::detail {
 namespace nda {
 
   /**
+   * @ingroup layout_utils
    * @brief Check if the given indices/arguments are within the bounds of an array/view.
    *
-   * @details It uses the shape and rank of the array/view to check if the given arguments
-   * are within bounds. If an error is detected, it throws a std::runtime_error with the
-   * error message.
+   * @details It uses the shape and rank of the array/view to check if the given arguments are within bounds. If an
+   * error is detected, it throws a std::runtime_error with the error message.
    *
    * @tparam Args Types of the arguments to be checked.
    * @param rank Rank of the array/view.
    * @param lengths Shape of the array/view.
-   * @param args Arguments (`long` indices, nda::range, nda::range::all_t or nda::ellipsis)
-   * to be checked.
+   * @param args Arguments (`long` indices, `nda::range`, `nda::range::all_t` or nda::ellipsis) to be checked.
    */
   template <typename... Args>
   void assert_in_bounds(int rank, long const *lengths, Args const &...args) {

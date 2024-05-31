@@ -78,6 +78,11 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup av_math
+   * @{
+   */
+
   // --- VIMEXPAND_START  --DO NOT EDIT BELOW --
 
 
@@ -323,4 +328,6 @@ namespace nda {
          return sqrt(x);
        })(std::forward<A>(a));
   }
+
+  /** @} */
 }

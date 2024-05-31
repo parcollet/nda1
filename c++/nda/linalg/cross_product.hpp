@@ -16,8 +16,7 @@
 
 /**
  * @file
- * @brief Provides a cross product for 3-dimensional vectors or other arrays/views
- * of rank 1.
+ * @brief Provides a cross product for 3-dimensional vectors or other arrays/views of rank 1.
  */
 
 #pragma once
@@ -29,6 +28,7 @@
 namespace nda::linalg {
 
   /**
+   * @ingroup linalg_tools
    * @brief Compute the cross product of two 3-dimensional vectors.
    *
    * @tparam V Vector type.

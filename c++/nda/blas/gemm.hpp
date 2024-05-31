@@ -39,17 +39,20 @@
 namespace nda::blas {
 
   /**
-   * @brief Multiply two matrices and add the result to another matrix.
+   * @addtogroup linalg_blas
+   * @{
+   */
+
+  /**
+   * @brief Generic nda::blas::gemm implementation for types not supported by BLAS/LAPACK.
    *
-   * @details Generic nda::blas::gemm implementation for types not supported by BLAS/LAPACK.
-   *
-   * @tparam A Matrix type.
-   * @tparam B Matrix type.
-   * @tparam C Matrix type.
-   * @param alpha Scalar constant.
+   * @tparam A Some matrix type.
+   * @tparam B Some matrix type.
+   * @tparam C Some matrix type.
+   * @param alpha Input scalar.
    * @param a Input matrix of size m by k.
    * @param b Input matrix of size k by n.
-   * @param beta Scalar constant.
+   * @param beta Input scalar.
    * @param c Input/Output matrix of size m by n.
    */
   template <Matrix A, Matrix B, MemoryMatrix C>
@@ -70,23 +73,25 @@ namespace nda::blas {
    *
    * @details This function performs one of the matrix-matrix operations
    * \f[
-   *   /mathbf{C} \leftarrow \alpha \mathrm{op}(/mathbf{A}) \mathrm{op}(/mathbf{B}) + \beta /mathbf{C} ;,
+   *   \mathbf{C} \leftarrow \alpha \mathrm{op}(\mathbf{A}) \mathrm{op}(\mathbf{B}) + \beta \mathbf{C} \;,
    * \f]
-   * where \f$ \mathrm{op}(/mathbf{X}) \f$ is one of
-   * - \f$ \mathrm{op}(/mathbf{X}) = \mathbf{X} \f$,
-   * - \f$ \mathrm{op}(/mathbf{X}) = \mathbf{X}^T \f$ or
-   * - \f$ \mathrm{op}(/mathbf{X}) = \mathbf{X}^H \f$ and
-   * \f$ \alpha \f$ and \f$ \beta \f$ are scalars, and \f$ /mathbf{A} \f$, \f$ /mathbf{B} \f$
-   * are matrices with \f$ \mathrm{op}(A) \f$ is an m by k matrix, \f$ \mathrm{op}(B) \f$ is a
-   * k by n matrix and \f$ \mathrm{op}(C) \f$ is an m by n matrix.
+   * where \f$ \mathrm{op}(\mathbf{X}) \f$ is one of
+   *
+   * - \f$ \mathrm{op}(\mathbf{X}) = \mathbf{X} \f$,
+   * - \f$ \mathrm{op}(\mathbf{X}) = \mathbf{X}^T \f$ or
+   * - \f$ \mathrm{op}(\mathbf{X}) = \mathbf{X}^H \f$.
+   *
+   * Here, \f$ \alpha \f$ and \f$ \beta \f$ are scalars, and \f$ \mathbf{A} \f$, \f$ \mathbf{B} \f$ are matrices with
+   * \f$ \mathrm{op}(\mathbf{A}) \f$ is an m by k matrix, \f$ \mathrm{op}(\mathbf{B}) \f$ is a k by n matrix and
+   * \f$ \mathrm{op}(\mathbf{C}) \f$ is an m by n matrix.
    *
    * @tparam A nda::Matrix type.
    * @tparam B nda::Matrix type.
    * @tparam C nda::MemoryMatrix type.
-   * @param alpha Scalar constant.
+   * @param alpha Input scalar.
    * @param a Input matrix.
    * @param b Input matrix.
-   * @param beta Scalar constant.
+   * @param beta Input scalar.
    * @param c Input/Output matrix of size m by n.
    */
   template <Matrix A, Matrix B, MemoryMatrix C>
@@ -138,5 +143,7 @@ namespace nda::blas {
       }
     }
   }
+
+  /** @} */
 
 } // namespace nda::blas

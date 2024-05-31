@@ -29,9 +29,16 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup layout_pols
+   * @{
+   */
+
+  /// @cond
   // Forward declarations.
   struct C_stride_layout;
   struct F_stride_layout;
+  /// @endcond
 
   /**
    * @brief Contigous layout policy with C-order (row-major order).
@@ -137,9 +144,11 @@ namespace nda {
 
   namespace detail {
 
+    /// @cond
     // Forward declarations.
     template <typename L>
     struct layout_to_policy;
+    /// @endcond
 
     // Get the correct layout policy given a general nda::idx_map.
     template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp>
@@ -174,5 +183,7 @@ namespace nda {
     };
 
   } // namespace detail
+
+  /** @} */
 
 } // namespace nda

@@ -58,26 +58,50 @@
 namespace nda {
 
   /**
-   * @brief A generic n-dimensional array.
+   * @ingroup arrays_views
+   * @brief A generic multi-dimensional array.
    *
-   * @details Together with nda::basic_array_view, this class forms the backbone of the
-   * nda library. It is templated with the following parameters:
+   * @details Together with nda::basic_array_view, this class forms the backbone of the **nda** library. It is templated
+   * with the following parameters:
    *
-   * - ValueType: This is the type of the elements stored in the array. Most of the time,
-   * this will be a scalar type like an int, double or std::complex<double>, but it can also
-   * be a more complex type like a custom class or a another nda::basic_array.
-   * - Rank: Integer specifying the number of dimensions of the array. This is a compile-time
-   * constant.
-   * - LayoutPolicy: The layout policy specifies how the array views the memory it uses and how
-   * it access its elements. It provides a mapping from multi-dimensional to linear indices and
-   * vice versa.
-   * - Algebra: The algebra specifies how the array behaves when it is used in an expression.
-   * Possible values are 'A' (array), 'M' (matrix) and 'V' (vector).
-   * - ContainerPolicy: The container policy specifies how and where the data is stored. It is
-   * responsible for allocating/deallocating the memory.
+   * - `ValueType`: This is the type of the elements stored in the array. Most of the time, this will be a scalar type
+   * like an int, double or std::complex<double>, but it can also be a more complex type like a custom class or a
+   * another nda::basic_array.
+   * - `Rank`: Integer specifying the number of dimensions of the array. This is a compile-time constant.
+   * - `LayoutPolicy`: The layout policy specifies how the array views the memory it uses and how it accesses its
+   * elements. It provides a mapping from multi-dimensional to linear indices and vice versa (see @ref layout_pols).
+   * - `Algebra`: The algebra specifies how an array behaves when it is used in an expression. Possible values are 'A'
+   * (array), 'M' (matrix) and 'V' (vector) (see nda::get_algebra).
+   * - `ContainerPolicy`: The container policy specifies how and where the data is stored. It is responsible for
+   * allocating/deallocating the memory (see @ref mem_handles).
    *
-   * In contrast to views (see nda::basic_array_view), regular arrays own the memory they use
-   * for data storage.
+   * In contrast to views (see nda::basic_array_view), regular arrays own the memory they use for data storage.
+   *
+   * @code{.cpp}
+   * // create a regular 3x2 array of ones
+   * auto arr = nda::ones<int>(3, 2);
+   * std::cout << arr << std::endl;
+   *
+   * // assign the value 42 to the first row
+   * arr(0, nda::ellipsis{}) = 42;
+   * std::cout << arr << std::endl;
+   * @endcode
+   *
+   * Output:
+   *
+   * @code{bash}
+   *
+   * [[1,1]
+   *  [1,1]
+   *  [1,1]]
+   *
+   * [[42,42]
+   *  [1,1]
+   *  [1,1]]
+   * @endcode
+   *
+   * Arrays and views share a lot of the same operations and functionalities. To turn a view into a regular array, use
+   * nda::make_regular.
    *
    * @tparam ValueType Type stored in the array.
    * @tparam Rank Number of dimensions of the array.
@@ -94,19 +118,19 @@ namespace nda {
     static_assert((Algebra != 'V') or (Rank == 1), "Internal error in nda::basic_array: Algebra 'V' requires a rank 1 array");
 
     public:
-    /// Type of the values in the array.
+    /// Type of the values in the array (can not be const).
     using value_type = ValueType;
 
-    /// Type of the memory layout policy.
+    /// Type of the memory layout policy (see @ref layout_pols).
     using layout_policy_t = LayoutPolicy;
 
-    /// Type of the memory layout  (an nda::idx_map).
+    /// Type of the memory layout (an nda::idx_map).
     using layout_t = typename LayoutPolicy::template mapping<Rank>;
 
-    /// Type of the container policy.
+    /// Type of the container policy (see @ref mem_pols).
     using container_policy_t = ContainerPolicy;
 
-    /// Type of the memory handle.
+    /// Type of the memory handle (see @ref mem_handles).
     using storage_t = typename ContainerPolicy::template handle<ValueType>;
 
     /// The associated regular type.
@@ -149,13 +173,13 @@ namespace nda {
      * @brief Convert the current array to a view with an 'A' (array) algebra.
      * @return An nda::basic_array_view of the current array.
      */
-    basic_array_view<ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy> as_array_view() { return {*this}; };
+    auto as_array_view() { return basic_array_view<ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy>{*this}; };
 
     /**
      * @brief Convert the current array to a view with an 'A' (array) algebra.
-     * @return A const nda::basic_array_view of the current array.
+     * @return An nda::basic_array_view of the current array with const value type.
      */
-    basic_array_view<const ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy> as_array_view() const { return {*this}; };
+    auto as_array_view() const { return basic_array_view<const ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy>{*this}; };
 
     /// @deprecated Create the transpose of a 2-dimensional array. Use nda::transpose instead.
     [[deprecated]] auto transpose()
@@ -171,28 +195,19 @@ namespace nda {
       return permuted_indices_view<encode(std::array<int, 2>{1, 0})>(*this);
     }
 
-    /**
-     * @brief Default constructor constructs an empty array.
-     * @details We need to provide a user-defined constructor to avoid value initialization
-     * of the sso buffer.
-     */
-    basic_array(){}; // NOLINT (see explanation above)
+    /// Default constructor constructs an empty array with a default constructed memory handle and layout.
+    basic_array(){}; // NOLINT (user-defined constructor to avoid value initialization of the sso buffer)
 
-    /// Default move constructor (everything is done in the memory handle).
+    /// Default move constructor moves the memory handle and layout.
     basic_array(basic_array &&) = default;
 
-    /**
-     * @brief Copy constructor makes a deep copy of the other array.
-     * @param a Other array to be copied.
-     */
-    explicit basic_array(basic_array const &a) : lay(a.indexmap()), sto(a.sto) {}
+    /// Default copy constructor copies the memory handle and layout.
+    explicit basic_array(basic_array const &a) = default;
 
     /**
-     * @brief Construct an array from another array with a different algebra and/or container
-     * policy.
+     * @brief Construct an array from another array with a different algebra and/or container policy.
      *
-     * @details It takes the memory layout of the other array and copies the data from the
-     * memory handle.
+     * @details It takes the memory layout of the other array and copies the data from the memory handle.
      *
      * @tparam A Algebra of the other array.
      * @tparam CP Container policy of the other array.
@@ -204,9 +219,8 @@ namespace nda {
     /**
      * @brief Construct an array with the given dimensions.
      *
-     * @details The integer type must be convertible to long and there must be exactly Rank
-     * arguments. It depends on the value type and the container policy whether the data is
-     * initialized with zeros or not.
+     * @details The integer type must be convertible to long and there must be exactly `Rank` arguments. It depends on
+     * the value type and the container policy whether the data is initialized with zeros or not.
      *
      * @tparam Ints Integer types.
      * @param is Extent (number of elements) along each dimension.
@@ -220,26 +234,24 @@ namespace nda {
     }
 
     /**
-     * @brief Construct a 1-dimensional array with the given size and initialized to the
-     * given scalar value.
+     * @brief Construct a 1-dimensional array with the given size and initialize each element to the given scalar value.
      *
      * @tparam Int Integer type.
      * @tparam RHS Type of the scalar value to initialize the array with.
-     * @param i Size of the array.
-     * @param val Scalar value to initialize the array with.
+     * @param sz Size of the array.
+     * @param val Value to initialize the array with.
      */
     template <std::integral Int, typename RHS>
-    explicit basic_array(Int i, RHS const &val)
+    explicit basic_array(Int sz, RHS const &val)
       requires((Rank == 1 and is_scalar_for_v<RHS, basic_array>))
-       : lay(layout_t{std::array{long(i)}}), sto{lay.size()} {
+       : lay(layout_t{std::array{long(sz)}}), sto{lay.size()} {
       assign_from_scalar(val);
     }
 
     /**
      * @brief Construct an array with the given shape.
      *
-     * @details It depends on the value type and the container policy whether the data is
-     * initialized with zeros or not.
+     * @details It depends on the value type and the container policy whether the data is initialized with zeros or not.
      *
      * @tparam Int Integer type.
      * @param shape Shape of the array.
@@ -252,8 +264,7 @@ namespace nda {
     /**
      * @brief Construct an array with the given memory layout.
      *
-     * @details It depends on the value type and the container policy whether the data is
-     * initialized with zeros or not.
+     * @details It depends on the value type and the container policy whether the data is initialized with zeros or not.
      *
      * @param layout Memory layout.
      */
@@ -262,19 +273,17 @@ namespace nda {
        : lay{layout}, sto{lay.size()} {}
 
     /**
-     * @brief Construct an array with the given memory layout and with an existing memory
-     * handle/storage.
+     * @brief Construct an array with the given memory layout and with an existing memory handle/storage.
      *
-     * @details The memory handle is moved into the array.
+     * @details The memory handle is moved and the layout is copied into the array.
      *
      * @param layout Memory layout.
-     * @param storage Memory handle/Storage.
+     * @param storage Memory handle/storage.
      */
     explicit basic_array(layout_t const &layout, storage_t &&storage) noexcept : lay{layout}, sto{std::move(storage)} {}
 
     /**
-     * @brief Construct an array from an nda::ArrayOfRank object with the same rank as the
-     * array by copying each element.
+     * @brief Construct an array from an nda::ArrayOfRank object with the same rank by copying each element.
      *
      * @tparam A nda::ArrayOfRank type.
      * @param a nda::ArrayOfRank object.
@@ -295,8 +304,8 @@ namespace nda {
     /**
      * @brief Construct an array from an nda::ArrayInitializer object.
      *
-     * @details This is typically used in delayed operations (e.g. mpi) that requires the
-     * knowledge of the data pointer to execute.
+     * @details An nda::ArrayInitializer is typically returned by delayed operations (see e.g. nda::mpi_gather).
+     * The constructor can then be used to create the resulting array.
      *
      * @tparam Initializer nda::ArrayInitializer type.
      * @param initializer nda::ArrayInitializer object.
@@ -366,14 +375,13 @@ namespace nda {
     }
 
     /**
-     * @brief Construct a 2-dimensional array from another 2-dimensional array with a
-     * different algebra.
+     * @brief Construct a 2-dimensional array from another 2-dimensional array with a different algebra.
      *
-     * @details The given array is moved into the constructed array. Note that for
-     * stack/sso arrays, this might involve a copy of the data.
+     * @details The given array is moved into the constructed array. Note that for nda::stack_array or other array
+     * types, this might still involve a copy of the data.
      *
      * @tparam A2 Algebra of the given array.
-     * @param a Array to move.
+     * @param a Other array.
      */
     template <char A2>
     explicit basic_array(basic_array<ValueType, 2, LayoutPolicy, A2, ContainerPolicy> &&a) noexcept
@@ -441,8 +449,8 @@ namespace nda {
     /**
      * @brief Make a random-initialized array with the given shape.
      *
-     * @details The random values are take from a uniform distribution over [0, 1). For a
-     * complex array, both real and imaginary parts are initialized with random values.
+     * @details The random values are take from a uniform distribution over [0, 1). For a complex array, both real and
+     * imaginary parts are initialized with random values.
      *
      * @tparam Int Integer type.
      * @param shape Shape of the array.
@@ -466,8 +474,8 @@ namespace nda {
     /**
      * @brief Make a random-initialized array with the given dimensions.
      *
-     * @details The random values are take from a uniform distribution over [0, 1). For a
-     * complex array, both real and imaginary parts are initialized with random values.
+     * @details The random values are take from a uniform distribution over [0, 1). For a complex array, both real and
+     * imaginary parts are initialized with random values.
      *
      * @tparam Ints Integer types.
      * @param is Extent (number of elements) along each dimension.
@@ -480,15 +488,17 @@ namespace nda {
       return rand(std::array<long, Rank>{is...});
     }
 
-    /// Default move assignment (everything is done in the memory handle).
+    /// Default move assignment moves the memory handle and layout from the right hand side array.
     basic_array &operator=(basic_array &&) = default;
 
-    /// Default copy assignment (everything is done in the memory handle).
+    /// Default copy assignment copies the memory handle and layout from the right hand side array.
     basic_array &operator=(basic_array const &) = default;
 
     /**
-     * @brief Assignment operator copies the elements of another array with a different algebra
-     * and/or container policy.
+     * @brief Assignment operator makes a deep copy of another array with a different algebra and/or container policy.
+     *
+     * @details The array is first resized to the shape of the right hand side and the elements are copied. This might
+     * invalidate all references/views to the existing storage.
      *
      * @tparam A Algebra of the other array.
      * @tparam CP Container policy of the other array.
@@ -503,8 +513,8 @@ namespace nda {
     /**
      * @brief Assignment operator makes a deep copy of an nda::ArrayOfRank object.
      *
-     * @details The array is resized to the shape of the right hand side and the elements are
-     * copied. This might invalidate all references to the storage.
+     * @details The array is first resized to the shape of the right hand side and the elements are copied. This might
+     * invalidate all references/views to the existing storage.
      *
      * @tparam RHS nda::ArrayOfRank type.
      * @param rhs Right hand side of the assignment operation.
@@ -523,7 +533,7 @@ namespace nda {
      * - 'A' (array) and 'V' (vector): The scalar is assigned to all elements of the array.
      * - 'M' (matrix): The scalar is assigned to the diagonal elements of the shorter dimension.
      *
-     * @tparam RHS Scalar type.
+     * @tparam RHS Type of the scalar.
      * @param rhs Right hand side of the assignment operation.
      */
     template <typename RHS>
@@ -537,8 +547,8 @@ namespace nda {
     /**
      * @brief Assignment operator uses an nda::ArrayInitializer to assign to the array.
      *
-     * @details The array is resized to the shape of the initializer. This might invalidate all
-     * references to the storage.
+     * @details The array is resized to the shape of the initializer. This might invalidate all references/views to the
+     * existing storage.
      *
      * @tparam Initializer nda::ArrayInitializer type.
      * @param initializer Initializer object.
@@ -553,8 +563,9 @@ namespace nda {
     /**
      * @brief Resize the array to a new shape.
      *
-     * @details The content of the resulting array is undefined since it makes no copy of
-     * previous data. This operations invalidates all references to the storage.
+     * @details Resizing is only performed if the storage is not null and if the new size is different from the previous
+     * size. If resizing is performed, the content of the resulting array is undefined since it makes no copy of the
+     * previous data and all references/views to the existing storage will be invalidated.
      *
      * @tparam Ints Integer types.
      * @param is New extent (number of elements) along each dimension.
@@ -569,10 +580,9 @@ namespace nda {
     /**
      * @brief Resize the array to a new shape.
      *
-     * @details Resizing is only performed if the storage is not null and if the new size is
-     * different from the previous size. The content of the resulting array may be undefined
-     * since it makes no copy of previous data. This operation may invalidate all references
-     * to the storage.
+     * @details Resizing is only performed if the storage is not null and if the new size is different from the previous
+     * size. If resizing is performed, the content of the resulting array is undefined since it makes no copy of the
+     * previous data and all references/views to the existing storage will be invalidated.
      *
      * @param shape New shape of the array.
      */

@@ -25,6 +25,11 @@
 
 namespace nda::clef::literals {
 
+  /**
+   * @addtogroup clef_placeholders
+   * @{
+   */
+
   // Define literal placeholders starting from the end of the allowed index spectrum.
 #define PH(I)                                                                                                                                        \
   (placeholder<63 - (I)> {})
@@ -63,5 +68,7 @@ namespace nda::clef::literals {
   constexpr auto tau_ = PH(10);
 
 #undef PH
+
+/** @} */
 
 } // namespace nda::clef::literals

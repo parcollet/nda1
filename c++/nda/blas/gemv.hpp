@@ -37,17 +37,20 @@
 namespace nda::blas {
 
   /**
-   * @brief Multiply a matrix by a vector and add it to another vector.
+   * @addtogroup linalg_blas
+   * @{
+   */
+
+  /**
+   * @brief Generic nda::blas::gemv implementation for types not supported by BLAS/LAPACK.
    *
-   * @details Generic nda::blas::gemv implementation for types not supported by BLAS/LAPACK.
-   *
-   * @tparam A Matrix type.
-   * @tparam X Vector type.
-   * @tparam Y Vector type.
-   * @param alpha Scalar constant.
+   * @tparam A Some matrix type.
+   * @tparam X Some vector type.
+   * @tparam Y Some vector type.
+   * @param alpha Input scalar.
    * @param a Input matrix of size m by n.
    * @param x Input vector of size n.
-   * @param beta Scalar constant.
+   * @param beta Input scalar.
    * @param y Input/Output vector of size m.
    */
   template <typename A, typename X, typename Y>
@@ -64,19 +67,21 @@ namespace nda::blas {
    * @brief Interface to the BLAS `gemv` routine.
    *
    * @details This function performs one of the matrix-vector operations
-   * - \f$ /mathbf{y} \leftarrow \alpha /mathbf{A} /mathbf{x} + \beta /mathbf{y} \f$,
-   * - \f$ /mathbf{y} \leftarrow \alpha /mathbf{A}^T /mathbf{x} + \beta /mathbf{y} \f$,
-   * - \f$ /mathbf{y} \leftarrow \alpha /mathbf{A}^H /mathbf{x} + \beta /mathbf{y} \f$,
-   * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, \f$ /mathbf{x} \f$ and \f$ /mathbf{y} \f$
-   * are vectors and \f$ /mathbf{A} \f$ is an m by n matrix.
+   *
+   * - \f$ \mathbf{y} \leftarrow \alpha \mathbf{A} \mathbf{x} + \beta \mathbf{y} \f$,
+   * - \f$ \mathbf{y} \leftarrow \alpha \mathbf{A}^T \mathbf{x} + \beta \mathbf{y} \f$,
+   * - \f$ \mathbf{y} \leftarrow \alpha \mathbf{A}^H \mathbf{x} + \beta \mathbf{y} \f$,
+   *
+   * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, \f$ \mathbf{x} \f$ and \f$ \mathbf{y} \f$
+   * are vectors and \f$ \mathbf{A} \f$ is an m by n matrix.
    *
    * @tparam A nda::Matrix type.
    * @tparam X nda::MemoryVector type.
    * @tparam Y nda::MemoryVector type.
-   * @param alpha Scalar constant.
+   * @param alpha Input scalar.
    * @param a Input matrix of size m by n.
    * @param x Input vector of size n.
-   * @param beta Scalar constant.
+   * @param beta Input scalar.
    * @param y Input/Output vector of size m.
    */
   template <Matrix A, MemoryVector X, MemoryVector Y>
@@ -118,5 +123,7 @@ namespace nda::blas {
       f77::gemv(op_a, m, n, alpha, mat.data(), get_ld(mat), x.data(), x.indexmap().strides()[0], beta, y.data(), y.indexmap().strides()[0]);
     }
   }
+
+  /** @} */
 
 } // namespace nda::blas

@@ -35,6 +35,11 @@
 namespace std { // has to be in the right namespace for ADL
 
   /**
+   * @addtogroup utils_std
+   * @{
+   */
+
+  /**
    * @brief Write a std::array to an output stream.
    *
    * @tparam T Value type of the array.
@@ -359,15 +364,15 @@ namespace nda::stdutil {
   /**
    * @brief Calculate the dot product of two std::array objects.
    *
-   * @warning This function simply calculates the sum of the element-wise products of the two arrays.
-   * For arrays with complex numbers, this might not be what you expect from a dot product.
+   * @warning This function simply calculates the sum of the element-wise products of the two arrays. For arrays with
+   * complex numbers, this might not be what you expect from a dot product.
    *
    * @tparam T Value type of input array #1.
    * @tparam U Value type of input array #2.
    * @tparam R Size of the input arrays.
    * @param a1 Input array #1.
    * @param a2 Input array #2.
-   * @return Dot product.
+   * @return Sum of the element-wise products of the two arrays.
    */
   template <typename T, typename U, size_t R>
   constexpr auto dot_product(std::array<T, R> const &a1, std::array<U, R> const &a2) {
@@ -379,6 +384,8 @@ namespace nda::stdutil {
       return res;
     }
   }
+
+  /** @}  */
 
 } // namespace nda::stdutil
 

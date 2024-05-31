@@ -16,8 +16,7 @@
 
 /**
  * @file
- * @brief Provides functions to transform the memory layout of an nda::basic_array
- * or nda::basic_array_view.
+ * @brief Provides functions to transform the memory layout of an nda::basic_array or nda::basic_array_view.
  */
 
 #pragma once
@@ -44,14 +43,28 @@
 namespace nda {
 
   /**
+   * @addtogroup av_factories
+   * @{
+   */
+
+  /**
    * @brief Transform the memory layout of an nda::basic_array or nda::basic_array_view.
+   *
+   * @details Depending on the input type `A`, the function does the following:
+   * - If `A` is a regular rvalue array, return a new regular array with the given layout.
+   * - Otherwise it returns a view with the given layout and
+   *   - the same value type as `A` if `A` is non-const.
+   *   - the const value type of `A` if `A` is const.
+   *
+   * The algebra of the transformed array/view is the same as the input array/view, except if its rank is different.
+   * Then the algebra is set to 'A'.
    *
    * @tparam A nda::MemoryArray type.
    * @tparam NewLayoutType nda::idx_map type.
    * @param a Array/View to transform.
    * @param new_layout New memory layout.
-   * @return If the input is an rvalue array, return a new array with the given layout.
-   * Otherwise, return a view with the given layout.
+   * @return If the input is an rvalue array, return a new array with the given layout. Otherwise, return a view with
+   * the given layout.
    */
   template <MemoryArray A, typename NewLayoutType>
   auto map_layout_transform([[maybe_unused]] A &&a, [[maybe_unused]] NewLayoutType const &new_layout) {
@@ -78,6 +91,11 @@ namespace nda {
 
   /**
    * @brief Reshape an nda::basic_array or nda::basic_array_view.
+   *
+   * @details The input array/view is assumed to be contiguous and in C- or Fortan-order and the size of the reshaped
+   * array/view must be the same as the input.
+   *
+   * It calls nda::map_layout_transform with the given shape.
    *
    * @tparam A nda::MemoryArray type.
    * @tparam Int Integral type.
@@ -106,6 +124,8 @@ namespace nda {
   /**
    * @brief Reshape an nda::basic_array or nda::basic_array_view.
    *
+   * @details See nda::reshape(A &&, std::array< Int, R > const &).
+   *
    * @tparam A nda::MemoryArray type.
    * @tparam Ints Integral types
    * @param a Array/View to reshape.
@@ -124,12 +144,13 @@ namespace nda {
   }
 
   /**
-   * @brief Flatten an nda::basic_array or nda::basic_array_view to a 1-dimensional
-   * array/view by reshaping it.
+   * @brief Flatten an nda::basic_array or nda::basic_array_view to a 1-dimensional array/view by reshaping it.
+   *
+   * @details It calls nda::reshape with a 1-dimensional shape of the same size as the original array/view.
    *
    * @tparam A nda::MemoryArray type.
    * @param a Array/View to flatten.
-   * @return An 1-dimensional array/view with the same size as original array/view.
+   * @return An 1-dimensional array/view with the same size as the original array/view.
    */
   template <MemoryArray A>
   auto flatten(A &&a) {
@@ -139,8 +160,8 @@ namespace nda {
   /**
    * @brief Permute the indices/dimensions of an nda::basic_array or nda::basic_array_view.
    *
-   * @details It calls the nda::idx_map::transpose method of the nda::idx_map of the
-   * array/view.
+   * @details It first calls the nda::idx_map::transpose method of the nda::idx_map of the array/view to get the new
+   * layout and then calls nda::map_layout_transform.
    *
    * @tparam Permutation Permutation encoded as an integer to apply to the indices.
    * @tparam A nda::MemoryArray type.
@@ -155,14 +176,13 @@ namespace nda {
   /**
    * @brief Transpose the memory layout of an nda::MemoryArray or an nda::expr_call.
    *
-   * @details For nda::MemoryArray types, it calls nda::permuted_indices_view with the
-   * reverse identity permutation. For nda::expr_call types, it calls nda::map with the
-   * transposed array.
+   * @details For nda::MemoryArray types, it calls nda::permuted_indices_view with the reverse identity permutation.
+   * For nda::expr_call types, it calls nda::map with the transposed array.
    *
    * @tparam A nda::MemoryArray or nda::expr_call type.
    * @param a Array/View or expression call.
-   * @return An array/view with transposed memory layout or a new nda::expr_call with the
-   * transposed array as the argument.
+   * @return An array/view with transposed memory layout or a new nda::expr_call with the transposed array as the
+   * argument.
    */
   template <typename A>
   auto transpose(A &&a)
@@ -179,6 +199,9 @@ namespace nda {
   /**
    * @brief Transpose two indices/dimensions of an nda::basic_array or nda::basic_array_view.
    *
+   * @details It calls nda::permuted_indices_view with the permutation that represents the transposition of the given
+   * indices.
+   *
    * @tparam I First index/dimension to transpose.
    * @tparam J Second index/dimension to transpose.
    * @tparam A nda::MemoryArray type.
@@ -194,19 +217,22 @@ namespace nda {
 
   // FIXME : use "magnetic" placeholder
   /**
-   * @brief Create a new nda::basic_array or nda::basic_array_view by grouping indices together
-   * of a given array/view.
+   * @brief Create a new nda::basic_array or nda::basic_array_view by grouping indices together of a given array/view.
    *
    * @details The resulting array/view has the same number of dimensions as given index groups.
+   *
+   * It first calls nda::group_indices_layout to create a new nda::idx_map with the grouped indices and then calls
+   * nda::map_layout_transform with the new layout.
    *
    * It can be used as follows:
    *
    * @code{.cpp}
+   * auto arr = nda::rand<double>(3, 4, 5, 6);
    * auto view = nda::group_indices_view(arr, idx_group<0, 1>, idx_group<2, 3>);
    * @endcode
    *
-   * In this examples a 4-dimensional array is transformed into a 2-dimensional array by grouping
-   * the first and the last two indices together.
+   * In this examples a 4-dimensional array `arr` is transformed into a 2-dimensional view by grouping the first and
+   * the last two indices together.
    *
    * @tparam A nda::MemoryArray type.
    * @tparam IdxGrps Groups of indices.
@@ -232,12 +258,12 @@ namespace nda {
   } // namespace detail
 
   /**
-   * @brief Add N dimensions of size 1 to a given nda::basic_array or nda::basic_array_view.
+   * @brief Add `N` fast varying dimensions of size 1 to a given nda::basic_array or nda::basic_array_view.
    *
    * @tparam N Number of dimensions to add.
    * @tparam A nda::MemoryArray type.
    * @param a Array/View to transform.
-   * @return An array/view with N dimensions of size 1 added to the original array/view.
+   * @return An array/view with `N` dimensions of size 1 added to the original array/view.
    */
   template <int N, typename A>
   auto reinterpret_add_fast_dims_of_size_one(A &&a)
@@ -253,5 +279,7 @@ namespace nda {
     auto ones_n = stdutil::make_initialized_array<N>(1l);
     return map_layout_transform(std::forward<A>(a), new_lay_t{stdutil::join(lay.lengths(), ones_n), stdutil::join(lay.strides(), ones_n)});
   }
+
+  /** @} */
 
 } // namespace nda

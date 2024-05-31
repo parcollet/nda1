@@ -35,12 +35,14 @@
 namespace nda {
 
   /**
-   * @brief Calculate the p-norm of an nda::ArrayOfRank<1> object \f$ \mathbf{x} \f$ with
-   * scalar values. The p-norm is defines as
+   * @ingroup linalg_tools
+   * @brief Calculate the p-norm of an nda::ArrayOfRank<1> object \f$ \mathbf{x} \f$ with scalar values.
+   * The p-norm is defined as
    * \f[
    *   || \mathbf{x} ||_p = \left( \sum_{i=0}^{N-1} |x_i|^p \right)^{1/p}
    * \f]
    * with the special cases (following numpy.linalg.norm convention)
+   *
    * - \f$ || \mathbf{x} ||_0 = \text{number of non-zero elements} \f$,
    * - \f$ || \mathbf{x} ||_{\infty} = \max_i |x_i| \f$,
    * - \f$ || \mathbf{x} ||_{-\infty} = \min_i |x_i| \f$.

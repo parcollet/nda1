@@ -29,6 +29,7 @@
 
 namespace nda {
 
+  /// @cond
   // Forward declarations
   template <char OP, ArrayOrScalar L, ArrayOrScalar R>
   struct expr;
@@ -36,10 +37,16 @@ namespace nda {
   struct expr_call;
   template <char OP, Array A>
   struct expr_unary;
+  /// @endcond
 
 } // namespace nda
 
 namespace nda::mem {
+
+  /**
+   * @addtogroup mem_addrspcs
+   * @{
+   */
 
   /**
    * @brief Enum providing idientifiers for the different memory address spaces.
@@ -83,8 +90,7 @@ namespace nda::mem {
   /**
    * @brief Promotion rules for nda::mem::AddressSpace values.
    *
-   * @details `Host` and `Device` address spaces are not compatible and will result in
-   * a compilation error.
+   * @details `Host` and `Device` address spaces are not compatible and will result in a compilation error.
    *
    * The promotion rules are as follows:
    * - `None` -> `Host` -> `Unified`.
@@ -108,39 +114,36 @@ namespace nda::mem {
    * @details See nda::mem::combine for how the address spaces are combined.
    *
    * @tparam A1 nda::MemoryArray type.
-   * @tparam As nda::MemeoryArray types.
+   * @tparam As nda::MemoryArray types.
    */
   template <MemoryArray A1, MemoryArray... As>
   constexpr AddressSpace common_addr_space = combine<get_addr_space<A1>, get_addr_space<As>...>;
 
-  // Specialization of nda::mem::get_addr_space for nda::Memory Array types.
+  /// Specialization of nda::mem::get_addr_space for nda::Memory Array types.
   template <MemoryArray A>
   static constexpr AddressSpace get_addr_space<A> = A::storage_t::address_space;
 
-  // Specialization of nda::mem::get_addr_space for nda::Handle types.
+  /// Specialization of nda::mem::get_addr_space for nda::Handle types.
   template <Handle H>
   static constexpr AddressSpace get_addr_space<H> = H::address_space;
 
-  // Specialization of nda::mem::get_addr_space for binary expressions involving
-  // two nda::ArrayOrScalar types.
+  /// Specialization of nda::mem::get_addr_space for binary expressions involving two nda::ArrayOrScalar types.
   template <char OP, ArrayOrScalar L, ArrayOrScalar R>
   static constexpr AddressSpace get_addr_space<expr<OP, L, R>> = combine<get_addr_space<L>, get_addr_space<R>>;
 
-  // Specialization of nda::mem::get_addr_space for function call expressions
-  // involving nda::Array types.
+  /// Specialization of nda::mem::get_addr_space for function call expressions involving nda::Array types.
   template <typename F, Array... As>
   static constexpr AddressSpace get_addr_space<expr_call<F, As...>> = combine<get_addr_space<As>...>;
 
-  // Specialization of nda::mem::get_addr_space for unary expressions involving
-  // an nda::Array type.
+  /// Specialization of nda::mem::get_addr_space for unary expressions involving an nda::Array type.
   template <char OP, Array A>
   static constexpr AddressSpace get_addr_space<expr_unary<OP, A>> = get_addr_space<A>;
 
   /**
    * @brief Check validity of a set of nda::mem::AddressSpace values.
    *
-   * @details Checks that the address spaces are not `None` and that the `Device` or
-   * `Unified` address spaces are only used when compiling with GPU support.
+   * @details Checks that the address spaces are not `None` and that the `Device` or `Unified` address spaces are only
+   * used when compiling with GPU support.
    *
    * @tparam AdrSpcs Address spaces to check.
    */
@@ -170,17 +173,11 @@ namespace nda::mem {
   template <typename A0, typename... A>
   static constexpr bool have_same_addr_space = ((get_addr_space<A0> == get_addr_space<A>)and... and true);
 
-  /**
-   * @brief Constexpr variable that is true if all given types have an address space
-   * compatible with `Host`.
-   */
+  /// Constexpr variable that is true if all given types have an address space compatible with `Host`.
   template <typename... Ts>
   static constexpr bool have_host_compatible_addr_space = ((on_host<Ts> or on_unified<Ts>)and...);
 
-  /**
-   * @brief Constexpr variable that is true if all given types have an address space
-   * compatible with `Device`.
-   */
+  /// Constexpr variable that is true if all given types have an address space compatible with `Device`.
   template <typename... Ts>
   static constexpr bool have_device_compatible_addr_space = ((on_device<Ts> or on_unified<Ts>)and...);
 
@@ -202,5 +199,7 @@ namespace nda::mem {
   static_assert(combine<Unified, Device> == Unified);
   static_assert(combine<Host, Unified> == Unified);
   static_assert(combine<Unified, Host> == Unified);
+
+  /** @} */
 
 } // namespace nda::mem

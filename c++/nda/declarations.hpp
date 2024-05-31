@@ -16,8 +16,7 @@
 
 /**
  * @file
- * @brief Provides various convenient aliases and helper functions for nda::basic_array
- * and nda::basic_array_view.
+ * @brief Provides various convenient aliases and helper functions for nda::basic_array and nda::basic_array_view.
  */
 
 #pragma once
@@ -39,6 +38,7 @@
 
 namespace nda {
 
+  /// @cond
   // Forward declarations.
   template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp>
   class idx_map;
@@ -56,6 +56,12 @@ namespace nda {
 
   template <char OP, ArrayOrScalar L, ArrayOrScalar R>
   struct expr;
+  /// @endcond
+
+  /**
+   * @addtogroup av_types
+   * @{
+   */
 
   /**
    * @brief Alias template of an nda::basic_array with an 'A' algebra.
@@ -69,8 +75,8 @@ namespace nda {
   using array = basic_array<ValueType, Rank, Layout, 'A', ContainerPolicy>;
 
   /**
-   * @brief Alias template of an nda::basic_array_view with an 'A' algebra,
-   * nda::default_accessor and nda::borrowed owning policy.
+   * @brief Alias template of an nda::basic_array_view with an 'A' algebra, nda::default_accessor and nda::borrowed
+   * owning policy.
    *
    * @tparam ValueType Value type of the view.
    * @tparam Rank Rank of the view.
@@ -122,8 +128,8 @@ namespace nda {
   using matrix = basic_array<ValueType, 2, Layout, 'M', ContainerPolicy>;
 
   /**
-   * @brief Alias template of an nda::basic_array_view with rank 2, an 'M' algebra,
-   * nda::default_accessor and nda::borrowed owning policy.
+   * @brief Alias template of an nda::basic_array_view with rank 2, an 'M' algebra, nda::default_accessor and
+   * nda::borrowed owning policy.
    *
    * @tparam ValueType Value type of the view.
    * @tparam Layout Layout policy of the view.
@@ -150,8 +156,8 @@ namespace nda {
   using vector = basic_array<ValueType, 1, C_layout, 'V', ContainerPolicy>;
 
   /**
-   * @brief Alias template of an nda::basic_array_view with rank 1, a 'V' algebra,
-   * nda::default_accessor and nda::borrowed owning policy.
+   * @brief Alias template of an nda::basic_array_view with rank 1, a 'V' algebra, nda::default_accessor and
+   * nda::borrowed owning policy.
    *
    * @tparam ValueType Value type of the view.
    * @tparam Layout Layout policy of the view.
@@ -169,6 +175,7 @@ namespace nda {
   using vector_const_view = basic_array_view<ValueType const, 1, Layout, 'V', default_accessor, borrowed<>>;
 
   /**
+   * @ingroup av_utils
    * @brief Encode the given shape into a single integer using the nda::encode function.
    *
    * @tparam Is Integer sequence describing the shape.
@@ -183,8 +190,8 @@ namespace nda {
   }
 
   /**
-   * @brief Alias template of an nda::basic_array with static extents, contiguous C
-   * layout, 'A' algebra and nda::stack container policy.
+   * @brief Alias template of an nda::basic_array with static extents, contiguous C layout, 'A' algebra and nda::stack
+   * container policy.
    *
    * @tparam ValueType Value type of the array.
    * @tparam N0 Size of the first dimension.
@@ -197,8 +204,8 @@ namespace nda {
                       nda::stack<N0 *(Ns *... * 1)>>;
 
   /**
-   * @brief Alias template of an nda::basic_array with rank 2, static extents, contiguous
-   * C layout, 'M' algebra and nda::stack memory policy.
+   * @brief Alias template of an nda::basic_array with rank 2, static extents, contiguous C layout, 'M' algebra and
+   * nda::stack memory policy.
    *
    * @tparam ValueType Value type of the matrix.
    * @tparam N Number of rows.
@@ -210,8 +217,8 @@ namespace nda {
                       nda::stack<static_cast<size_t>(N *M)>>;
 
   /**
-   * @brief Alias template of an nda::basic_array with rank 1, static extents, contiguous
-   * C layout, 'V' algebra and nda::stack memory policy.
+   * @brief Alias template of an nda::basic_array with rank 1, static extents, contiguous C layout, 'V' algebra and
+   * nda::stack memory policy.
    *
    * @tparam ValueType Value type of the vector.
    * @tparam N Size of the vector.
@@ -305,6 +312,13 @@ namespace nda {
   template <typename ValueType, typename Layout = C_stride_layout>
   using cuvector_const_view = basic_array_view<ValueType const, 1, Layout, 'V', default_accessor, borrowed<mem::Device>>;
 
+  /** @} */
+
+  /**
+   * @addtogroup av_utils
+   * @{
+   */
+
   /// Specialization of nda::is_regular_v for nda::basic_array.
   template <typename ValueType, int Rank, typename Layout, char Algebra, typename ContainerPolicy>
   inline constexpr bool is_regular_v<basic_array<ValueType, Rank, Layout, Algebra, ContainerPolicy>> = true;
@@ -332,26 +346,22 @@ namespace nda {
      basic_array_view<ValueType, Rank, Layout, Algebra, AccessorPolicy, OwningPolicy>::layout_t::layout_info;
 
   /**
-   * @brief Get the type of the nda::basic_array_view that would be obtained by constructing
-   * a view from a given type.
-   *
+   * @brief Get the type of the nda::basic_array_view that would be obtained by constructing a view from a given type.
    * @tparam T Type to construct a view from.
    */
   template <typename T, typename T2 = std::remove_reference_t<T> /* Keep this: Fix for gcc11 bug */>
   using get_view_t = std::remove_reference_t<decltype(basic_array_view{std::declval<T>()})>;
 
   /**
-   * @brief Get the type of the nda::basic_array that would be obtained by constructing an
-   * array from a given type.
-   *
+   * @brief Get the type of the nda::basic_array that would be obtained by constructing an array from a given type.
    * @tparam T Type to construct an array from.
    */
   template <typename T, typename T2 = std::remove_reference_t<T> /* Keep this: Fix for gcc11 bug */>
   using get_regular_t = decltype(basic_array{std::declval<T>()});
 
   /**
-   * @brief Get the type of the nda::basic_array that would be obtained by constructing an
-   * array on host memory from a given type.
+   * @brief Get the type of the nda::basic_array that would be obtained by constructing an array on host memory from a
+   * given type.
    *
    * @tparam T Type to construct an array from.
    */
@@ -362,8 +372,8 @@ namespace nda {
                                     get_algebra<RT>, heap<mem::Host>>>;
 
   /**
-   * @brief Get the type of the nda::basic_array that would be obtained by constructing an
-   * array on device memory from a given type.
+   * @brief Get the type of the nda::basic_array that would be obtained by constructing an array on device memory from
+   * a given type.
    *
    * @tparam T Type to construct an array from.
    */
@@ -374,8 +384,8 @@ namespace nda {
                                     get_algebra<RT>, heap<mem::Device>>>;
 
   /**
-   * @brief Get the type of the nda::basic_array that would be obtained by constructing an
-   * array on unified memory from a given type.
+   * @brief Get the type of the nda::basic_array that would be obtained by constructing an array on unified memory from
+   * a given type.
    *
    * @tparam T Type to construct an array from.
    */
@@ -400,5 +410,7 @@ namespace nda {
   /// Specialization of nda::get_layout_info for nda::expr types.
   template <char OP, typename L, typename R>
   inline constexpr layout_info_t get_layout_info<expr<OP, L, R>> = expr<OP, L, R>::compute_layout_info();
+
+  /** @} */
 
 } // namespace nda

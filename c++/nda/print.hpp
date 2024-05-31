@@ -35,6 +35,10 @@
 namespace nda {
 
   /**
+   * @addtogroup layout_utils
+   */
+
+  /**
    * @brief Write an nda::layout_prop_e to a std::ostream.
    *
    * @param out std::ostream object.
@@ -65,6 +69,13 @@ namespace nda {
                << "  MemoryStrideOrder   : " << idxm.stride_order << "\n"
                << "  Flags   :  " << LayoutProp << "\n";
   }
+
+  /** @} */
+
+  /**
+   * @addtogroup av_utils
+   * @{
+   */
 
   /**
    * @brief Write an nda::basic_array or nda::basic_array_view to a std::ostream.
@@ -126,12 +137,14 @@ namespace nda {
     return out << "array_adapter of shape " << aa.shape();
   }
 
+  /// @cond
   // Forward declarations (necessary for libclang parsing).
   template <char OP, Array A>
   struct expr_unary;
 
   template <char OP, ArrayOrScalar L, ArrayOrScalar R>
   struct expr;
+  /// @endcond
 
   /**
    * @brief Write an nda::expr_unary to a std::ostream.
@@ -174,5 +187,7 @@ namespace nda {
   std::ostream &operator<<(std::ostream &out, expr_call<F, As...> const &) {
     return out << "mapped"; //array<value_type, std::decay_t<A>::rank>(x);
   }
+
+  /** @} */
 
 } // namespace nda

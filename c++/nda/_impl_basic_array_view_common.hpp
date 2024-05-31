@@ -15,11 +15,6 @@
 // Authors: Thomas Hahn, Miguel Morales, Olivier Parcollet, Nils Wentzell
 
 /**
- * @file
- * @brief Common implementation details for nda::basic_array and nda::basic_array_view.
- */
-
-/**
  * @brief Get the memory layout of the view/array.
  * @return nda::idx_map specifying the layout of the view/array.
  */
@@ -44,42 +39,36 @@
 [[nodiscard]] storage_t storage() && noexcept { return std::move(sto); }
 
 /**
- * @brief Get the stride order of the memory layout of the view/array (see nda::idx_map
- * for more details on how we define stride orders).
+ * @brief Get the stride order of the memory layout of the view/array (see nda::idx_map for more details on how we
+ * define stride orders).
  *
- * @return std::array object specifying the stride order.
+ * @return `std::array<int, Rank>` object specifying the stride order.
  */
 [[nodiscard]] constexpr auto stride_order() const noexcept { return lay.stride_order; }
 
 /**
- * @brief Get a pointer to the actual data (in general this is not the beginning of the
- * memory block for a view).
- *
- * @return Const pointer to the first element of the view.
+ * @brief Get a pointer to the actual data (in general this is not the beginning of the memory block for a view).
+ * @return Const pointer to the first element of the view/array.
  */
 [[nodiscard]] ValueType const *data() const noexcept { return sto.data(); }
 
 /**
- * @brief Get a pointer to the actual data (in general this is not the beginning of the
- * memory block for a view).
- *
- * @return Pointer to the first element of the view.
+ * @brief Get a pointer to the actual data (in general this is not the beginning of thr memory block for a view).
+ * @return Pointer to the first element of the view/array.
  */
 [[nodiscard]] ValueType *data() noexcept { return sto.data(); }
 
 /**
  * @brief Get the shape of the view/array.
- * @return std::array object specifying the shape of the view/array.
+ * @return `std::array<long, Rank>` object specifying the shape of the view/array.
  */
-[[nodiscard]] std::array<long, rank> const &shape() const noexcept { return lay.lengths(); }
+[[nodiscard]] auto const &shape() const noexcept { return lay.lengths(); }
 
 /**
- * @brief Get the strides of the view/array (see nda::idx_map for more details on how we
- * define strides).
- *
- * @return std::array object specifying the strides of the view/array.
+ * @brief Get the strides of the view/array (see nda::idx_map for more details on how we define strides).
+ * @return `std::array<long, Rank>` object specifying the strides of the view/array.
  */
-[[nodiscard]] std::array<long, rank> const &strides() const noexcept { return lay.strides(); }
+[[nodiscard]] auto const &strides() const noexcept { return lay.strides(); }
 
 /**
  * @brief Get the total size of the view/array.
@@ -89,7 +78,7 @@
 
 /**
  * @brief Is the memory layout of the view/array contiguous?
- * @return True if the memory layout is contiguous, false otherwise.
+ * @return True if the nda::idx_map is contiguous, false otherwise.
  */
 [[nodiscard]] long is_contiguous() const noexcept { return lay.is_contiguous(); }
 
@@ -121,29 +110,27 @@
 
 /**
  * @brief Get a range that generates all valid index tuples.
- * @return An itertools::mulitplied range that can be used to iterate over all valid
- * index tuples.
+ * @return An `itertools::mulitplied` range that can be used to iterate over all valid index tuples.
  */
 [[nodiscard]] auto indices() const noexcept { return itertools::product_range(shape()); }
 
 /**
  * @brief Is the stride order of the view/array in C-order?
- * @return True if the stride order is C-order, false otherwise.
+ * @return True if the stride order of the nda::idx_map is C-order, false otherwise.
  */
 static constexpr bool is_stride_order_C() noexcept { return layout_t::is_stride_order_C(); }
 
 /**
  * @brief Is the stride order of the view/array in Fortran-order?
- * @return True if the stride order is Fortran-order, false otherwise.
+ * @return True if the stride order of the nda::idx_map is Fortran-order, false otherwise.
  */
 static constexpr bool is_stride_order_Fortran() noexcept { return layout_t::is_stride_order_Fortran(); }
 
 /**
- * @brief Access the element of the view/array at the given nda::_lindear_index_t.
+ * @brief Access the element of the view/array at the given nda::_linear_index_t.
  *
- * @details The linear index specifies the position of the element in the view/array
- * and not the position of the element w.r.t. to the data pointer (i.e. any possible
- * strides should not be taken into account).
+ * @details The linear index specifies the position of the element in the view/array and not the position of the
+ * element w.r.t. to the data pointer (i.e. any possible strides should not be taken into account).
  *
  * @param idx nda::_linear_index_t object.
  * @return Const reference to the element at the given linear index.
@@ -157,21 +144,12 @@ decltype(auto) operator()(_linear_index_t idx) const noexcept {
     static_assert(always_false<layout_t>, "Internal error in array/view: Calling this type with a _linear_index_t is not allowed");
 }
 
-/**
- * @brief Access the element of the view/array at the given nda::_lindear_index_t.
- *
- * @details The linear index specifies the position of the element in the view/array
- * and not the position of the element w.r.t. to the data pointer (i.e. any possible
- * strides should not be taken into account).
- *
- * @param idx nda::_linear_index_t object.
- * @return Reference to the element at the given linear index.
- */
-decltype(auto) operator()(_linear_index_t x) noexcept {
+/// Non-const overload of @ref nda::basic_array_view::operator()(_linear_index_t) const.
+decltype(auto) operator()(_linear_index_t idx) noexcept {
   if constexpr (layout_t::layout_prop == layout_prop_e::strided_1d)
-    return sto[x.value * lay.min_stride()];
+    return sto[idx.value * lay.min_stride()];
   else if constexpr (layout_t::layout_prop == layout_prop_e::contiguous)
-    return sto[x.value];
+    return sto[idx.value];
   else
     static_assert(always_false<layout_t>, "Internal error in array/view: Calling this type with a _linear_index_t is not allowed");
 }
@@ -188,8 +166,8 @@ public:
 /**
  * @brief Implementation of the function call operator.
  *
- * @details This function is an implementation detail an should be private. Since the
- * Green's function library in TRIQS uses this function, it is kept public (for now).
+ * @details This function is an implementation detail an should be private. Since the Green's function library in
+ * TRIQS uses this function, it is kept public (for now).
  *
  * @tparam ResultAlgebra Algebra of the resulting view/array.
  * @tparam SelfIsRvalue True if the view/array is an rvalue.
@@ -197,10 +175,9 @@ public:
  * @tparam T Types of the arguments.
  *
  * @param self Calling view.
- * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
- * nda::ellipsis or lazy arguments.
- * @return Result of the function call depending on the given arguments and type of the
- * view/array.
+ * @param idxs Multi-dimensional index consisting of `long`, `nda::range`, `nda::range::all_t`, nda::ellipsis or lazy
+ * arguments.
+ * @return Result of the function call depending on the given arguments and type of the view/array.
  */
 template <char ResultAlgebra, bool SelfIsRvalue, typename Self, typename... Ts>
 FORCEINLINE static decltype(auto) call(Self &&self, Ts const &...idxs) noexcept(has_no_boundcheck) {
@@ -247,14 +224,26 @@ FORCEINLINE static decltype(auto) call(Self &&self, Ts const &...idxs) noexcept(
 
 public:
 /**
-  * @brief Function call operator to access the view/array.
-  *
-  * @tparam Ts Types of the function arguments.
-  * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
-  * nda::ellipsis or lazy arguments.
-  * @return Result of the function call depending on the given arguments and type of the
-  * view/array.
-  */
+ * @brief Function call operator to access the view/array.
+ *
+ * @details Depending on the type of the calling object and the given arguments, this function call does the following:
+ * - If any of the arugments is lazy, an nda::clef::expr with the nda::clef::tags::function tag is returned.
+ * - If no arguments are given, a full view of the calling object is returned:
+ *   - If the calling object itself or its value type is const, a view with a const value type is returned.
+ *   - Otherwise, a view with a non-const value type is returned.
+ * - If the number of arguments is equal to the rank of the calling object and all arguments are convertible to `long`,
+ * a single element is accessed:
+ *   - If the calling object is a view or an lvalue, a (const) reference to the element is returned.
+ *   - Otherwise, a copy of the element is returned.
+ * - Otherwise a slice of the calling object is returned with the same value type and accessor and owning policies as
+ * the calling object. The algebra of the slice is the same as well, except if a 1-dimensional slice of a matrix is
+ * taken. In this case, the algebra is changed to 'V'.
+ *
+ * @tparam Ts Types of the function arguments.
+ * @param idxs Multi-dimensional index consisting of `long`, `nda::range`, `nda::range::all_t`, nda::ellipsis or lazy
+ * arguments.
+ * @return Result of the function call depending on the given arguments and type of the view/array.
+ */
 template <typename... Ts>
 FORCEINLINE decltype(auto) operator()(Ts const &...idxs) const & noexcept(has_no_boundcheck) {
   static_assert((rank == -1) or (sizeof...(Ts) == rank) or (sizeof...(Ts) == 0) or (ellipsis_is_present<Ts...> and (sizeof...(Ts) <= rank + 1)),
@@ -262,15 +251,7 @@ FORCEINLINE decltype(auto) operator()(Ts const &...idxs) const & noexcept(has_no
   return call<Algebra, false>(*this, idxs...);
 }
 
-/**
-  * @brief Function call operator to access the view/array.
-  *
-  * @tparam Ts Types of the function arguments.
-  * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
-  * nda::ellipsis or lazy arguments.
-  * @return Result of the function call depending on the given arguments and type of the
-  * view/array.
-  */
+/// Non-const overload of `nda::basic_array_view::operator()(Ts const &...) const &`.
 template <typename... Ts>
 FORCEINLINE decltype(auto) operator()(Ts const &...idxs) & noexcept(has_no_boundcheck) {
   static_assert((rank == -1) or (sizeof...(Ts) == rank) or (sizeof...(Ts) == 0) or (ellipsis_is_present<Ts...> and (sizeof...(Ts) <= rank + 1)),
@@ -278,15 +259,7 @@ FORCEINLINE decltype(auto) operator()(Ts const &...idxs) & noexcept(has_no_bound
   return call<Algebra, false>(*this, idxs...);
 }
 
-/**
- * @brief Function call operator to access the view/array.
- *
- * @tparam Ts Types of the function arguments.
- * @param idxs Multi-dimensional index consisting of long, nda::range, nda::range::all_t,
- * nda::ellipsis or lazy arguments.
- * @return Result of the function call depending on the given arguments and type of the
- * view/array.
- */
+/// Rvalue overload of `nda::basic_array_view::operator()(Ts const &...) const &`.
 template <typename... Ts>
 FORCEINLINE decltype(auto) operator()(Ts const &...idxs) && noexcept(has_no_boundcheck) {
   static_assert((rank == -1) or (sizeof...(Ts) == rank) or (sizeof...(Ts) == 0) or (ellipsis_is_present<Ts...> and (sizeof...(Ts) <= rank + 1)),
@@ -297,11 +270,19 @@ FORCEINLINE decltype(auto) operator()(Ts const &...idxs) && noexcept(has_no_boun
 /**
  * @brief Subscript operator to access the 1-dimensional view/array.
  *
+ * @details Depending on the type of the calling object and the given argument, this subscript operation does the
+ * following:
+ * - If the argument is lazy, an nda::clef::expr with the nda::clef::tags::function tag is returned.
+ * - If the argument is convertible to `long`, a single element is accessed:
+ *   - If the calling object is a view or an lvalue, a (const) reference to the element is returned.
+ *   - Otherwise, a copy of the element is returned.
+ * - Otherwise a slice of the calling object is returned with the same value type, algebra and accessor and owning
+ * policies as the calling object.
+ *
  * @tparam T Type of the argument.
- * @param idx 1-dimensional index that is either a long, nda::range, nda::range::all_t,
- * nda::ellipsis or a lazy argument.
- * @return Result of the subscript operation depending on the given argument and type of
- * the view/array.
+ * @param idx 1-dimensional index that is either a `long`, `nda::range`, `nda::range::all_t`, nda::ellipsis or a lazy
+ * argument.
+ * @return Result of the subscript operation depending on the given argument and type of the view/array.
  */
 template <typename T>
 decltype(auto) operator[](T const &idx) const & noexcept(has_no_boundcheck) {
@@ -309,30 +290,14 @@ decltype(auto) operator[](T const &idx) const & noexcept(has_no_boundcheck) {
   return call<Algebra, false>(*this, idx);
 }
 
-/**
- * @brief Subscript operator to access the 1-dimensional view/array.
- *
- * @tparam T Type of the argument.
- * @param idx 1-dimensional index that is either a long, nda::range, nda::range::all_t,
- * nda::ellipsis or a lazy argument.
- * @return Result of the subscript operation depending on the given argument and type of
- * the view/array.
- */
+/// Non-const overload of `nda::basic_array_view::operator[](T const &) const &`.
 template <typename T>
 decltype(auto) operator[](T const &x) & noexcept(has_no_boundcheck) {
   static_assert((rank == 1), "Error in array/view: Subscript operator is only available for rank 1 views/arrays in C++17/20");
   return call<Algebra, false>(*this, x);
 }
 
-/**
- * @brief Subscript operator to access the 1-dimensional view/array.
- *
- * @tparam T Type of the argument.
- * @param idx 1-dimensional index that is either a long, nda::range, nda::range::all_t,
- * nda::ellipsis or a lazy argument.
- * @return Result of the subscript operation depending on the given argument and type of
- * the view/array.
- */
+/// Rvalue overload of `nda::basic_array_view::operator[](T const &) const &`.
 template <typename T>
 decltype(auto) operator[](T const &x) && noexcept(has_no_boundcheck) {
   static_assert((rank == 1), "Error in array/view: Subscript operator is only available for rank 1 views/arrays in C++17/20");
@@ -390,7 +355,12 @@ iterator end() noexcept { return make_iterator<iterator>(true); }
 /**
  * @brief Addition assignment operator.
  *
- * @tparam RHS An nda::Scalar or an nda::Array.
+ * @details It first performs the (lazy) addition with the right hand side operand and then assigns the result to the
+ * left hand side view/array.
+ *
+ * See nda::operator+(L &&, R &&) and nda::operator+(A &&, S &&) for more details.
+ *
+ * @tparam RHS nda::Scalar or nda::Array type.
  * @param rhs Right hand side operand of the addition assignment operation.
  * @return Reference to this object.
  */
@@ -403,7 +373,12 @@ auto &operator+=(RHS const &rhs) noexcept {
 /**
  * @brief Subtraction assignment operator.
  *
- * @tparam RHS An nda::Scalar or an nda::Array.
+ * @details It first performs the (lazy) subtraction with the right hand side operand and then assigns the result to
+ * the left hand side view/array.
+ *
+ * See nda::operator-(L &&, R &&) and nda::operator-(A &&, S &&) for more details.
+ *
+ * @tparam RHS nda::Scalar or nda::Array type.
  * @param rhs Right hand side operand of the subtraction assignment operation.
  * @return Reference to this object.
  */
@@ -416,7 +391,12 @@ auto &operator-=(RHS const &rhs) noexcept {
 /**
  * @brief Multiplication assignment operator.
  *
- * @tparam RHS An nda::Scalar or an nda::Array.
+ * @details It first performs the (lazy) multiplication with the right hand side operand and then assigns the result
+ * to the left hand side view/array.
+ *
+ * See nda::operator*(L &&, R &&) and nda::operator*(A &&, S &&) for more details.
+ *
+ * @tparam RHS nda::Scalar or nda::Array type.
  * @param rhs Right hand side operand of the multiplication assignment operation.
  * @return Reference to this object.
  */
@@ -429,7 +409,12 @@ auto &operator*=(RHS const &rhs) noexcept {
 /**
  * @brief Division assignment operator.
  *
- * @tparam RHS An nda::Scalar or an nda::Array.
+ * @details It first performs the (lazy) division with the right hand side operand and then assigns the result to the
+ * left hand side view/array.
+ *
+ * See nda::operator/(L &&, R &&) and nda::operator/(A &&, S &&) for more details.
+ *
+ * @tparam RHS nda::Scalar or nda::Array type.
  * @param rhs Right hand side operand of the division assignment operation.
  * @return Reference to this object.
  */
@@ -440,7 +425,8 @@ auto &operator/=(RHS const &rhs) noexcept {
 }
 
 /**
- * @brief Assign a general contiguous range to the 1-dimensional view/array.
+ * @brief Assignment operator makes a deep copy of a general contiguous range and assigns it to the 1-dimensional
+ * view/array.
  *
  * @tparam R Range type.
  * @param rhs Right hand side range object.

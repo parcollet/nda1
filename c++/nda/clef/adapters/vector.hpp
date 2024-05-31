@@ -28,6 +28,11 @@
 
 namespace nda::clef {
 
+  /**
+   * @addtogroup clef_autoassign
+   * @{
+   */
+
   namespace detail {
 
     // Helper function to auto assign to a std::vector object.
@@ -56,5 +61,7 @@ namespace nda::clef {
   void clef_auto_assign_subscript(std::vector<T> &v, F f) {
     for (size_t i = 0; i < v.size(); ++i) detail::clef_auto_assign_std_vector_impl(v[i], f(i));
   }
+
+  /** @} */
 
 } // namespace nda::clef

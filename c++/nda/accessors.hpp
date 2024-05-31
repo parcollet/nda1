@@ -27,10 +27,15 @@
 
 namespace nda {
 
-  /// Default accessor for nda::array objects.
+  /**
+   * @addtogroup av_utils
+   * @{
+   */
+
+  /// Default accessor for various array and view types.
   struct default_accessor {
     /**
-     * @brief Actual accessor type.
+     * @brief Accessor type of the nda::default_accessor.
      * @tparam T Value type of the data.
      */
     template <typename T>
@@ -67,10 +72,10 @@ namespace nda {
     };
   };
 
-  /// Accessor for nda::array objects with no aliasing.
+  /// Accessor for array and view types with no aliasing.
   struct no_alias_accessor {
     /**
-     * @brief Actual accessor type.
+     * @brief Accessor type of the nda::no_alias_accessor.
      * @tparam T Value type of the data.
      */
     template <typename T>
@@ -103,5 +108,7 @@ namespace nda {
       FORCEINLINE static T *offset(pointer p, std::ptrdiff_t i) noexcept { return p + i; }
     };
   };
+
+  /** @} */
 
 } // namespace nda

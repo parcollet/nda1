@@ -34,9 +34,16 @@
 
 namespace nda::clef {
 
+  /**
+   * @addtogroup clef_eval
+   * @{
+   */
+
+  /// @cond
   // Forward declarations.
   template <typename T, typename... Pairs>
-  decltype(auto) eval(T const &ex, Pairs &&...pairs);
+  decltype(auto) eval(T const &obj, Pairs &&...pairs);
+  /// @endcond
 
   /**
    * @brief Generic evaluator for types which do not have a specialized evaluator.
@@ -68,21 +75,19 @@ namespace nda::clef {
   template <int N, int... Is, typename... Ts>
   struct evaluator<placeholder<N>, pair<Is, Ts>...> {
     private:
-    // Helper function to determine the position of the nda::clef::pair that has the
-    // nda::clef::placeholder with label N.
+    // Helper function to determine the position of the nda::clef::pair that has the nda::clef::placeholder<N>.
     template <size_t... Ps>
     static constexpr int get_position_of_N(std::index_sequence<Ps...>) {
       return ((Is == N ? int(Ps) + 1 : 0) + ...) - 1;
     }
 
-    // The position of the nda::clef::pair that has the nda::clef::placeholder with
-    // label N (-1 if no such pair was given).
+    // The position of the nda::clef::pair that has the nda::clef::placeholder<N> (-1 if no such pair was given).
     static constexpr int N_position = get_position_of_N(std::make_index_sequence<sizeof...(Is)>{});
 
     public:
     /**
-     * @brief Constexpr variable that is true if the there is no nda::clef::pair containing
-     * an nda::clef::placeholder with label `N`.
+     * @brief Constexpr variable that is true if the there is no nda::clef::pair containing an nda::clef::placeholder
+     * with label `N`.
      */
     static constexpr bool is_lazy = (N_position == -1);
 
@@ -90,14 +95,14 @@ namespace nda::clef {
      * @brief Evaluate the placeholder.
      *
      * @param pairs Pack of nda::clef::pair objects.
-     * @return Value stored in the pair with the same integer label as the placeholder or a
-     * placeholder with the label `N` if no such pair was given.
+     * @return Value stored in the pair with the same integer label as the placeholder or a placeholder with the label
+     * `N` if no such pair was given.
      */
     FORCEINLINE decltype(auto) operator()(placeholder<N>, pair<Is, Ts> &...pairs) const {
       if constexpr (not is_lazy) { // N is one of the Is
         auto &pair_N = std::get<N_position>(std::tie(pairs...));
-        // The pair is a temporary constructed for the time of the eval call
-        // If it holds a reference, we return it, else we move the rhs object out of the pair
+        // the pair is a temporary constructed for the time of the eval call
+        // if it holds a reference, we return it, else we move the rhs object out of the pair
         if constexpr (std::is_lvalue_reference_v<decltype(pair_N.rhs)>) {
           return pair_N.rhs;
         } else {
@@ -121,13 +126,11 @@ namespace nda::clef {
     static constexpr bool is_lazy = false;
 
     /**
-     * @brief Evaluate the std::reference_wrapper by redirecting the evaluation to the object
-     * contained in the wrapper.
+     * @brief Evaluate the std::reference_wrapper by redirecting the evaluation to the object contained in the wrapper.
      *
      * @param wrapper std::reference_wrapper object.
      * @param pairs Pack of nda::clef::pair objects.
-     * @return The result of evaluating the object contained in the wrapper together with the
-     * given pairs.
+     * @return The result of evaluating the object contained in the wrapper together with the given pairs.
      */
     FORCEINLINE decltype(auto) operator()(std::reference_wrapper<T> const &wrapper, Pairs const &...pairs) const {
       return eval(wrapper.get(), pairs...);
@@ -157,13 +160,12 @@ namespace nda::clef {
     /**
      * @brief Evaluate the given expression by applying the given nda::clef::pair objects.
      *
-     * @note Depending on the given expression as well as the the given pairs, the result of
-     * the evaluation might be again a lazy expression.
+     * @note Depending on the given expression as well as the the given pairs, the result of the evaluation might be
+     * again a lazy expression.
      *
      * @param ex Expression to be evaluated.
      * @param pairs nda::clef::pair objects to be applied to the expression.
-     * @return The result of the evaluation (calls nda::clef::op_dispatch indirectly through
-     * a helper function).
+     * @return The result of the evaluation (calls nda::clef::op_dispatch indirectly through a helper function).
      */
     [[nodiscard]] FORCEINLINE decltype(auto) operator()(expr<Tag, Childs...> const &ex, Pairs &...pairs) const {
       return eval_impl(std::make_index_sequence<sizeof...(Childs)>(), ex, pairs...);
@@ -182,9 +184,8 @@ namespace nda::clef {
    * auto res = nda::clef::eval(ex, i_ = 1, j_ = 2); // int res = 3;
    * @endcode
    *
-   * Here, `ex` is a binary expression with the `+` tag and the placeholder `i_` and `j_` as its child
-   * nodes. The `eval` function calls the correct evaluator for the given expression and the given
-   * pairs.
+   * Here, `ex` is a binary expression with the `+` tag and the placeholder `i_` and `j_` as its child nodes. The `eval`
+   * function calls the correct evaluator for the given expression and the given pairs.
    *
    * @tparam T Type of the expression/object.
    * @tparam Pairs Types of the nda::clef::pair objects.
@@ -196,5 +197,7 @@ namespace nda::clef {
   FORCEINLINE decltype(auto) eval(T const &obj, Pairs &&...pairs) { // NOLINT (we don't want to forward here)
     return evaluator<T, std::remove_reference_t<Pairs>...>()(obj, pairs...);
   }
+
+  /** @} */
 
 } // namespace nda::clef

@@ -31,12 +31,20 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup utils_concepts
+   * @{
+   */
+
   // clang has full support for "lambdas in unevaluated context" only for versions >= 17.
 #ifndef __clang__
 
   // clang-format off
   /**
-   * @brief Check if given type can be called with a certain number of long arguments.
+   * @brief Check if a given type can be called with a certain number of long arguments.
+   *
+   * @details An example of a type satisfying this concept is e.g. nda::basic_array or nda::basic_array_view. More
+   * generally, every type modelling the nda::Array concept has to be nda::CallableWithLongs as well.
    *
    * @tparam A Type to check.
    * @tparam R Number of long arguments.
@@ -62,9 +70,8 @@ namespace nda {
   /**
    * @brief Check if a given type can be called with a certain number of long arguments.
    *
-   * @details An example of a type satisfying this concept is e.g. nda::basic_array or
-   * nda::basic_array_view. More generally, every type modelling the nda::Array concept
-   * has to be nda::CallableWithLongs as well.
+   * @details An example of a type satisfying this concept is e.g. nda::basic_array or nda::basic_array_view. More
+   * generally, every type modelling the nda::Array concept has to be nda::CallableWithLongs as well.
    *
    * @tparam A Type to check.
    * @tparam R Number of long arguments.
@@ -96,8 +103,8 @@ namespace nda {
   /**
    * @brief Check if a given type is of type `std::array<long, R>` for some arbitrary `R`.
    *
-   * @details The shape and the stride of every nda::MemoryArray type is represented as a
-   * `std::array<long, R>`, where `R` is the rank of the array.
+   * @details The shape and the strides of every nda::MemoryArray type is represented as a `std::array<long, R>`, where
+   * `R` is the rank of the array.
    *
    * @tparam T Type to check.
    */
@@ -119,7 +126,7 @@ namespace nda {
   concept DoubleOrComplex = nda::is_double_or_complex_v<S>;
 
   /**
-   * @brief Check if a given type is an instantiation of a some other template template type.
+   * @brief Check if a given type is an instantiation of some other template template type.
    *
    * @details See nda::is_instantiation_of for more information.
    *
@@ -129,18 +136,26 @@ namespace nda {
   template <typename T, template <typename...> class TMPLT>
   concept InstantiationOf = nda::is_instantiation_of_v<TMPLT, T>;
 
+  /** @} */
+
   namespace mem {
 
+    /**
+     * @addtogroup mem_utils
+     * @{
+     */
+
+    /// @cond
     // Forward declarations.
     struct blk_t;
     enum class AddressSpace;
+    /// @endcond
 
     /**
      * @brief Check if a given type satisfies the allocator concept.
      *
-     * @details Allocators are used to reserve and free memory. Depending on their address space,
-     * the memory can either be allocated on the Host (CPU), on the Device (GPU) or on unified
-     * memory (see nda::mem::AddressSpace).
+     * @details Allocators are used to reserve and free memory. Depending on their address space, the memory can either
+     * be allocated on the Host (CPU), on the Device (GPU) or on unified memory (see nda::mem::AddressSpace).
      *
      * @note The named <a href="https://en.cppreference.com/w/cpp/named_req/Allocator">C++ Allocator
      * requirements</a> of the standard library are different.
@@ -158,9 +173,9 @@ namespace nda {
     /**
      * @brief Check if a given type satisfies the memory handle concept.
      *
-     * @details Memory handles are used to manage memory. They are responsible for providing access
-     * to the data which can be located on the stack (CPU), the heap (CPU), the device (GPU) or on
-     * unified memory (see nda::mem::AddressSpace).
+     * @details Memory handles are used to manage memory. They are responsible for providing access to the data which
+     * can be located on the stack (CPU), the heap (CPU), the device (GPU) or on unified memory (see
+     * nda::mem::AddressSpace).
      *
      * @tparam H Type to check.
      * @tparam T Value type of the handle.
@@ -176,9 +191,8 @@ namespace nda {
     /**
      * @brief Check if a given type satisfies the owning memory handle concept.
      *
-     * @details In addition to the requirements of the nda::mem::Handle concept, owning memory
-     * handles are aware of the size of the memory they manage and can be used to release the
-     * memory.
+     * @details In addition to the requirements of the nda::mem::Handle concept, owning memory handles are aware of the
+     * size of the memory they manage and can be used to release the memory.
      *
      * @tparam H Type to check.
      * @tparam T Value type of the handle.
@@ -189,20 +203,26 @@ namespace nda {
       { h.size() } noexcept -> std::same_as<long>;
     };
 
+    /** @} */
+
   } // namespace mem
+
+  /**
+   * @addtogroup av_utils
+   * @{
+   */
 
   /**
    * @brief Check if a given type satisfies the array concept.
    *
-   * @details An array is a multi-dimensional container of elements. It is characterized by a
-   * certain size (number of elements), rank (number of dimensions) and shape (extent of each
-   * dimension). Furthermore, it provides access to its elements by overloading the function
-   * call operator.
+   * @details An array is a multi-dimensional container of elements. It is characterized by a certain size (number of
+   * elements), rank (number of dimensions) and shape (extent of each dimension). Furthermore, it provides access to its
+   * elements by overloading the function call operator.
    *
    * Examples of types satisfying this concept are e.g. nda::basic_array or nda::basic_array_view.
    *
-   * @note std::array does not satisfy this concept, as it does not have a shape or provides
-   * access via the function call operator.
+   * @note std::array does not satisfy this concept, as it does not have a shape or provides access via the function
+   * call operator.
    *
    * @tparam A Type to check.
    */
@@ -216,12 +236,10 @@ namespace nda {
   /**
    * @brief Check if a given type satisfies the memory array concept.
    *
-   * @details In addition to the requirements of the nda::mem::Array concept, memory arrays
-   * provide access to the underlying memory storage and use an nda::idx_map to specify the
-   * layout of the data in memory.
+   * @details In addition to the requirements of the nda::Array concept, memory arrays provide access to the underlying
+   * memory storage and use an nda::idx_map to specify the layout of the data in memory.
    *
-   * An example of a type satisfying the nda::Array but not the nda::MemoryArray concept is
-   * nda::expr.
+   * An example of a type satisfying the nda::Array but not the nda::MemoryArray concept is nda::expr.
    *
    * @tparam A Type to check.
    */
@@ -295,8 +313,7 @@ namespace nda {
   concept MemoryVector = MemoryArrayOfRank<V, 1>;
 
   /**
-   * @brief Check if a given type satisfies the array initializer concept for a given
-   * nda::MemoryArray type.
+   * @brief Check if a given type satisfies the array initializer concept for a given nda::MemoryArray type.
    *
    * @details They are mostly used in lazy mpi calls (see e.g. nda::mpi_reduce).
    *
@@ -319,5 +336,7 @@ namespace nda {
    */
   template <typename A, typename U>
   concept HasValueTypeConstructibleFrom = Array<A> and (std::is_constructible_v<U, get_value_t<A>>);
+
+  /** @} */
 
 } // namespace nda

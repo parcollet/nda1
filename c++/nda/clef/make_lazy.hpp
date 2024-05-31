@@ -29,16 +29,21 @@
 namespace nda::clef {
 
   /**
+   * @addtogroup clef_expr
+   * @{
+   */
+
+  /**
    * @brief Create a terminal expression node of an object.
    *
    * @tparam T Type of the object.
    * @param t Given object.
-   * @return An nda::clef::expr with the nda::clef::tag::terminal tag containing either a copy
-   * of the object itself (if it is moved) or a reference to the object.
+   * @return An nda::clef::expr with the nda::clef::tags::terminal tag containing either a copy of the object itself
+   * (if it is moved) or a reference to the object.
    */
   template <typename T>
-  expr<tags::terminal, expr_storage_t<T>> make_expr(T &&t) {
-    return {tags::terminal(), std::forward<T>(t)};
+  auto make_expr(T &&t) {
+    return expr<tags::terminal, expr_storage_t<T>>{tags::terminal(), std::forward<T>(t)};
   }
 
   /**
@@ -46,12 +51,11 @@ namespace nda::clef {
    *
    * @tparam T Type of the object.
    * @param t Given object.
-   * @return An nda::clef::expr with the nda::clef::tag::terminal tag containing a copy of the
-   * object.
+   * @return An nda::clef::expr with the nda::clef::tags::terminal tag containing a copy of the object.
    */
   template <typename T>
-  expr<tags::terminal, std::decay_t<T>> make_expr_from_clone(T &&t) {
-    return {tags::terminal(), std::forward<T>(t)};
+  auto make_expr_from_clone(T &&t) {
+    return expr<tags::terminal, std::decay_t<T>>{tags::terminal(), std::forward<T>(t)};
   }
 
   /**
@@ -63,14 +67,14 @@ namespace nda::clef {
    * @tparam Args Types of the arguments.
    * @param f Callable object.
    * @param args Function arguments.
-   * @return An nda::clef::expr with the nda::clef::tag::function tag containing the callable and
-   * the forwarded arguments.
+   * @return An nda::clef::expr with the nda::clef::tags::function tag containing the callable and the forwarded
+   * arguments.
    */
   template <typename F, typename... Args>
-  expr<tags::function, expr_storage_t<F>, expr_storage_t<Args>...> make_expr_call(F &&f, Args &&...args)
+  auto make_expr_call(F &&f, Args &&...args)
     requires(is_any_lazy<Args...>)
   {
-    return {tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
+    return expr<tags::function, expr_storage_t<F>, expr_storage_t<Args>...>{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
   }
 
   /**
@@ -82,14 +86,14 @@ namespace nda::clef {
    * @tparam Args Types of the arguments.
    * @param t Object to be subscripted.
    * @param args Subscript arguments.
-   * @return An nda::clef::expr with the nda::clef::tag::subscript tag containing the subscriptable
-   * object and the forwarded arguments.
+   * @return An nda::clef::expr with the nda::clef::tags::subscript tag containing the subscriptable object and the
+   * forwarded arguments.
    */
   template <typename T, typename... Args>
-  expr<tags::subscript, expr_storage_t<T>, expr_storage_t<Args>...> make_expr_subscript(T &&t, Args &&...args)
+  auto make_expr_subscript(T &&t, Args &&...args)
     requires(is_any_lazy<Args...>)
   {
-    return {tags::subscript{}, std::forward<T>(t), std::forward<Args>(args)...};
+    return expr<tags::subscript, expr_storage_t<T>, expr_storage_t<Args>...>{tags::subscript{}, std::forward<T>(t), std::forward<Args>(args)...};
   }
 
   /// Macro to make any function lazy, i.e. accept lazy arguments and return a function call expression node.
@@ -134,5 +138,7 @@ namespace nda::clef {
   {                                                                                                                                                  \
     return make_expr_call(std::move(*this), std::forward<Args>(args)...);                                                                            \
   }
+
+  /** @} */
 
 } // namespace nda::clef

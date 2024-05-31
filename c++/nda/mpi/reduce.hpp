@@ -34,14 +34,13 @@
 #include <utility>
 
 /**
- * @brief Specialization of the mpi::lazy class for nda::Array types and the mpi::tag::reduce tag.
+ * @ingroup av_mpi
+ * @brief Specialization of the `mpi::lazy` class for nda::Array types and the `mpi::tag::reduce` tag.
  *
- * @details An object of this class is returned when reducing nda::Array objects across multiple
- * MPI processes.
+ * @details An object of this class is returned when reducing nda::Array objects across multiple MPI processes.
  *
- * It models an nda::ArrayInitializer, that means it can be used to initialize and assign to
- * nda::basic_array and nda::basic_array_view objects. The target array will have the same shape
- * as the input arrays.
+ * It models an nda::ArrayInitializer, that means it can be used to initialize and assign to nda::basic_array and
+ * nda::basic_array_view objects. The target array will have the same shape as the input arrays.
  *
  * See nda::mpi_reduce for an example.
  *
@@ -72,7 +71,7 @@ struct mpi::lazy<mpi::tag::reduce, A> {
 
   /**
    * @brief Compute the shape of the target array.
-   * @details It is assumed that the shape of the input array is the same for all MPI processes.
+   * @note It is assumed that the shape of the input array is the same for all MPI processes.
    * @return Shape of the input array.
    */
   [[nodiscard]] auto shape() const { return rhs.shape(); }
@@ -80,8 +79,8 @@ struct mpi::lazy<mpi::tag::reduce, A> {
   /**
    * @brief Execute the lazy MPI operation and write the result to a target array/view.
    *
-   * @details If the target array/view is the same as the input array/view, i.e. if their data
-   * pointers are the same, the reduction is performed in-place.
+   * @details If the target array/view is the same as the input array/view, i.e. if their data pointers are the same,
+   * the reduction is performed in-place.
    *
    * @tparam T nda::Array type of the target array/view.
    * @param target Target array/view.
@@ -136,24 +135,31 @@ struct mpi::lazy<mpi::tag::reduce, A> {
 namespace nda {
 
   /**
+   * @ingroup av_mpi
    * @brief Implementation of an MPI reduce for nda::basic_array or nda::basic_array_view types.
    *
-   * @details Since the returned mpi::lazy object models an nda::ArrayInitializer, it can be used
-   * to initialize/assign to nda::basic_array and nda::basic_array_view objects:
+   * @details Since the returned `mpi::lazy` object models an nda::ArrayInitializer, it can be used to initialize/assign
+   * to nda::basic_array and nda::basic_array_view objects:
    *
    * @code{.cpp}
+   * // create an array on all processes
    * nda::array<int, 2> arr(3, 4);
-   * // fill array on each rank
+   *
+   * // ...
+   * // fill array on each process
+   * // ...
+   *
+   * // reduce the array to the root process
    * nda::array<int, 2> res = mpi::reduce(arr);
    * @endcode
    *
    * @tparam A nda::basic_array or nda::basic_array_view type.
    * @param a Array or view to be gathered.
-   * @param comm mpi::communicator object.
+   * @param comm `mpi::communicator` object.
    * @param root Rank of the root process.
    * @param all Should all processes receive the result of the gather.
    * @param op MPI reduction operation.
-   * @return An mpi::lazy object modelling an nda::ArrayInitializer.
+   * @return An `mpi::lazy` object modelling an nda::ArrayInitializer.
    */
   template <typename A>
   ArrayInitializer<std::remove_reference_t<A>> auto mpi_reduce(A &&a, mpi::communicator comm = {}, int root = 0, bool all = false,

@@ -37,24 +37,26 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `getrs` routine.
    *
    * @details Solves a system of linear equations
+   *
    * - \f$ \mathbf{A X} = \mathbf{B} \f$,
    * - \f$ \mathbf{A}^T \mathbf{X} = \mathbf{B} \f$ or
    * - \f$ \mathbf{A}^H \mathbf{X} = \mathbf{B} \f$
-   * with a general N-by-N matrix \f$ \mathbf{A} \f$ using the LU factorization computed
-   * by `getrf`.
+   *
+   * with a general n-by-n matrix \f$ \mathbf{A} \f$ using the LU factorization computed by `getrf`.
    *
    * @tparam A nda::MemoryMatrix type.
    * @tparam B nda::MemoryMatrix type.
    * @tparam B nda::MemoryVector type.
-   * @param a Input matrix. The factors \f$ \mathbf{L} \f$ and \f$ \mathbf{U} \f$ from the
-   * factorization \f$ \mathbf{A} = \mathbf{P L U} \f$ as computed by `getrf`.
-   * @param b Input/output matrix. On entry, the right hand side matrix \f$ \mathbf{B} \f$.
-   * On exit, the solution matrix \f$ \mathbf{X} \f$.
-   * @param ipiv Input vector. The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i
-   * of the matrix was interchanged with row IPIV(i).
+   * @param a Input matrix. The factors \f$ \mathbf{L} \f$ and \f$ \mathbf{U} \f$ from the factorization \f$ \mathbf{A}
+   * = \mathbf{P L U} \f$ as computed by `getrf`.
+   * @param b Input/output matrix. On entry, the right hand side matrix \f$ \mathbf{B} \f$. On exit, the solution matrix
+   * \f$ \mathbf{X} \f$.
+   * @param ipiv Input vector. The pivot indices from `getrf`, i.e. for `1 <= i <= N`, row i of the matrix was
+   * interchanged with row `ipiv(i)`.
    * @return Integer return code from the LAPACK call.
    */
   template <MemoryMatrix A, MemoryMatrix B, MemoryVector IPIV>

@@ -35,11 +35,16 @@
 namespace nda {
 
   /**
+   * @addtogroup utils_perms
+   * @{
+   */
+
+  /**
    * @brief Decode a `uint64_t` into a `std::array<int, N>`.
    *
-   * @details The 64-bit code is split into 4-bit chunks, and each chunk is then decoded into a
-   * value in the range [0, 15]. The 4 least significant bits are decoded into the first element,
-   * the next 4-bits into second element, and so on.
+   * @details The 64-bit code is split into 4-bit chunks, and each chunk is then decoded into a value in the range
+   * [0, 15]. The 4 least significant bits are decoded into the first element, the next 4-bits into second element, and
+   * so on.
    *
    * @tparam N Size of the array.
    * @param binary_representation 64-bit code.
@@ -55,12 +60,11 @@ namespace nda {
   /**
    * @brief Encode a `std::array<int, N>` in a `uint64_t`.
    *
-   * @details The values in the array are assumed to be in the range [0, 15]. Then each value
-   * is encoded in 4 bits, i.e. the first element is encoded in the 4 least significant bits,
-   * the second element in the next 4 bits, and so on.
+   * @details The values in the array are assumed to be in the range [0, 15]. Then each value is encoded in 4 bits, i.e.
+   * the first element is encoded in the 4 least significant bits, the second element in the next 4 bits, and so on.
    *
    * @tparam N Size of the array.
-   * @param a Array to encode.
+   * @param a `std::array<int, N>` to encode.
    * @return 64-bit code.
    */
   template <size_t N>
@@ -73,19 +77,26 @@ namespace nda {
     return result;
   }
 
+  /** @} */
+
 } // namespace nda
 
 namespace nda::permutations {
 
   /**
+   * @addtogroup utils_perms
+   * @{
+   */
+
+  /**
    * @brief Check if a given array is a valid permutation.
    *
-   * @details A valid permutation is an array of integers with values in the range [0, N - 1]
-   * where each value appears exactly once.
+   * @details A valid permutation is an array of integers with values in the range [0, N - 1] where each value appears
+   * exactly once.
    *
    * @tparam Int Integral type.
    * @tparam N Degree of the permutation.
-   * @param p Array to check.
+   * @param p std:::array to check.
    * @return True if the array is a valid permutation, false otherwise.
    */
   template <std::integral Int, size_t N>
@@ -101,8 +112,8 @@ namespace nda::permutations {
   /**
    * @brief Composition of two permutations.
    *
-   * @details The second argument is applied first. Composition is not commutative in general,
-   * i.e. `compose(p1, p2) != compose(p2, p1)`.
+   * @details The second argument is applied first. Composition is not commutative in general, i.e. `compose(p1, p2) !=
+   * compose(p2, p1)`.
    *
    * @tparam Int Integral type.
    * @tparam N Degree of the permutations.
@@ -122,8 +133,8 @@ namespace nda::permutations {
   /**
    * @brief Inverse of a permutation.
    *
-   * @details The inverse, `inv`, of a permutation `p` is defined such that `compose(p, inv) ==
-   * compose(inv, p) == identity`.
+   * @details The inverse, `inv`, of a permutation `p` is defined such that `compose(p, inv) == compose(inv, p) ==
+   * identity`.
    *
    * @tparam Int Integral type.
    * @tparam N Degree of the permutations.
@@ -141,13 +152,13 @@ namespace nda::permutations {
   /**
    * @brief Apply the inverse of a permutation to a std::array.
    *
-   * @details See also nda::permuation::apply and nda::permutation::inverse.
+   * @details See also nda::permutations::apply and nda::permutations::inverse.
    *
    * @tparam T Value type of the array.
    * @tparam Int Integral type.
    * @tparam N Size/Degree of the array/permutation.
    * @param p Permutation to invert and apply.
-   * @param a Array to apply the inverse permutation to.
+   * @param a std::array to apply the inverse permutation to.
    * @return Result of applying the inverse permutation to the array.
    */
   template <typename T, std::integral Int, size_t N>
@@ -161,14 +172,14 @@ namespace nda::permutations {
   /**
    * @brief Apply a permutation to a std::array.
    *
-   * @details The application of a permutation `p` to an array `a` results in a new array
-   * `b` such that `b[i] = a[p[i]]`.
+   * @details The application of a permutation `p` to an array `a` results in a new array `b` such that `b[i] =
+   * a[p[i]]`.
    *
    * @tparam T Value type of the array.
    * @tparam Int Integral type.
    * @tparam N Size/Degree of the array/permutation.
    * @param p Permutation to apply.
-   * @param a Array to apply the permutation to.
+   * @param a std::array to apply the permutation to.
    * @return Result of applying the permutation to the array.
    */
   template <typename T, std::integral Int, size_t N>
@@ -208,8 +219,7 @@ namespace nda::permutations {
   /**
    * @brief Get the permutation representing a single given transposition.
    *
-   * @details A transposition is a permutation in which only two elements are different
-   * from the identity permutation.
+   * @details A transposition is a permutation in which only two elements are different from the identity permutation.
    *
    * @tparam N Degree of the permutation.
    * @param i First index to transpose.
@@ -225,10 +235,10 @@ namespace nda::permutations {
   }
 
   /**
-   * @brief Perform a forward (partial) cyclic permutation of the identity 'p' times.
+   * @brief Perform a forward (partial) cyclic permutation of the identity `p` times.
    *
-   * @details The permutation is partial if `pos >= 0 && pos < N`. In this case, only the first
-   * `pos` elements are permuted, while the rest is left unchanged w.r.t the identity.
+   * @details The permutation is partial if `pos >= 0 && pos < N`. In this case, only the first `pos` elements are
+   * permuted, while the rest is left unchanged w.r.t the identity.
    *
    * @tparam N Degree of the permutation.
    * @param p Number of times to perform the cyclic permutation.
@@ -242,5 +252,7 @@ namespace nda::permutations {
     for (int i = 0; i < N; ++i) result[i] = (i < pos ? (pos + i - p) % pos : i);
     return result;
   }
+
+  /** @} */
 
 } // namespace nda::permutations

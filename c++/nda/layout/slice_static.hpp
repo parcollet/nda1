@@ -16,8 +16,7 @@
 
 /**
  * @file
- * @brief Provides utilities that determine the resulting nda::idx_map when taking a
- * slice of an nda::idx_map.
+ * @brief Provides utilities that determine the resulting nda::idx_map when taking a slice of an nda::idx_map.
  */
 
 #pragma once
@@ -40,13 +39,20 @@
 
 namespace nda {
 
+  /// @cond
   // Forward declarations.
   template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp>
   class idx_map;
+  /// @endcond
 
 } // namespace nda
 
 namespace nda::slice_static {
+
+  /**
+   * @addtogroup layout_idx
+   * @{
+   */
 
   // Notations for this file
   //
@@ -92,8 +98,7 @@ namespace nda::slice_static {
       return (r == 0 ? 128 : r - 1);
     }
 
-    // Get the position of an nda::ellipsis object in a given parameter pack (returns 128 if
-    // there is no nda::ellipsis).
+    // Get the position of an nda::ellipsis object in a given parameter pack (returns 128 if there is no nda::ellipsis).
     template <typename... Args>
     constexpr int ellipsis_position() {
       return detail::ellipsis_position_impl<Args...>(std::make_index_sequence<sizeof...(Args)>{});
@@ -111,8 +116,7 @@ namespace nda::slice_static {
       return n - (e_len - 1);
     }
 
-    // Determine how the dimensions of the sliced index map are mapped to the dimensions of the
-    // original index map.
+    // Determine how the dimensions of the sliced index map are mapped to the dimensions of the original index map.
     template <int N, int P, size_t Q>
     constexpr std::array<int, P> n_of_p_map(std::array<bool, Q> const &args_is_range, int e_pos, int e_len) {
       auto result = stdutil::make_initialized_array<P>(0);
@@ -126,8 +130,7 @@ namespace nda::slice_static {
       return result;
     }
 
-    // Determine how the dimensions of the sliced index map are mapped to the arguments after
-    // ellipsis expansion.
+    // Determine how the dimensions of the sliced index map are mapped to the arguments after ellipsis expansion.
     template <int N, int P, size_t Q>
     constexpr std::array<int, P> q_of_p_map(std::array<bool, Q> const &args_is_range, int e_pos, int e_len) {
       auto result = stdutil::make_initialized_array<P>(0);
@@ -180,8 +183,8 @@ namespace nda::slice_static {
           return layout_prop_e::none;
       }
 
-      // count the number of nda::range::all_t blocks in the argument list, e.g. long, range::all,
-      // range::all, long, range::all -> 2 blocks
+      // count the number of nda::range::all_t blocks in the argument list, e.g. long, range::all, range::all, long,
+      // range::all -> 2 blocks
       int n_rangeall_blocks         = 0;
       bool previous_arg_is_rangeall = false;
       for (int i = 0; i < N; ++i) {
@@ -201,16 +204,16 @@ namespace nda::slice_static {
       return layout_prop_e::none;
     }
 
-    // Get the contribution to the flat index of the first element of the slice from a single
-    // dimension if the argument is a long.
+    // Get the contribution to the flat index of the first element of the slice from a single dimension if the argument
+    // is a long.
     FORCEINLINE long get_offset(long idx, long stride) { return idx * stride; }
 
-    // Get the contribution to the flat index of the first element of the slice from a single
-    // dimension if the argument is a range.
+    // Get the contribution to the flat index of the first element of the slice from a single dimension if the argument
+    // is a range.
     FORCEINLINE long get_offset(range const &rg, long stride) { return rg.first() * stride; }
 
-    // Get the contribution to the flat index of the first element of the slice from a single
-    // dimension if the argument is a range::all_t or covered by an nda::ellipsis.
+    // Get the contribution to the flat index of the first element of the slice from a single dimension if the argument
+    // is a range::all_t or covered by an nda::ellipsis.
     FORCEINLINE long get_offset(range::all_t, long) { return 0; }
 
     // Get the length of the slice for a single dimension if the argument is a range.
@@ -219,15 +222,15 @@ namespace nda::slice_static {
       return range(rg.first(), last, rg.step()).size();
     }
 
-    // Get the length of the slice for a single dimension if the argument is a range::all_t or
-    // covered by an nda::ellipsis.
+    // Get the length of the slice for a single dimension if the argument is a range::all_t or covered by an
+    // nda::ellipsis.
     FORCEINLINE long get_length(range::all_t, long original_len) { return original_len; }
 
     // Get the stride of the slice for a single dimension if the argument is a range.
     FORCEINLINE long get_stride(range const &rg, long original_str) { return original_str * rg.step(); }
 
-    // Get the stride of the slice for a single dimension if the argument is a range::all_t or
-    // covered by an nda::ellipsis..
+    // Get the stride of the slice for a single dimension if the argument is a range::all_t or covered by an
+    // nda::ellipsis..
     FORCEINLINE long get_stride(range::all_t, long original_str) { return original_str; }
 
     // Helper function to determine the resulting index map when taking a slice of a given index map.
@@ -240,8 +243,8 @@ namespace nda::slice_static {
       // compile time check
       static_assert(IdxMap::rank() == sizeof...(Ns), "Internal error in slice_idx_map_impl: Rank and length of index sequence do not match");
 
-      // rank of original and resulting idx_map, number of arguments, length of ellipsis,
-      // position of ellipsis in the argument list
+      // rank of original and resulting idx_map, number of arguments, length of ellipsis, position of ellipsis in the
+      // argument list
       static constexpr int N     = sizeof...(Ns);
       static constexpr int P     = sizeof...(Ps);
       static constexpr int Q     = sizeof...(Args);
@@ -274,8 +277,8 @@ namespace nda::slice_static {
       std::array<long, P> len{get_length(std::get<q_of_p[Ps]>(argstie), std::get<n_of_p[Ps]>(idxm.lengths()))...};
       std::array<long, P> str{get_stride(std::get<q_of_p[Ps]>(argstie), std::get<n_of_p[Ps]>(idxm.strides()))...};
 
-      // static extents of the resulting index map: 0 (= dynamic extent) if the corresponding argument
-      // is not a range/range::all_t/ellipsis
+      // static extents of the resulting index map: 0 (= dynamic extent) if the corresponding argument is not a
+      // range/range::all_t/ellipsis
       static constexpr std::array<int, P> new_static_extents{(args_is_rangeall[q_of_p[Ps]] ? IdxMap::static_extents[n_of_p[Ps]] : 0)...};
 
       // stride order of the resulting index map
@@ -297,19 +300,17 @@ namespace nda::slice_static {
   /**
    * @brief Determine the resulting nda::idx_map when taking a slice of a given nda::idx_map.
    *
-   * @details Let `n_args` be the number of given `long`, nda::range, nda::range::all_t or
-   * nda::ellipsis arguments.
+   * @details Let `n_args` be the number of given `long`, `nda::range`, `nda::range::all_t` or nda::ellipsis arguments.
    *
-   * The rank `R'` of the resulting slice is determined by the rank `R` of the original nda::idx_map
-   * and the number `n_long` of `long` arguments, i.e. `R' = R - n_long`.
+   * The rank ``R'`` of the resulting slice is determined by the rank `R` of the original nda::idx_map and the number
+   * `n_long` of `long` arguments, i.e. ``R' = R - n_long``.
    *
-   * The number of allowed nda::ellipsis objects is restricted to at most one. If an nda::ellipsis
-   * object is present and `n_args <= R`, the ellipsis is expanded in terms of nda::range::all_t
-   * objects to cover the remaining `R - n_args + 1` dimensions. Otherwise, the ellipsis is ignored.
+   * The number of allowed nda::ellipsis objects is restricted to at most one. If an nda::ellipsis object is present and
+   * `n_args <= R`, the ellipsis is expanded in terms of `nda::range::all_t` objects to cover the remaining
+   * `R - n_args + 1` dimensions. Otherwise, the ellipsis is ignored.
    *
-   * After ellipsis expansion, the only arguments contributing to the slice are nda::range and
-   * nda::range::all_t objects. Together with the original nda::idx_map, they determine the resulting
-   * nda::idx_map.
+   * After ellipsis expansion, the only arguments contributing to the slice are `nda::range` and `nda::range::all_t`
+   * objects. Together with the original nda::idx_map, they determine the resulting nda::idx_map.
    *
    * @tparam R Rank of the original nda::idx_map.
    * @tparam SE Static extents of the original nda::idx_map.
@@ -317,7 +318,7 @@ namespace nda::slice_static {
    * @tparam LP Layout properties of the original nda::idx_map.
    * @tparam Args Given argument types.
    * @param idxm Original nda::idx_map.
-   * @param args Arguments consisting of `long`, nda::range, nda::range::all_t or nda::ellipsis objects.
+   * @param args Arguments consisting of `long`, `nda::range`, `nda::range::all_t` or nda::ellipsis objects.
    * @return Resulting nda::idx_map of the slice.
    */
   template <int R, uint64_t SE, uint64_t SO, layout_prop_e LP, typename... Args>
@@ -333,5 +334,7 @@ namespace nda::slice_static {
 
     return detail::slice_idx_map_impl(std::make_index_sequence<R - n_args_long>{}, std::make_index_sequence<R>{}, idxm, args...);
   }
+
+  /** @} */
 
 } // namespace nda::slice_static

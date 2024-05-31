@@ -27,6 +27,11 @@
 
 namespace nda::clef {
 
+  /**
+   * @addtogroup clef_expr
+   * @{
+   */
+
   namespace detail {
 
     // Helper function to sum a callable object over a domain using a simple for loop.
@@ -104,5 +109,7 @@ namespace nda::clef {
   auto sum(Expr const &f, A0 &&a0, A1 &&a1, As &&...as) {
     return sum(sum(f, std::forward<A0>(a0)), std::forward<A1>(a1), std::forward<As>(as)...);
   }
+
+  /** @} */
 
 } // namespace nda::clef

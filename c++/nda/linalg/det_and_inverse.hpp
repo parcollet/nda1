@@ -42,14 +42,21 @@
 namespace nda {
 
   /**
-     * @brief Check if a given array/view is square, i.e. if the first dimension has the
-     * same extent as the the second dimension.
-     *
-     * @tparam A Array/View type.
-     * @param a Array/View object.
-     * @param print_error If true, print an error message if the matrix is not square.
-     * @return True if the array/view is square, false otherwise.
-     */
+   * @addtogroup linalg_tools
+   * @{
+   */
+
+  /**
+   * @brief Check if a given array/view is square, i.e. if the first dimension has the same extent as the second
+   * dimension.
+   *
+   * @note It does not check if the array/view has rank 2.
+   *
+   * @tparam A Array/View type.
+   * @param a Array/View object.
+   * @param print_error If true, print an error message if the matrix is not square.
+   * @return True if the array/view is square, false otherwise.
+   */
   template <typename A>
   bool is_matrix_square(A const &a, bool print_error = false) {
     bool r = (a.shape()[0] == a.shape()[1]);
@@ -59,14 +66,16 @@ namespace nda {
   }
 
   /**
-     * @brief Check if a given array/view is diagonal, i.e. if it is square (see
-     * nda::is_matrix_square) and all the the off-diagonal elements are zero.
-     *
-     * @tparam A Array/View type.
-     * @param a Array/View object.
-     * @param print_error If true, print an error message if the matrix is not diagonal.
-     * @return True if the array/view is diagonal, false otherwise.
-     */
+   * @brief Check if a given array/view is diagonal, i.e. if it is square (see nda::is_matrix_square) and all the the
+   * off-diagonal elements are zero.
+   *
+   * @note It does not check if the array/view has rank 2.
+   *
+   * @tparam A Array/View type.
+   * @param a Array/View object.
+   * @param print_error If true, print an error message if the matrix is not diagonal.
+   * @return True if the array/view is diagonal, false otherwise.
+   */
   template <typename A>
   bool is_matrix_diagonal(A const &a, bool print_error = false) {
     bool r = is_matrix_square(a) and a == diag(diagonal(a));
@@ -77,16 +86,15 @@ namespace nda {
   /**
    * @brief Compute the determinant of a square matrix/view.
    *
-   * @details It uses nda::lapack::getrf to compute the LU decomposition of the matrix
-   * and then calculates the determinant by multiplying the diagonal elements of the U
-   * matrix and taking into account that `getrf` may change the ordering of the rows/columns
-   * of the matrix.
+   * @details It uses nda::lapack::getrf to compute the LU decomposition of the matrix and then calculates the
+   * determinant by multiplying the diagonal elements of the \f$ \mathbf{U} \f$ matrix and taking into account that
+   * `getrf` may change the ordering of the rows/columns of the matrix.
    *
    * The given matrix/view is modified in place.
    *
-   * @tparam M Matrix or view type.
-   * @param m Matrix or view.
-   * @return Determinant of the matrix.
+   * @tparam M Type of the matrix/view.
+   * @param m Matrix/view object.
+   * @return Determinant of the matrix/view.
    */
   template <typename M>
   auto determinant_in_place(M &m)
@@ -124,12 +132,12 @@ namespace nda {
   /**
    * @brief Compute the determinant of a square matrix/view.
    *
-   * @details The given matrix/view is not modified. It first makes copy of the given
-   * matrix/view and then calls nda::determinant_in_place with the copy.
+   * @details The given matrix/view is not modified. It first makes a copy of the given matrix/view and then calls
+   * nda::determinant_in_place with the copy.
    *
-   * @tparam M Matrix or view type.
-   * @param m Matrix or view.
-   * @return Determinant of the matrix.
+   * @tparam M Type of the matrix/view.
+   * @param m Matrix/view object.
+   * @return Determinant of the matrix/view.
    */
   template <typename M>
   auto determinant(M const &m) {
@@ -229,9 +237,14 @@ namespace nda {
   }
 
   /**
-   * @brief Compute the inverse of an N-by-N matrix.
+   * @brief Compute the inverse of an n-by-n matrix.
    *
    * @details The inversion is performed in place.
+   *
+   * For small matrices (1-by-1, 2-by-2, 3-by-3), we directly compute the matrix inversion using the optimized routines:
+   * nda::inverse1_in_place, nda::inverse2_in_place, nda::inverse3_in_place.
+   *
+   * For larger matrices, it uses nda::lapack::getrf and nda::lapack::getri.
    *
    * @tparam M nda::MemoryMatrix type.
    * @param m nda::MemoryMatrix object to be inverted.
@@ -271,10 +284,10 @@ namespace nda {
   }
 
   /**
-   * @brief Compute the inverse of an N-by-N matrix.
+   * @brief Compute the inverse of an n-by-n matrix.
    *
-   * @details  The given matrix/view is not modified. It first makes copy of the given
-   * matrix/view and then calls nda::inverse_in_place with the copy.
+   * @details  The given matrix/view is not modified. It first makes copy of the given matrix/view and then calls
+   * nda::inverse_in_place with the copy.
    *
    * @tparam M nda::MemoryMatrix type.
    * @param m nda::MemoryMatrix object to be inverted.
@@ -290,11 +303,16 @@ namespace nda {
     return r;
   }
 
+  /** @} */
+
 } // namespace nda
 
 namespace nda::clef {
 
-  /** @brief Lazy version of nda::determinant. */
+  /**
+   * @ingroup linalg_tools
+   * @brief Lazy version of nda::determinant.
+   */
   CLEF_MAKE_FNT_LAZY(determinant)
 
 } // namespace nda::clef

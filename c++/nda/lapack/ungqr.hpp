@@ -38,10 +38,11 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `ungqr` routine.
    *
-   * @details Generates an M-by-N complex matrix \f$ \mathbf{Q} \f$ with orthonormal columns,
-   * which is defined as the first N columns of a product of K elementary reflectors of order M
+   * @details Generates an m-by-n complex matrix \f$ \mathbf{Q} \f$ with orthonormal columns, which is defined as the
+   * first n columns of a product of k elementary reflectors of order m
    * \f[
    *   \mathbf{Q} = \mathbf{H}(1) \mathbf{H}(2) \ldots \mathbf{H}(k) \; ,
    * \f]
@@ -49,11 +50,11 @@ namespace nda::lapack {
    *
    * @tparam A nda::MemoryMatrix with complex value type.
    * @tparam TAU nda::MemoryVector with complex value type.
-   * @param a Input/output matrix. On entry, the i-th column must contain the vector which
-   * defines the elementary reflector \f$ H(i) \; , i = 1,2,...,K \f$ , as returned by `geqrf`
-   * in the first K columns. On exit, the M-by-N matrix \f$ \mathbf{Q} \f$.
-   * @param tau Input vector. `tau(i)` must contain the scalar factor of the elementary reflector
-   * H(i), as returned by `geqrf`.
+   * @param a Input/output matrix. On entry, the i-th column must contain the vector whichdefines the elementary
+   * reflector \f$ H(i) \; , i = 1,2,...,K \f$, as returned by `geqrf` in the first k columns. On exit, the m-by-n
+   * matrix \f$ \mathbf{Q} \f$.
+   * @param tau Input vector. `tau(i)` must contain the scalar factor of the elementary reflector \f$ \mathbf{H}(i) \f$,
+   * as returned by `geqrf`.
    * @return Integer return code from the LAPACK call.
    */
   template <MemoryMatrix A, MemoryVector TAU>

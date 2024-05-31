@@ -31,10 +31,14 @@
 
 namespace nda::clef {
 
+  /**
+   * @addtogroup clef_expr
+   * @{
+   */
+
   namespace detail {
 
-    // Get the value from a std::reference_wrapper or simply forward the argument
-    // of any other type.
+    // Get the value from a std::reference_wrapper or simply forward the argument of any other type.
     template <typename U>
     FORCEINLINE U &&fget(U &&x) {
       return std::forward<U>(x);
@@ -50,6 +54,10 @@ namespace nda::clef {
 
   /**
    * @brief Generic operation performed on expression nodes.
+   *
+   * @details Specializations for the different operation tags provide an implementation of the function call operator
+   * which performs the actual operation on the given operands.
+   *
    * @tparam Tag Tag of the operation.
    */
   template <typename Tag>
@@ -113,6 +121,7 @@ namespace nda::clef {
   namespace tags {                                                                                                                                   \
     /** @brief Tag for binary `OP` expressions. */                                                                                                   \
     struct TAG : binary_op {                                                                                                                         \
+      /** @brief String representation of the operation. */                                                                                          \
       static const char *name() { return AS_STRING(OP); }                                                                                            \
     };                                                                                                                                               \
   }                                                                                                                                                  \
@@ -126,6 +135,7 @@ namespace nda::clef {
   /** @brief Specialization of nda::clef::operation for nda::clef::tags::TAG. */                                                                     \
   template <>                                                                                                                                        \
   struct operation<tags::TAG> {                                                                                                                      \
+    /** @brief Function call operator to perform the actual binary `OP` operation. */                                                                \
     template <typename L, typename R>                                                                                                                \
     FORCEINLINE decltype(auto) operator()(L &&l, R &&r) const {                                                                                      \
       return detail::fget(std::forward<L>(l)) OP detail::fget(std::forward<R>(r));                                                                   \
@@ -150,6 +160,7 @@ namespace nda::clef {
   namespace tags {                                                                                                                                   \
     /** @brief Tag for unary `OP` expressions. */                                                                                                    \
     struct TAG : unary_op {                                                                                                                          \
+      /** @brief String representation of the operation. */                                                                                          \
       static const char *name() { return AS_STRING(OP); }                                                                                            \
     };                                                                                                                                               \
   }                                                                                                                                                  \
@@ -163,6 +174,7 @@ namespace nda::clef {
   /** @brief Specialization of nda::clef::operation for nda::clef::tags::TAG. */                                                                     \
   template <>                                                                                                                                        \
   struct operation<tags::TAG> {                                                                                                                      \
+    /** @brief Function call operator to perform the actual unary `OP` operation. */                                                                 \
     template <typename L>                                                                                                                            \
     FORCEINLINE decltype(auto) operator()(L &&l) const {                                                                                             \
       return OP detail::fget(std::forward<L>(l));                                                                                                    \
@@ -203,19 +215,20 @@ namespace nda::clef {
    * @param c Conditional expression.
    * @param a Return expression when the condition is true.
    * @param b Return expression when the condition is false.
-   * @return An nda::clef::expr object with the nda::clef::tag::ternary tag and the given
+   * @return An nda::clef::expr object with the nda::clef::tags::ternary tag and the given
    * operands forwarded as its child nodes.
    */
   template <typename C, typename A, typename B>
-  FORCEINLINE expr<tags::if_else, expr_storage_t<C>, expr_storage_t<A>, expr_storage_t<B>> if_else(C &&c, A &&a, B &&b) {
-    return {tags::if_else(), std::forward<C>(c), std::forward<A>(a), std::forward<B>(b)};
+  FORCEINLINE auto if_else(C &&c, A &&a, B &&b) {
+    return expr<tags::if_else, expr_storage_t<C>, expr_storage_t<A>, expr_storage_t<B>>{tags::if_else(), std::forward<C>(c), std::forward<A>(a),
+                                                                                        std::forward<B>(b)};
   }
 
   /**
    * @brief Dispatch operations containing at least one lazy operand.
    *
-   * @details Since at least one operand is lazy, the operation is not performed immediately.
-   * Instead, a new nda::clef::expr object is created with the given operation and operands.
+   * @details Since at least one operand is lazy, the operation is not performed immediately. Instead, a new
+   * nda::clef::expr object is created with the given operation and operands.
    *
    * @tparam Tag Tag of the operation.
    * @tparam Args Types of the operands.
@@ -223,15 +236,15 @@ namespace nda::clef {
    * @return An nda::clef::expr for the given operation and operands.
    */
   template <typename Tag, typename... Args>
-  FORCEINLINE expr<Tag, expr_storage_t<Args>...> op_dispatch(std::true_type, Args &&...args) {
-    return {Tag(), std::forward<Args>(args)...};
+  FORCEINLINE auto op_dispatch(std::true_type, Args &&...args) {
+    return expr<Tag, expr_storage_t<Args>...>{Tag(), std::forward<Args>(args)...};
   }
 
   /**
    * @brief Dispatch operations containing only non-lazy operands.
    *
-   * @details Since all operands are non-lazy, the operation is performed immediately by calling
-   * the corresponding nda::clef::operation with the forwarded operands.
+   * @details Since all operands are non-lazy, the operation is performed immediately by calling the corresponding
+   * nda::clef::operation with the forwarded operands.
    *
    * @tparam Tag Tag of the operation.
    * @tparam Args Types of the operands.
@@ -242,5 +255,7 @@ namespace nda::clef {
   FORCEINLINE decltype(auto) op_dispatch(std::false_type, Args &&...args) {
     return operation<Tag>()(std::forward<Args>(args)...);
   }
+
+  /** @} */
 
 } // namespace nda::clef

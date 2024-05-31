@@ -31,16 +31,17 @@
 namespace nda::blas {
 
   /**
+   * @ingroup linalg_blas
    * @brief Interface to the BLAS `scal` routine.
    *
    * @details Scales a vector by a constant. This function calculates
    * \f[
    *   \mathbf{x} \leftarrow \alpha \mathbf{x} ;,
    * \f]
-   * where \f$ \alpha \f$ is a scalar constant and \f$ x \f$ is a vector.
+   * where \f$ \alpha \f$ is a scalar constant and \f$ \mathbf{x} \f$ is a vector.
    *
    * @tparam X nda::MemoryVector or a conjugate array expression.
-   * @param alpha Scalar constant.
+   * @param alpha Input scalar.
    * @param x Input/Output vector to be scaled.
    */
   template <typename X>

@@ -56,8 +56,8 @@ namespace std {
 
   /**
    * @brief std::swap is deleted for nda::basic_array_view.
-   * @warning The std::swap is WRONG for an nda::basic_array_view because of its copy/move
-   * semantics. Use nda::swap instead (the correct one, found by ADL).
+   * @warning The std::swap is WRONG for an nda::basic_array_view because of its copy/move semantics. Use nda::swap
+   * instead (the correct one, found by ADL).
    */
   template <typename V1, int R1, typename LP1, char A1, typename AP1, typename OP1, typename V2, int R2, typename LP2, char A2, typename AP2,
             typename OP2>
@@ -68,29 +68,29 @@ namespace std {
 namespace nda {
 
   /**
-   * @brief A generic view of an n-dimensional array.
+   * @ingroup arrays_views
+   * @brief A generic view of a multi-dimensional array.
    *
-   * @details Together with nda::basic_array, this class forms the backbone of the nda library.
-   * It is templated with the following parameters:
+   * @details Together with nda::basic_array, this class forms the backbone of the nda library. It is templated with
+   * the following parameters:
    *
-   * - ValueType: This is the type of the elements in the view. Depending on how the view was
-   * constructed and on the underlying array, this can be a const or non-const type.
-   * - Rank: Integer specifying the number of dimensions of the view. This is a compile-time
-   * constant.
-   * - LayoutPolicy: The layout policy specifies how the view accesses its elements. It provides
-   * a mapping from multi-dimensional to linear indices and vice versa.
-   * - Algebra: The algebra specifies how the view behaves when it is used in an expression.
-   * Possible values are 'A' (array), 'M' (matrix) and 'V' (vector).
-   * - AccessorPolicy: The accessor policy specifies how the view accesses the data pointer.
-   * This can be useful for optimizations.
-   * - OwningPolicy: The owning policy specifies the ownership of the data pointer and who is
-   * responsible for handling the memory resources.
+   * - `ValueType`: This is the type of the elements in the view. Depending on how the view was constructed and on the
+   * underlying array, this can be a const or non-const type.
+   * - `Rank`: Integer specifying the number of dimensions of the view. This is a compile-time constant.
+   * - `LayoutPolicy`: The layout policy specifies how the view accesses its elements. It provides a mapping from
+   * multi-dimensional to linear indices and vice versa (see @ref layout_pols).
+   * - `Algebra`: The algebra specifies how the view behaves when it is used in an expression. Possible values are 'A'
+   * (array), 'M' (matrix) and 'V' (vector) (see nda::get_algebra).
+   * - `AccessorPolicy`: The accessor policy specifies how the view accesses the data pointer. This can be useful for
+   * optimizations.
+   * - `OwningPolicy`: The owning policy specifies the ownership of the data pointer and who is responsible for
+   * handling the memory resources (see @ref mem_handles).
    *
-   * In contrast to regular arrays (see nda::basic_array), views do not own the data they point
-   * to. They are a fast and efficient way to access and manipulate already existing data:
+   * In contrast to regular arrays (see nda::basic_array), views do not own the data they point to. They are a fast and
+   * efficient way to access and manipulate already existing data:
    *
    * @code{.cpp}
-   * // create a regular 5x5 array of ones
+   * // create a regular 3x3 array of ones
    * auto arr = nda::ones<int>(3, 3);
    * std::cout << arr << std::endl;
    *
@@ -99,7 +99,22 @@ namespace nda {
    * std::cout << arr << std::endl;
    * @endcode
    *
-   * Here, `arr(nda::range::all, 0)` creates a view of the first column of the regular array `arr`.
+   * Output:
+   *
+   * @code{bash}
+   *
+   * [[1,1,1]
+   *  [1,1,1]
+   *  [1,1,1]]
+   *
+   * [[0,1,1]
+   *  [0,1,1]
+   *  [0,1,1]]
+   * @endcode
+   *
+   * Views are usually created by taking a slice of a regular nda::basic_array or another view. In the example above,
+   * `arr(nda::range::all, 0)` creates a view of the first column of the regular array `arr`, which is then set to zero.
+   * A view of the full array can be created with `arr()`.
    *
    * @tparam ValueType Type stored in the array.
    * @tparam Rank Number of dimensions of the view.
@@ -119,22 +134,22 @@ namespace nda {
     /// Type of the values in the view (might be const).
     using value_type = ValueType;
 
-    /// Type of the memory layout policy.
+    /// Type of the memory layout policy (see @ref layout_pols).
     using layout_policy_t = LayoutPolicy;
 
     /// Type of the memory layout (an nda::idx_map).
     using layout_t = typename LayoutPolicy::template mapping<Rank>;
 
-    /// Type of the accessor policy.
+    /// Type of the accessor policy (see e.g. nda::default_accessor).
     using accessor_policy_t = AccessorPolicy;
 
-    /// Type of the owning policy.
+    /// Type of the owning policy (see @ref mem_pols).
     using owning_policy_t = OwningPolicy;
 
-    /// Type of the memory handle.
+    /// Type of the memory handle (see @ref mem_handles).
     using storage_t = typename OwningPolicy::template handle<ValueType>;
 
-    /// The associated regular type.
+    /// The associated regular (nda::basic_array) type.
     using regular_type = basic_array<std::remove_const_t<ValueType>, Rank, C_layout, Algebra, heap<mem::get_addr_space<storage_t>>>;
 
     /// Number of dimensions of the view.
@@ -174,6 +189,8 @@ namespace nda {
     /**
      * @brief Construct a view from a given layout and memory handle.
      *
+     * @warning This should not be used directly. Use one of the other constructors instead.
+     *
      * @param idxm Layout of the view.
      * @param st Memory handle of the view.
      */
@@ -182,35 +199,35 @@ namespace nda {
     public:
     // backward : FIXME : temporary to be removed
     /// @deprecated Convert the current view to a view with an 'A' (array) algebra.
-    [[deprecated]] basic_array_view<ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy> as_array_view() { return {*this}; };
+    [[deprecated]] auto as_array_view() { return basic_array_view<ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy>{*this}; };
 
     /// @deprecated Convert the current view to a view with an 'A' (array) algebra.
-    [[deprecated]] basic_array_view<const ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy> as_array_view() const { return {*this}; };
+    [[deprecated]] auto as_array_view() const {
+      return basic_array_view<const ValueType, Rank, LayoutPolicy, 'A', AccessorPolicy, OwningPolicy>{*this};
+    };
 
-    /// Default constructor constructs an empty view.
+    /// Default constructor constructs an empty view with a default constructed memory handle and layout.
     basic_array_view() = default;
 
-    /// Default move constructor (everything is done in the memory handle).
+    /// Default move constructor moves the memory handle and layout.
     basic_array_view(basic_array_view &&) = default;
 
-    /// Default copy constructor (everything is done in the memory handle).
+    /// Default copy constructor copies the memory handle and layout.
     basic_array_view(basic_array_view const &) = default;
 
     /**
      * @brief Generic constructor from any nda::MemoryArray type.
      *
-     * @tparam A Memory array type of the same rank as the view.
-     * @param a Memory array.
+     * @details It simply copies the memory layout and initializes the memory handle with the handle of the given
+     * nda::MemoryArray object.
+     *
+     * @tparam A nda::MemoryArray type of the same rank as the view.
+     * @param a nda::MemoryArray object.
      */
     template <MemoryArrayOfRank<Rank> A>
-      requires(
-                 // require the same stride-order
-                 (get_layout_info<A>.stride_order == layout_t::stride_order_encoded) and
-                 // require the same underlying value_type (except for const)
-                 (std::is_same_v<std::remove_const_t<ValueType>, get_value_t<A>>) and
-                 // make sure that we have a const value_type if our argument does
-                 (std::is_const_v<ValueType> or !std::is_const_v<typename std::decay_t<A>::value_type>))
-    // explicit iff the layout properties are incompatible
+      requires((get_layout_info<A>.stride_order == layout_t::stride_order_encoded)
+               and (std::is_same_v<std::remove_const_t<ValueType>, get_value_t<A>>)
+               and (std::is_const_v<ValueType> or !std::is_const_v<typename std::decay_t<A>::value_type>))
     explicit(requires_runtime_check<typename std::decay_t<A>::layout_policy_t>)
        basic_array_view(A &&a) noexcept // NOLINT (should we forward the reference?)
        : lay(a.indexmap()), sto(a.storage()) {}
@@ -218,8 +235,8 @@ namespace nda {
     /**
      * @brief Construct a view from a bare pointer to some contiguous data and a shape.
      *
-     * @note We do not have any control over the specified dimensions. The caller has to
-     *  ensure their correctness and their compatibility with the given data pointer.
+     * @note We do not have any control over the specified dimensions. The caller has to ensure their correctness and
+     * their compatibility with the given data pointer.
      *
      * @param shape Shape of the view.
      * @param p Pointer to the data.
@@ -227,11 +244,10 @@ namespace nda {
     basic_array_view(std::array<long, Rank> const &shape, ValueType *p) noexcept : basic_array_view(layout_t{shape}, p) {}
 
     /**
-     * @brief Construct a view from a bare pointer to some contiguous data and a memory
-     * layout.
+     * @brief Construct a view from a bare pointer to some contiguous data and a memory layout.
      *
-     * @note We do not have any control over the given layout. The caller has to ensure
-     * its correctness and its compatibility with the given data pointer.
+     * @note We do not have any control over the given layout. The caller has to ensure its correctness and its
+     * compatibility with the given data pointer.
      *
      * @param idxm Layout of the view.
      * @param p Pointer to the data.
@@ -239,7 +255,7 @@ namespace nda {
     basic_array_view(layout_t const &idxm, ValueType *p) noexcept : lay(idxm), sto{p} {}
 
     /**
-     * @brief Construct a 1-dimensional view on a std::array.
+     * @brief Construct a 1-dimensional view of a std::array.
      *
      * @tparam N Size of the std::array.
      * @param a Reference to a std::array object.
@@ -249,7 +265,7 @@ namespace nda {
     explicit basic_array_view(std::array<ValueType, N> &a) noexcept : basic_array_view{{long(N)}, a.data()} {}
 
     /**
-     * @brief Construct a 1-dimensional view on a std::array.
+     * @brief Construct a 1-dimensional view of a std::array.
      *
      * @tparam N Size of the std::array.
      * @param a Const reference to a std::array object.
@@ -259,7 +275,7 @@ namespace nda {
     explicit basic_array_view(std::array<std::remove_const_t<ValueType>, N> const &a) noexcept : basic_array_view{{long(N)}, a.data()} {}
 
     /**
-     * @brief Construct a 1-dimensional view on a general contiguous range.
+     * @brief Construct a 1-dimensional view of a general contiguous range.
      *
      * @tparam R Type of the range.
      * @param rg Range object.
@@ -272,8 +288,8 @@ namespace nda {
     /**
      * @brief Copy assignment operator makes a deep copy of the contents of the view.
      *
-     * @details The dimension of right hand side must be large enough or the behaviour
-     * is undefined. If `NDA_BOUNDCHECK` is defined, bounds checking is enabled.
+     * @details The dimension of the right hand side must be large enough or the behaviour is undefined. If
+     * `NDA_ENFORCE_BOUNDCHECK` is defined, bounds checking is enabled.
      *
      * @param rhs Right hand side of the assignment operation.
      */
@@ -283,13 +299,12 @@ namespace nda {
     }
 
     /**
-     * @brief Assignment operator makes a deep copy of the contents of an nda::ArrayOfRank
-     * type.
+     * @brief Assignment operator makes a deep copy of the contents of an nda::ArrayOfRank object.
      *
-     * @details The dimension of right hand side must be large enough or the behaviour is
-     *  undefined. If `NDA_BOUNDCHECK` is defined, bounds checking is enabled.
+     * @details The dimension of the right hand side must be large enough or the behaviour is undefined. If
+     * `NDA_ENFORCE_BOUNDCHECK` is defined, bounds checking is enabled.
      *
-     * @tparam RHS nda::ArrayOfRank type (with the same rank as the constructed view).
+     * @tparam RHS nda::ArrayOfRank type with the same rank as the view.
      * @param rhs Right hand side of the assignment operation.
      */
     template <ArrayOfRank<Rank> RHS>
@@ -306,7 +321,7 @@ namespace nda {
      * - 'A' (array) and 'V' (vector): The scalar is assigned to all elements of the view.
      * - 'M' (matrix): The scalar is assigned to the diagonal elements of the shorter dimension.
      *
-     * @tparam RHS Scalar type.
+     * @tparam RHS Type of the scalar.
      * @param rhs Right hand side of the assignment operation.
      */
     template <typename RHS>
@@ -367,7 +382,9 @@ namespace nda {
     }
 
     /**
-     * @brief Swap two views by simply swapping their memory handles and layouts.
+     * @brief Swap two views by swapping their memory handles and layouts.
+     *
+     * @details This does not modify the data the views point to.
      *
      * @param a First view.
      * @param b Second view.
@@ -379,6 +396,8 @@ namespace nda {
 
     /**
      * @brief Swap two views by swapping their data.
+     *
+     * @details This modifies the data the views point to.
      *
      * @param a First view.
      * @param b Second view.

@@ -38,6 +38,7 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `geqp3` routine.
    *
    * @details Computes a QR factorization with column pivoting of a matrix \f$ \mathbf{A} \f$:
@@ -49,14 +50,14 @@ namespace nda::lapack {
    * @tparam A nda::MemoryMatrix type.
    * @tparam JPVT nda::MemoryVector type.
    * @tparam TAU nda::MemoryVector type.
-   * @param a Input/output matrix. On entry, the M-by-N matrix \f$ \mathbf{A} \f$. On exit, the
-   * upper triangle of the array contains the min(M,N)-by-N upper trapezoidal matrix \f$ \mathbf{R} \f$;
-   * the elements below the diagonal, together with the array `tau`, represent the unitary matrix
-   * \f$ \mathbf{Q} \f$ as a product of min(M,N) elementary reflectors.
-   * @param jpvt Input/output vector. On entry, if `JPVT(J) !=n 0`, the J-th column of \f$ \mathbf{A} \f$
-   * is permuted to the front of \f$ \mathbf{A P} \f$ (a leading column); if `JPVT(J) == 0`, the J-th
-   * column of \f$ \mathbf{A} \f$ is a free column. On exit, if `JPVT(J) == K`, then the J-th column of
-   * \f$ \mathbf{A P} \f$ was the the K-th column of \f$ \mathbf{A} \f$.
+   * @param a Input/output matrix. On entry, the m-by-n matrix \f$ \mathbf{A} \f$. On exit, the upper triangle of the
+   * array contains the `min(m,n)`-by-n upper trapezoidal matrix \f$ \mathbf{R} \f$; the elements below the diagonal,
+   * together with the array `tau`, represent the unitary matrix \f$ \mathbf{Q} \f$ as a product of `min(m,n)`
+   * elementary reflectors.
+   * @param jpvt Input/output vector. On entry, if `jpvt(j) != 0`, the j-th column of \f$ \mathbf{A} \f$ is permuted to
+   * the front of \f$ \mathbf{A P} \f$ (a leading column); if `jpvt(j) == 0`, the j-th column of \f$ \mathbf{A} \f$ is a
+   * free column. On exit, if `jpvt(j) == k`, then the j-th column of \f$ \mathbf{A P} \f$ was the the k-th column of
+   * \f$ \mathbf{A} \f$.
    * @param tau Output vector. The scalar factors of the elementary reflectors.
    * @return Integer return code from the LAPACK call.
    */

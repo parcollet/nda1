@@ -30,6 +30,11 @@ namespace nda::clef {
 
   namespace tags {
 
+    /**
+     * @addtogroup clef_expr
+     * @{
+     */
+
     /// Tag for function call expressions.
     struct function {};
 
@@ -48,14 +53,21 @@ namespace nda::clef {
     /// Tag for binary operator expressions.
     struct binary_op {};
 
+    /** @} */
+
   } // namespace tags
+
+  /**
+   * @addtogroup clef_expr
+   * @{
+   */
 
   /**
    * @brief Single node of the expression tree.
    *
-   * @details An expression node contains a tag that determines the type of expression and
-   * a tuple of child nodes which are usually either other expression nodes, nda::clef::placeholder
-   * objects or specific values/objects like an int or a double.
+   * @details An expression node contains a tag that determines the type of expression and a tuple of child nodes which
+   * are usually either other expression nodes, nda::clef::placeholder objects or specific values/objects like an int or
+   * a double.
    *
    * @tparam Tag Tag of the expression.
    * @tparam Ts Types of the child nodes.
@@ -97,13 +109,12 @@ namespace nda::clef {
      *
      * @tparam Args Types of the subscript arguments.
      * @param args Subscript arguments.
-     * @return An nda::clef::expr object with the nda::clef::tag::subscript tag containing the
-     * current expression node as the first child node and the other arguments as the remaining
-     * child nodes.
+     * @return An nda::clef::expr object with the nda::clef::tags::subscript tag containing the current expression node
+     * as the first child node and the other arguments as the remaining child nodes.
      */
     template <typename... Args>
-    expr<tags::subscript, expr, expr_storage_t<Args>...> operator[](Args &&...args) const {
-      return {tags::subscript(), *this, std::forward<Args>(args)...};
+    auto operator[](Args &&...args) const {
+      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), *this, std::forward<Args>(args)...};
     }
 
     /**
@@ -111,12 +122,12 @@ namespace nda::clef {
      *
      * @tparam Args Types of the function call arguments.
      * @param args Function call arguments.
-     * @return An nda::clef::expr object with the nda::clef::tag::function tag containing the current
-     * expression node as the first child node and the other arguments as the remaining child nodes.
+     * @return An nda::clef::expr object with the nda::clef::tags::function tag containing the current expression node
+     * as the first child node and the other arguments as the remaining child nodes.
      */
     template <typename... Args>
-    expr<tags::function, expr, expr_storage_t<Args>...> operator()(Args &&...args) const {
-      return {tags::function(), *this, std::forward<Args>(args)...};
+    auto operator()(Args &&...args) const {
+      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), *this, std::forward<Args>(args)...};
     }
   };
 
@@ -135,5 +146,7 @@ namespace nda::clef {
     constexpr bool force_copy_in_expr_impl<expr<Tag, Ts...>> = true;
 
   } // namespace detail
+
+  /** @} */
 
 } // namespace nda::clef

@@ -44,9 +44,23 @@
 namespace nda::lapack {
 
   /**
+   * @addtogroup linalg_lapack
+   * @{
+   */
+
+  /**
    * @brief Worker class for solving linear least square problems.
    *
-   * @details See https://math.stackexchange.com/questions/772039/how-does-the-svd-solve-the-least-squares-problem.
+   * @details Solving a linear least squares problem means finding the minimum norm solution \f$ \mathbf{x} \f$ of a
+   * linear system of equations, i.e.
+   * \f[
+   *   \min_x | \mathbf{b} - \mathbf{A x} |_2 \; ,
+   * \f]
+   * where \f$ \mathbf{A} \f$ is a given matrix and \f$ \mathbf{b} \f$ is a given vector (although it can also be a
+   * matrix, in this case one gets a solution matrix\f$ \mathbf{X} \f$).
+   *
+   * See https://math.stackexchange.com/questions/772039/how-does-the-svd-solve-the-least-squares-problem for the
+   * notation used in this file.
    *
    * @tparam T Value type of the given problem.
    */
@@ -71,7 +85,7 @@ namespace nda::lapack {
     public:
     /**
      * @brief Get the number of variables of the given problem.
-     * @return Number of columns of the matrix A.
+     * @return Number of columns of the matrix \f$ \mathbf{A} \f$ .
      */
     int n_var() const { return A.extent(1); }
 
@@ -82,11 +96,11 @@ namespace nda::lapack {
     [[nodiscard]] array<double, 1> const &S_vec() const { return s_vec; }
 
     /**
-     * @brief Construct a new worker object for a given matrix A.
+     * @brief Construct a new worker object for a given matrix \f$ \mathbf{A} \f$ .
      *
-     * @details It performs the SVD decomposition of the given matrix A and calculates
-     * the (pseudo) inverse of A. Furthermore, it sets the null space term which determines
-     * the error of the least square problem.
+     * @details It performs the SVD decomposition of the given matrix \f$ \mathbf{A} \f$  and calculates the (pseudo)
+     * inverse of \f$ \mathbf{A} \f$. Furthermore, it sets the null space term which determines the error of the least
+     * square problem.
      *
      * @param A_ Matrix to be decomposed by SVD.
      */
@@ -112,10 +126,10 @@ namespace nda::lapack {
     }
 
     /**
-     * @brief Solve the least-square problem for a given right hand side matrix B.
+     * @brief Solve the least-square problem for a given right hand side matrix \f$ \mathbf{B} \f$.
+     *
      * @param B Right hand side matrix.
-     * @return A std::pair containing the solution matrix X and the error of the least
-     * square problem.
+     * @return A std::pair containing the solution matrix \f$ \mathbf{X} \f$ and the error of the least square problem.
      */
     std::pair<matrix<T>, double> operator()(matrix_const_view<T> B, std::optional<long> /* inner_matrix_dim */ = {}) const {
       using std::sqrt;
@@ -129,10 +143,10 @@ namespace nda::lapack {
     }
 
     /**
-     * @brief Solve the least-square problem for a given right hand side vector b.
+     * @brief Solve the least-square problem for a given right hand side vector \f$ \mathbf{b} \f$.
+     *
      * @param b Right hand side vector.
-     * @return A std::pair containing the solution vector x and the error of the least
-     * square problem.
+     * @return A std::pair containing the solution vector \f$ \mathbf{x} \f$ and the error of the least square problem.
      */
     std::pair<vector<T>, double> operator()(vector_const_view<T> b, std::optional<long> /*inner_matrix_dim*/ = {}) const {
       using std::sqrt;
@@ -145,6 +159,8 @@ namespace nda::lapack {
   /**
    * @brief Worker class for solving linear least square problems for hermitian tail-fitting.
    * @details Restrict the resulting vector of moment matrices to one of hermitian matrices.
+   *
+   * See also nda::lapack::gelss_worker.
    */
   struct gelss_worker_hermitian {
     private:
@@ -163,7 +179,7 @@ namespace nda::lapack {
     public:
     /**
      * @brief Get the number of variables of the given problem.
-     * @return Number of columns of the matrix A.
+     * @return Number of columns of the matrix \f$ \mathbf{A} \f$.
      */
     int n_var() const { return static_cast<int>(A.extent(1)); }
 
@@ -174,16 +190,16 @@ namespace nda::lapack {
     array<double, 1> const &S_vec() const { return _lss.S_vec(); }
 
     /**
-     * @brief Construct a new worker object for a given matrix A.
+     * @brief Construct a new worker object for a given matrix \f$ \mathbf{A} \f$.
      * @param A_ Matrix to be decomposed by SVD.
      */
     gelss_worker_hermitian(matrix<dcomplex> A_) : A(std::move(A_)), _lss(A), _lss_matrix(vstack(A, conj(A))) {}
 
     /**
-     * @brief Solve the least-square problem for a given right hand side matrix B.
+     * @brief Solve the least-square problem for a given right hand side matrix \f$ \mathbf{B} \f$.
      * @param B Right hand side matrix.
-     * @return A std::pair containing the solution matrix X and the error of the least
-     * square problem.
+     * @param inner_matrix_dim Inner matrix dimension for hermitian least square fitting.
+     * @return A std::pair containing the solution matrix \f$ \mathbf{X} \f$ and the error of the least square problem.
      */
     std::pair<matrix<dcomplex>, double> operator()(matrix_const_view<dcomplex> B, std::optional<long> inner_matrix_dim = {}) const {
       if (not inner_matrix_dim.has_value())
@@ -226,5 +242,7 @@ namespace nda::lapack {
       return {0.5 * (x + inner_adjoint(x)), err};
     }
   };
+
+  /** @} */
 
 } // namespace nda::lapack

@@ -29,12 +29,17 @@
 namespace nda::mem {
 
   /**
+   * @addtogroup mem_utils
+   * @{
+   */
+
+  /**
    * @brief Call the correct `malloc` function based on the given address space.
    *
    * @details It makes the following function calls depending on the address space:
-   * - `std::malloc` for nda::mem::Host.
-   * - `cudaMalloc` for nda::mem::Device.
-   * - `cudaMallocManaged` for nda::mem::Unified.
+   * - `std::malloc` for `Host`.
+   * - `cudaMalloc` for `Device`.
+   * - `cudaMallocManaged` for `Unified`.
    *
    * @tparam AdrSp nda::mem::AddressSpace.
    * @param size Size in bytes to be allocated.
@@ -60,8 +65,8 @@ namespace nda::mem {
    * @brief Call the correct `free` function based on the given address space.
    *
    * @details It makes the following function calls depending on the address space:
-   * - `std::free` for nda::mem::Host.
-   * - `cudaFree` for nda::mem::Device and nda::mem::Unified.
+   * - `std::free` for `Host`.
+   * - `cudaFree` for `Device` and `Unified`.
    *
    * @tparam AdrSp nda::mem::AddressSpace.
    * @param p Pointer to the memory to be freed.
@@ -77,5 +82,7 @@ namespace nda::mem {
       device_error_check(cudaFree(p), "cudaFree");
     }
   }
+
+  /** @} */
 
 } // namespace nda::mem

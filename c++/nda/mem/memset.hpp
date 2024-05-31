@@ -29,11 +29,16 @@
 namespace nda::mem {
 
   /**
+   * @addtogroup mem_utils
+   * @{
+   */
+
+  /**
    * @brief Call the correct `memset` function based on the given address space.
    *
    * @details It makes the following function calls depending on the address spaces:
-   * - `std::memset` for nda::mem::Host.
-   * - `cudaMemset` for nda::mem::Device and nda::mem::Unified.
+   * - `std::memset` for `Host`.
+   * - `cudaMemset` for `Device` and `Unified`.
    *
    * @tparam AdrSp nda::mem::AddressSpace.
    * @param p Pointer to the memory to be set.
@@ -53,15 +58,14 @@ namespace nda::mem {
   }
 
   /**
-   * @brief Call CUDA's `cudaMemset2D` function or simulate its behavior on the host based on
-   * the given address space.
+   * @brief Call CUDA's `cudaMemset2D` function or simulate its behavior on the `Host` based on the given address space.
    *
-   * @details Sets each byte of a matrix (`height` rows of `width` bytes each) pointed to by
-   * `dest` to a specified value. `pitch` is the width in memory in bytes of the 2D array pointed
-   * to by `dest`, including any padding added to the end of each row.
+   * @details Sets each byte of a matrix (`height` rows of `width` bytes each) pointed to by `dest` to a specified
+   * value. `pitch` is the width in memory in bytes of the 2D array pointed to by `dest`, including any padding added to
+   * the end of each row.
    *
-   * If the address space is nda::mem::Host, it simulates the behavior of CUDA's `cudaMemset2D`
-   * function by making multiple calls to std::memset.
+   * If the address space is `Host`, it simulates the behavior of CUDA's `cudaMemset2D` function by making multiple
+   * calls to std::memset.
    *
    * @tparam AdrSp nda::mem::AddressSpace.
    * @param ptr Pointer to the memory to be set.
@@ -82,5 +86,7 @@ namespace nda::mem {
       device_error_check(cudaMemset2D(ptr, pitch, value, width, height), "cudaMemset2D");
     }
   }
+
+  /** @} */
 
 } // namespace nda::mem

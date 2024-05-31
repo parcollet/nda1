@@ -30,8 +30,13 @@
 namespace nda {
 
   /**
-   * @brief Array adapter that consists of a shape and a callable object, which
-   * takes R integers as arguments (just like an nda::basic_array).
+   * @addtogroup av_utils
+   * @{
+   */
+
+  /**
+   * @brief Adapter that consists of a shape and a callable object, which takes `R` integers as arguments (just like an
+   * nda::basic_array or nda::basic_array_view).
    *
    * @tparam R Rank of the adapter.
    * @tparam F Callable type.
@@ -59,9 +64,9 @@ namespace nda {
 
     /**
      * @brief Get shape of the adapter.
-     * @return std::array object specifying the shape of the adapter.
+     * @return `std::array<long, R>` object specifying the shape of the adapter.
      */
-    [[nodiscard]] std::array<long, R> const &shape() const { return myshape; }
+    [[nodiscard]] auto const &shape() const { return myshape; }
 
     /**
      * @brief Get the total size of the adapter.
@@ -87,7 +92,12 @@ namespace nda {
   template <auto R, typename Int, typename F>
   array_adapter(std::array<Int, R>, F) -> array_adapter<R, F>;
 
-  /// Specialization of nda::get_algebra for nda::array_adapter.
+  /** @} */
+
+  /**
+   * @ingroup utils_type_traits
+   * @brief Specialization of nda::get_algebra for nda::array_adapter.
+   */
   template <int R, typename F>
   inline constexpr char get_algebra<array_adapter<R, F>> = 'A';
 

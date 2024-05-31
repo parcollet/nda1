@@ -26,6 +26,11 @@
 
 namespace nda {
 
+  /**
+  * @addtogroup mem_pols
+  * @{
+  */
+
 #ifdef NDA_TEST_DEFAULT_ALLOC_MBUCKET // for testing only: use multi_bucket allocator
   template <typename Allocator =
                mem::segregator<8 * NDA_TEST_DEFAULT_ALLOC_MBUCKET, mem::multi_bucket<8 * NDA_TEST_DEFAULT_ALLOC_MBUCKET>, mem::mallocator>>
@@ -52,7 +57,7 @@ namespace nda {
 
   /**
    * @brief Alias template of the nda::heap_basic policy using an nda::mem::mallocator.
-   * @tparam AdrSp nda::mem::AdressSpace in which the memory is allocated.
+   * @tparam AdrSp nda::mem::AddressSpace in which the memory is allocated.
    */
   template <mem::AddressSpace AdrSp = mem::Host>
   using heap = heap_basic<mem::mallocator<AdrSp>>;
@@ -97,7 +102,7 @@ namespace nda {
 
   /**
    * @brief Memory policy using an nda::mem::handle_borrowed.
-   * @tparam AdrSp nda::mem::AdressSpace in which the memory is allocated.
+   * @tparam AdrSp nda::mem::AddressSpace in which the memory is allocated.
    */
   template <mem::AddressSpace AdrSp = mem::Host>
   struct borrowed {
@@ -108,5 +113,7 @@ namespace nda {
     template <typename T>
     using handle = mem::handle_borrowed<T, AdrSp>;
   };
+
+  /** @} */
 
 } // namespace nda

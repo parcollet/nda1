@@ -37,38 +37,38 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `gelss` routine.
    *
    * @details Computes the minimum norm solution to a complex linear least squares problem:
    * \f[
    *   \min_x | \mathbf{b} - \mathbf{A x} |_2
    * \f]
-   * using the singular value decomposition (SVD) of \f$ \mathbf{A} \f$. \f$ \mathbf{A} \f$
-   * is an M-by-N matrix which may be rank-deficient.
+   * using the singular value decomposition (SVD) of \f$ \mathbf{A} \f$. \f$ \mathbf{A} \f$ is an m-by-n matrix which
+   * may be rank-deficient.
    *
-   * Several right hand side vectors \f$ \mathbf{b} \f$ and solution vectors \f$ \mathbf{x} \f$
-   * can be handled in a single call; they are stored as the columns of the M-by-NRHS right hand
-   * side matrix \f$ \mathbf{B} \f$ and the N-by-NRHS solution matrix \f$ \mathbf{X} \f$.
+   * Several right hand side vectors \f$ \mathbf{b} \f$ and solution vectors \f$ \mathbf{x} \f$ can be handled in a
+   * single call; they are stored as the columns of the m-by-nrhs right hand side matrix \f$ \mathbf{B} \f$ and the
+   * n-by-nrhs solution matrix \f$ \mathbf{X} \f$.
    *
-   * The effective rank of \f$ \mathbf{A} \f$ is determined by treating as zero those singular
-   * values which are less than RCOND times the largest singular value.
+   * The effective rank of \f$ \mathbf{A} \f$ is determined by treating as zero those singular values which are less
+   * than `rcond` times the largest singular value.
    *
    * @tparam A nda::MemoryMatrix type.
    * @tparam B nda::MemoryArray type.
    * @tparam S nda::MemoryVector type.
-   * @param a Input/output matrix. On entry, the M-by-N matrix \f$ \mathbf{A} \f$. On exit, the
-   * first min(m,n) rows of \f$ \mathbf{A} \f$ are overwritten with its right singular vectors,
-   * stored rowwise.
-   * @param b Input/output array. On entry, the M-by-NRHS right hand side matrix \f$ \mathbf{B} \f$.
-   * On exit, \f$ \mathbf{B} \f$ is overwritten by the N-by-NRHS solution matrix \f$ \mathbf{X} \f$.
-   * If `m >= n` and `RANK == n`, the residual sum-of-squares for the solution in the i-th column is
-   * given by the sum of squares of the modulus of elements `n+1:m` in that column.
-   * @param s Output vector. The singular values of \f$ \mathbf{A} \f$ in decreasing order. The condition
-   * number of A in the 2-norm is `s(1)/s(min(m,n))`.
-   * @param rcond It is used to determine the effective rank of \f$ \mathbf{A} \f$. Singular values
-   * `s(i) <= rcond * s(1)` are treated as zero. If `rcond < 0`, machine precision is used instead.
-   * @param rank Output variable of the effective rank of \f$ \mathbf{A} \f$, i.e., the number of
-   * singular values which are greater than `rcond * s(1)`.
+   * @param a Input/output matrix. On entry, the m-by-n matrix \f$ \mathbf{A} \f$. On exit, the first `min(m,n)` rows of
+   * \f$ \mathbf{A} \f$ are overwritten with its right singular vectors, stored rowwise.
+   * @param b Input/output array. On entry, the m-by-nrhs right hand side matrix \f$ \mathbf{B} \f$. On exit,
+   * \f$ \mathbf{B} \f$ is overwritten by the n-by-nrhs solution matrix \f$ \mathbf{X} \f$. If `m >= n` and `RANK == n`,
+   * the residual sum-of-squares for the solution in the i-th column is given by the sum of squares of the modulus of
+   * elements `n+1:m` in that column.
+   * @param s Output vector. The singular values of \f$ \mathbf{A} \f$ in decreasing order. The condition number of A in
+   * the 2-norm is `s(1)/s(min(m,n))`.
+   * @param rcond It is used to determine the effective rank of \f$ \mathbf{A} \f$. Singular values `s(i) <= rcond *
+   * s(1)` are treated as zero. If `rcond < 0`, machine precision is used instead.
+   * @param rank Output variable of the effective rank of \f$ \mathbf{A} \f$, i.e., the number of singular values which
+   * are greater than `rcond * s(1)`.
    * @return Integer return code.
    */
   template <MemoryMatrix A, MemoryArray B, MemoryVector S>

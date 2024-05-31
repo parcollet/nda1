@@ -37,6 +37,11 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup linalg_tools
+   * @{
+   */
+
   namespace detail {
 
     // Helper variable template to check if the three matrix types can be passed to gemm.
@@ -66,6 +71,11 @@ namespace nda {
 
   /**
    * @brief Perform a matrix-matrix multiplication.
+   *
+   * @details It is generic in the sense that it allows the input matrices to belong to a different
+   * nda::mem::AddressSpace (as long as they are compatible).
+   *
+   * If possible, it uses nda::blas::gemm, otherwise it calls nda::blas::gemm_generic.
    *
    * @tparam A nda::Matrix type of lhs operand.
    * @tparam B nda::Matrix type of rhs operand.
@@ -127,6 +137,11 @@ namespace nda {
   /**
    * @brief Perform a matrix-vector multiplication.
    *
+   * @details It is generic in the sense that it allows the input matrix and vector to belong to a different
+   * nda::mem::AddressSpace (as long as they are compatible).
+   *
+   * If possible, it uses nda::blas::gemv, otherwise it calls nda::blas::gemv_generic.
+   *
    * @tparam A nda::Matrix type of lhs operand.
    * @tparam X nda::Vector type of rhs operand.
    * @param a Left hand side matrix operand.
@@ -181,5 +196,7 @@ namespace nda {
     }
     return result;
   }
+
+  /** @} */
 
 } // namespace nda

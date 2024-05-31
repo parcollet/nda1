@@ -76,50 +76,65 @@ namespace nda::linalg {
   } // namespace detail
 
   /**
-   * @brief Find the eigenvalues and eigenvectors of a symmetric (real) or hermitian
-   * (complex) matrix.
+   * @addtogroup linalg_tools
+   * @{
+   */
+
+  /**
+   * @brief Find the eigenvalues and eigenvectors of a symmetric (real) or hermitian (complex) matrix/view.
    *
-   * @details The given matrix is copied and the original is not modified.
+   * @details For a real symmetric matrix/view, it calls the LAPACK routine `syev`. For a complex hermitian matrix/view,
+   * it calls the LAPACK routine `heev`.
    *
-   * @tparam M Matrix type.
+   * The given matrix/view is copied and the original is not modified.
+   *
+   * @tparam M Type of the matrix/view.
    * @param m Matrix/View to diagonalize.
-   * @return std::pair consisting of the array of eigenvalues in ascending order and
-   * the matrix containing the eigenvectors in its columns.
+   * @return std::pair consisting of the array of eigenvalues in ascending order and the matrix containing the
+   * eigenvectors in its columns.
    */
   template <typename M>
-  std::pair<array<double, 1>, typename M::regular_type> eigenelements(M const &m) {
+  auto eigenelements(M const &m) {
     auto m_copy = matrix<typename M::value_type, F_layout>(m);
     auto ev     = detail::_eigen_element_impl(m_copy, 'V');
-    return {ev, m_copy};
+    return std::pair<array<double, 1>, typename M::regular_type>{ev, m_copy};
   }
 
   /**
-   * @brief Find the eigenvalues of a symmetric (real) or hermitian (complex) matrix.
+   * @brief Find the eigenvalues of a symmetric (real) or hermitian (complex) matrix/view.
    *
-   * @details The given matrix is copied and the original is not modified.
+   * @details For a real symmetric matrix/view, it calls the LAPACK routine `syev`. For a complex hermitian matrix/view,
+   * it calls the LAPACK routine `heev`.
    *
-   * @tparam M Matrix type.
+   * The given matrix/view is copied and the original is not modified.
+   *
+   * @tparam M Type of the matrix/view.
    * @param m Matrix/View to diagonalize.
-   * @return An nda::array containing the eigenvalues in ascending order.
+   * @return An nda::array of rank 1 containing the eigenvalues in ascending order.
    */
   template <typename M>
-  array<double, 1> eigenvalues(M const &m) {
+  auto eigenvalues(M const &m) {
     auto m_copy = matrix<typename M::value_type, F_layout>(m);
     return detail::_eigen_element_impl(m_copy, 'N');
   }
 
   /**
-   * @brief Find the eigenvalues of a symmetric (real) or hermitian (complex) matrix.
+   * @brief Find the eigenvalues of a symmetric (real) or hermitian (complex) matrix/view.
    *
-   * @details The given matrix will be modified by the diagonalization process.
+   * @details For a real symmetric matrix/view, it calls the LAPACK routine `syev`. For a complex hermitian matrix/view,
+   * it calls the LAPACK routine `heev`.
    *
-   * @tparam M Matrix type.
+   * The given matrix/view will be modified by the diagonalization process.
+   *
+   * @tparam M Type of the matrix/view.
    * @param m Matrix/View to diagonalize.
-   * @return An nda::array containing the eigenvalues in ascending order.
+   * @return An nda::array of rank 1 containing the eigenvalues in ascending order.
    */
   template <typename M>
-  array<double, 1> eigenvalues_in_place(M &m) {
+  auto eigenvalues_in_place(M &m) {
     return _eigen_element_impl(m, 'N');
   }
+
+  /** @} */
 
 } // namespace nda::linalg

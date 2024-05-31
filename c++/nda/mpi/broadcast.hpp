@@ -31,15 +31,18 @@
 namespace nda {
 
   /**
+   * @ingroup av_mpi
    * @brief Implementation of an MPI broadcast for nda::basic_array or nda::basic_array_view types.
    *
-   * @details For the root process, the array/view is broadcasted to all other processes. For non-root
-   * processes, the array/view is resized/checked to match the broadcasted dimensions and the data is
-   * written into the given array/view.
+   * @details For the root process, the array/view is broadcasted to all other processes. For non-root processes, the
+   * array/view is resized/checked to match the broadcasted dimensions and the data is written into the given
+   * array/view.
+   *
+   * Throws an exception, if a given view does not have the correct shape.
    *
    * @tparam A nda::basic_array or nda::basic_array_view type.
    * @param a Array or view to be broadcasted from/into.
-   * @param comm mpi::communicator object.
+   * @param comm `mpi::communicator` object.
    * @param root Rank of the root process.
    */
   template <typename A>

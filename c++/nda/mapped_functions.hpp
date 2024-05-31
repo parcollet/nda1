@@ -16,8 +16,8 @@
 
 /**
  * @file
- * @brief Provides some custom implementations of standard mathematical functions
- * used for lazy, coefficient-wise array operations.
+ * @brief Provides some custom implementations of standard mathematical functions used for lazy, coefficient-wise array
+ * operations.
  */
 
 #pragma once
@@ -32,6 +32,11 @@
 #include <utility>
 
 namespace nda {
+
+  /**
+   * @addtogroup av_math
+   * @{
+   */
 
   /**
    * @brief Get the real part of a scalar.
@@ -89,8 +94,7 @@ namespace nda {
    * @brief Check if a std::complex<double> is NaN.
    *
    * @param z std::complex<double> value.
-   * @return True if either the real or imaginary part of the given complex number is
-   * NaN, false otherwise.
+   * @return True if either the real or imaginary part of the given complex number is `NaN`, false otherwise.
    */
   inline bool isnan(std::complex<double> const &z) { return std::isnan(z.real()) or std::isnan(z.imag()); }
 
@@ -138,8 +142,7 @@ namespace nda {
    *
    * @tparam A nda::Array type.
    * @param a nda::Array object.
-   * @return A lazy nda::expr_call object if the array is complex valued, otherwise the
-   * array itself.
+   * @return A lazy nda::expr_call object if the array is complex valued, otherwise the array itself.
    */
   template <Array A>
   decltype(auto) conj(A &&a) {
@@ -148,5 +151,7 @@ namespace nda {
     else
       return std::forward<A>(a);
   }
+
+  /** @} */
 
 } // namespace nda

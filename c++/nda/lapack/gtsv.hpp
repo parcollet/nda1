@@ -30,33 +30,31 @@
 namespace nda::lapack {
 
   /**
+   * @ingroup linalg_lapack
    * @brief Interface to the LAPACK `gtsv` routine.
    *
    * @details Solves the equation
    * \f[
    *   \mathbf{A} \mathbf{X} = \mathbf{B},
    * \f]
-   * where \f$ \mathbf{A} \f$ is an N-by-N tridiagonal matrix, by Gaussian elimination with
-   * partial pivoting.
+   * where \f$ \mathbf{A} \f$ is an n-by-n tridiagonal matrix, by Gaussian elimination with partial pivoting.
    *
-   * Note that the equation \f$ \mathbf{A}^T \mathbf{X} = \mathbf{B} \f$ may be solved by
-   * interchanging the order of the arguments containing the subdiagonal elements.
+   * Note that the equation \f$ \mathbf{A}^T \mathbf{X} = \mathbf{B} \f$ may be solved by interchanging the order of the
+   * arguments containing the subdiagonal elements.
    *
    * @tparam DL nda::MemoryVector type.
    * @tparam D nda::MemoryVector type.
    * @tparam DU nda::MemoryVector type.
    * @tparam B nda::MemoryArray type.
-   * @param dl Input/Output vector. On entry, it must contain the (n-1) subdiagonal elements
-   * of \f$ \mathbf{A} \f$. On exit, it is overwritten by the (n-2) elements of the second
-   * superdiagonal of the upper triangular matrix \f$ \mathbf{U} \f$ from the LU factorization
-   * of \f$ \mathbf{A} \f$.
-   * @param d Input/Output vector. On entry, it must contain the diagonal elements of \f$ \mathbf{A} \f$.
-   * On exit, it is overwritten by the n diagonal elements of \f$ \mathbf{U} \f$.
-   * @param du Input/Output vector. On entry, it must contain the (n-1) superdiagonal elements
-   * of \f$ \mathbf{A} \f$. On exit, it is overwritten by the (n-1) elements of the first superdiagonal
-   * of \f$ \mathbf{U} \f$ .
-   * @param b Input/Output array. On entry, the N-by-NRHS right hand side matrix \f$ \mathbf{B} \f$.
-   * On exit, if `INFO = 0`, the N-by-NRHS solution matrix \f$ \mathbf{X} \f$.
+   * @param dl Input/Output vector. On entry, it must contain the (n-1) subdiagonal elements of \f$ \mathbf{A} \f$. On
+   * exit, it is overwritten by the (n-2) elements of the second superdiagonal of the upper triangular matrix
+   * \f$ \mathbf{U} \f$ from the LU factorization of \f$ \mathbf{A} \f$.
+   * @param d Input/Output vector. On entry, it must contain the diagonal elements of \f$ \mathbf{A} \f$. On exit, it is
+   * overwritten by the n diagonal elements of \f$ \mathbf{U} \f$.
+   * @param du Input/Output vector. On entry, it must contain the (n-1) superdiagonal elements of \f$ \mathbf{A} \f$. On
+   * exit, it is overwritten by the (n-1) elements of the first superdiagonal of \f$ \mathbf{U} \f$ .
+   * @param b Input/Output array. On entry, the n-by-nrhs right hand side matrix \f$ \mathbf{B} \f$. On exit, if
+   * `INFO == 0`, the n-by-nrhs solution matrix \f$ \mathbf{X} \f$.
    * @return Integer return code from the LAPACK call.
    */
   template <MemoryVector DL, MemoryVector D, MemoryVector DU, MemoryArray B>

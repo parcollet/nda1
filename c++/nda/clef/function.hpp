@@ -16,8 +16,8 @@
 
 /**
  * @file
- * @brief Provides functionality to turn lazy expressions into callable objects and to
- * generally simplify the evaluation of lazy expressions.
+ * @brief Provides functionality to turn lazy expressions into callable objects and to generally simplify the evaluation
+ * of lazy expressions.
  */
 
 #pragma once
@@ -33,10 +33,15 @@
 namespace nda::clef {
 
   /**
+   * @addtogroup clef_expr
+   * @{
+   */
+
+  /**
    * @brief Helper struct to simplify calls to nda::clef::eval.
    *
-   * @details It stores the object (usually a lazy expression) which we want to evaluate
-   * and takes integer labels of placeholders as template arguments.
+   * @details It stores the object (usually a lazy expression) which we want to evaluate and takes integer labels of
+   * placeholders as template arguments.
    *
    * See nda::clef::make_function for an example.
    *
@@ -51,9 +56,9 @@ namespace nda::clef {
     /**
      * @brief Function call operator.
      *
-     * @details The arguments together with the integer labels (template parameters of the class)
-     * are used to construct nda::clef::pair objects. The stored object and the pairs are then
-     * passed to the nda::clef::eval function to perform the evaluation.
+     * @details The arguments together with the integer labels (template parameters of the class) are used to construct
+     * nda::clef::pair objects. The stored object and the pairs are then passed to the nda::clef::eval function to
+     * perform the evaluation.
      *
      * @tparam Args Types of the function call arguments.
      * @param args Function call arguments.
@@ -68,12 +73,12 @@ namespace nda::clef {
   /**
    * @brief Factory function for nda::clef::make_fun_impl objects.
    *
-   * @details The given arguments are used to construct a new nda::clef::make_fun_impl object.
-   * The first argument is forwarded to its constructor and the integer labels of the remaining
-   * placeholder arguments are used in its template argument list.
+   * @details The given arguments are used to construct a new nda::clef::make_fun_impl object. The first argument is
+   * forwarded to its constructor and the integer labels of the remaining placeholder arguments are used in its template
+   * argument list.
    *
-   * The following example shows how to turn a binary lazy expression `ex` into a callable object
-   * `f` that takes two arguments:
+   * The following example shows how to turn a binary lazy expression `ex` into a callable object `f` that takes two
+   * arguments:
    *
    * @code{.cpp}
    * nda::clef::placeholder<0> i_;
@@ -84,21 +89,22 @@ namespace nda::clef {
    * auto res2 = f(1.5, 2); // double res2 = 3.5;
    * @endcode
    *
-   * @note There is no check if the given placeholders actually match placeholders in the object
-   * to be evaluated.
+   * @note There is no check if the given placeholders actually match placeholders in the object to be evaluated.
    *
    * @tparam T Type of the object.
    * @tparam Phs Types of the placeholders.
    * @param obj Object to be stored in the nda::clef::make_fun_impl object.
-   * @return A callable nda::clef::make_fun_impl object that takes as many arguments as placeholders
-   * were given.
+   * @return A callable nda::clef::make_fun_impl object that takes as many arguments as placeholders were given.
    */
   template <typename T, typename... Phs>
-  FORCEINLINE make_fun_impl<std::decay_t<T>, Phs::index...> make_function(T &&obj, Phs...) {
-    return {std::forward<T>(obj)};
+  FORCEINLINE auto make_function(T &&obj, Phs...) {
+    return make_fun_impl<std::decay_t<T>, Phs::index...>{std::forward<T>(obj)};
   }
 
+  /** @} */
+
   /**
+   * @ingroup clef_eval
    * @brief Specialization of nda::clef::evaluator for nda::clef::make_fun_impl types.
    *
    * @tparam T Type of the object stored in the nda::clef::make_fun_impl object.
@@ -116,9 +122,9 @@ namespace nda::clef {
     /**
      * @brief Evaluate the nda::clef::make_fun_impl object.
      *
-     * @details It first evaluates the object stored in the given nda::clef::make_fun_impl object
-     * by applying the given pairs. The result is then used to construct a new nda::clef::make_fun_impl
-     * instance together with the placeholders from the original nda::clef::make_fun_impl object.
+     * @details It first evaluates the object stored in the given nda::clef::make_fun_impl object by applying the given
+     * pairs. The result is then used to construct a new nda::clef::make_fun_impl instance together with the
+     * placeholders from the original nda::clef::make_fun_impl object.
      *
      * @param f nda::clef::make_fun_impl object.
      * @param pairs nda::clef::pair objects.

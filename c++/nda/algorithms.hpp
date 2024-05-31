@@ -34,6 +34,11 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup av_algs
+   * @{
+   */
+
   // FIXME : CHECK ORDER of the LOOP !
   /**
    * @brief Perform a fold operation on the given nda::Array object.
@@ -49,8 +54,7 @@ namespace nda {
    * @tparam A nda::Array type.
    * @tparam F Callable type.
    * @tparam R Type of the initial value.
-   * @param f Callable object taking two arguments compatible with the initial value
-   * and the array value type.
+   * @param f Callable object taking two arguments compatible with the initial value and the array value type.
    * @param a nda::Array object.
    * @param r Initial value.
    * @return Result of the fold operation.
@@ -63,10 +67,7 @@ namespace nda {
     return r2;
   }
 
-  /**
-   * @brief The same as nda::fold, except that the initial value is a default constructed
-   * value type of the array.
-   */
+  /// The same as nda::fold, except that the initial value is a default constructed value type of the array.
   template <Array A, typename F>
   auto fold(F f, A const &a) {
     return fold(std::move(f), a, get_value_t<A>{});
@@ -101,6 +102,8 @@ namespace nda {
   /**
    * @brief Find the maximum element of an array.
    *
+   * @details It uses nda::fold and `std::max`.
+   *
    * @tparam A nda::Array type.
    * @param a nda::Array object.
    * @return Maximum element of the array.
@@ -118,6 +121,8 @@ namespace nda {
   /**
    * @brief Find the minimum element of an array.
    *
+   * @details It uses nda::fold and `std::min`.
+   *
    * @tparam A nda::Array type.
    * @param a nda::Array object.
    * @return Minimum element of the array.
@@ -132,8 +137,8 @@ namespace nda {
        a, get_first_element(a));
   }
 
-  // FIXME in matrix functions?
   /**
+   * @ingroup av_math
    * @brief Calculate the Frobenius norm of a 2-dimensional array.
    *
    * @tparam A nda::ArrayOfRank<2> type.
@@ -177,5 +182,7 @@ namespace nda {
   {
     return fold(std::multiplies<>{}, a, get_value_t<A>{1});
   }
+
+  /** @} */
 
 } // namespace nda

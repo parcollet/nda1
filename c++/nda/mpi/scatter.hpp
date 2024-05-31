@@ -33,14 +33,13 @@
 #include <vector>
 
 /**
- * @brief Specialization of the mpi::lazy class for nda::Array types and the mpi::tag::scatter tag.
+ * @ingroup av_mpi
+ * @brief Specialization of the `mpi::lazy` class for nda::Array types and the `mpi::tag::scatter` tag.
  *
- * @details An object of this class is returned when scattering nda::Array objects across multiple
- * MPI processes.
+ * @details An object of this class is returned when scattering nda::Array objects across multiple MPI processes.
  *
- * It models an nda::ArrayInitializer, that means it can be used to initialize and assign to
- * nda::basic_array and nda::basic_array_view objects. The input array will be a chunked into
- * along its first dimension using mpi::chunk_length.
+ * It models an nda::ArrayInitializer, that means it can be used to initialize and assign to nda::basic_array and
+ * nda::basic_array_view objects. The input array will be a chunked along its first dimension using `mpi::chunk_length`.
  *
  * See nda::mpi_scatter for an example.
  *
@@ -69,8 +68,8 @@ struct mpi::lazy<mpi::tag::scatter, A> {
   /**
    * @brief Compute the shape of the target array.
    *
-   * @details The target shape will be the same as the input shape, except that first dimension of the
-   * input array is chunked into equal parts using mpi::chunk_length and assigned to each MPI process.
+   * @details The target shape will be the same as the input shape, except that the first dimension of the input array
+   * is chunked into equal (as much as possible) parts using `mpi::chunk_length` and assigned to each MPI process.
    *
    * @warning This makes an MPI call.
    *
@@ -126,14 +125,21 @@ struct mpi::lazy<mpi::tag::scatter, A> {
 namespace nda {
 
   /**
+   * @ingroup av_mpi
    * @brief Implementation of an MPI scatter for nda::basic_array or nda::basic_array_view types.
    *
-   * @details Since the returned mpi::lazy object models an nda::ArrayInitializer, it can be used
-   * to initialize/assign to nda::basic_array and nda::basic_array_view objects:
+   * @details Since the returned `mpi::lazy` object models an nda::ArrayInitializer, it can be used to initialize/assign
+   * to nda::basic_array and nda::basic_array_view objects:
    *
    * @code{.cpp}
+   * // create an array on all processes
    * nda::array<int, 2> arr(10, 4);
-   * // fill array on root rank
+   *
+   * // ...
+   * // fill array on root process
+   * // ...
+   *
+   * // scatter the array to all processes
    * nda::array<int, 2> res = mpi::scatter(arr);
    * @endcode
    *
@@ -141,10 +147,10 @@ namespace nda {
    *
    * @tparam A nda::basic_array or nda::basic_array_view type.
    * @param a Array or view to be scattered.
-   * @param comm mpi::communicator object.
+   * @param comm `mpi::communicator` object.
    * @param root Rank of the root process.
    * @param all Should all processes receive the result of the scatter (not used).
-   * @return An mpi::lazy object modelling an nda::ArrayInitializer.
+   * @return An `mpi::lazy` object modelling an nda::ArrayInitializer.
    */
   template <typename A>
   ArrayInitializer<std::remove_reference_t<A>> auto mpi_scatter(A &&a, mpi::communicator comm = {}, int root = 0, bool all = false)

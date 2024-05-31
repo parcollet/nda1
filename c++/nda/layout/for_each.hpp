@@ -33,6 +33,11 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup layout_utils
+   * @{
+   */
+
   namespace detail {
 
     // Get the i-th slowest moving dimension from a given encoded stride order.
@@ -85,11 +90,10 @@ namespace nda {
   /**
    * @brief Loop over all possible index values of a given shape and apply a function to them.
    *
-   * @details It traverses all possible indices in the order given by the encoded `StrideOrder`
-   * parameter. The shape is either specified at runtime (`StaticExtents == 0`) or, partially or
-   * fully, at compile time (`StaticExtents != 0`). The given function `f` must be callable with
-   * as many long values as the number of dimensions in the shape array, e.g. for a 3-dimensional
-   * shape the function must be callable as `f(long, long, long)`.
+   * @details It traverses all possible indices in the order given by the encoded `StrideOrder` parameter. The shape is
+   * either specified at runtime (`StaticExtents == 0`) or, partially or fully, at compile time (`StaticExtents != 0`).
+   * The given function `f` must be callable with as many long values as the number of dimensions in the shape array,
+   * e.g. for a 3-dimensional shape the function must be callable as `f(long, long, long)`.
    *
    * @tparam StaticExtents Encoded static extents.
    * @tparam StrideOrder Encoded stride order.
@@ -109,10 +113,10 @@ namespace nda {
   /**
    * @brief Loop over all possible index values of a given shape and apply a function to them.
    *
-   * @details It traverses all possible indices in C-order, i.e. the last index varies the
-   * fastest. The shape is specified at runtime and the given function `f` must be callable with
-   * as many long values as the number of dimensions in the shape array, e.g. for a 3-dimensional
-   * shape the function must be callable as `f(long, long, long)`.
+   * @details It traverses all possible indices in C-order, i.e. the last index varies the fastest. The shape is
+   * specified at runtime and the given function `f` must be callable with as many long values as the number of
+   * dimensions in the shape array, e.g. for a 3-dimensional shape the function must be callable as
+   * `f(long, long, long)`.
    *
    * @tparam F Callable type.
    * @tparam R Number of dimensions.
@@ -126,5 +130,7 @@ namespace nda {
     auto idxs = nda::stdutil::make_initialized_array<R>(0l);
     detail::for_each_static_impl<0, 0, 0>(shape, idxs, f);
   }
+
+  /** @} */
 
 } // namespace nda

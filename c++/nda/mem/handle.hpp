@@ -36,6 +36,11 @@
 
 namespace nda::mem {
 
+  /**
+   * @addtogroup mem_utils
+   * @{
+   */
+
   /// Should we initialize memory for complex double types to zero.
   static constexpr bool init_dcmplx = true;
 
@@ -69,9 +74,18 @@ namespace nda::mem {
   /// Instance of nda::mem::init_zero_t.
   inline static constexpr init_zero_t init_zero{};
 
+  /** @} */
+
+  /**
+   * @addtogroup mem_handles
+   * @{
+   */
+
+  /// @cond
   // Forward declaration.
   template <typename T, AddressSpace AdrSp = Host>
   struct handle_shared;
+  /// @endcond
 
   /**
    * @brief A handle for a memory block on the heap.
@@ -79,7 +93,7 @@ namespace nda::mem {
    * @details By default it uses nda::mem::mallocator to allocate/deallocate memory.
    *
    * @tparam T Value type of the data.
-   * @tparam A Type of the allocator.
+   * @tparam A nda::mem::Allocator type.
    */
   template <typename T, Allocator A = mallocator<>>
   struct handle_heap {
@@ -128,7 +142,7 @@ namespace nda::mem {
     /// Value type of the data.
     using value_type = T;
 
-    /// Allocator type.
+    /// nda::mem::Allocator type.
     using allocator_type = A;
 
     /// nda::mem::AddressSpace in which the memory is allocated.
@@ -145,21 +159,18 @@ namespace nda::mem {
 
     /**
      * @brief Destructor for the handle.
-     *
-     * @details If the shared pointer is set, it does nothing. Otherwise, it explicitly
-     * calls the destructor of non-trivial objects and deallocates the memory.
+     * @details If the shared pointer is set, it does nothing. Otherwise, it explicitly calls the destructor of
+     * non-trivial objects and deallocates the memory.
      */
     ~handle_heap() noexcept {
       if (not sptr and not(is_null())) destruct({_data, _size});
     }
 
-    /// Default constructor leaves the handle in a null state (nullptr and size 0).
+    /// Default constructor leaves the handle in a null state (`nullptr` and size 0).
     handle_heap() = default;
 
     /**
-     * @brief Move constructor simply copies the pointers and size and resets the source
-     * handle to a null state.
-     *
+     * @brief Move constructor simply copies the pointers and size and resets the source handle to a null state.
      * @param h Source handle.
      */
     handle_heap(handle_heap &&h) noexcept : _data(h._data), _size(h._size), sptr(std::move(h.sptr)) {
@@ -168,8 +179,8 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Move assignment operator first releases the resources held by the current
-     * handle and then moves the resources from the source to the current handle.
+     * @brief Move assignment operator first releases the resources held by the current handle and then moves the
+     * resources from the source to the current handle.
      *
      * @param h Source handle.
      */
@@ -202,8 +213,8 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Copy assignment operator utilizes the copy constructor and move assignment
-     * operator to make a deep copy of the data and size from the source handle.
+     * @brief Copy assignment operator utilizes the copy constructor and move assignment operator to make a deep copy of
+     * the data and size from the source handle.
      *
      * @param h Source handle.
      */
@@ -231,8 +242,8 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Assignment operator utilizes another constructor and move assignment to
-     * make a deep copy of the data and size from the source handle.
+     * @brief Assignment operator utilizes another constructor and move assignment to make a deep copy of the data and
+     * size from the source handle.
      *
      * @tparam AS Allocator type of the source handle.
      * @param h Source handle with a different allocator.
@@ -244,9 +255,7 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Construct a handle by allocating memory for the data of a given size but
-     * without initializing it.
-     *
+     * @brief Construct a handle by allocating memory for the data of a given size but without initializing it.
      * @param size Size of the data (number of elements).
      */
     handle_heap(long size, do_not_initialize_t) {
@@ -258,9 +267,7 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Construct a handle by allocating memory for the data of a given size and
-     * initializing it to zero.
-     *
+     * @brief Construct a handle by allocating memory for the data of a given size and initializing it to zero.
      * @param size Size of the data (number of elements).
      */
     handle_heap(long size, init_zero_t) {
@@ -272,14 +279,12 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Construct a handle by allocating memory for the data of a given size and
-     * initializing it depending on the value type.
+     * @brief Construct a handle by allocating memory for the data of a given size and initializing it depending on the
+     * value type.
      *
      * @details The data is initialized as follows:
-     * - If `T` is std::complex and nda::mem::init_dcmplx is true, the data is initialized
-     * to zero.
-     * - If `T` is not trivial and not complex, the data is default constructed by placement
-     * new operator calls.
+     * - If `T` is std::complex and nda::mem::init_dcmplx is true, the data is initialized to zero.
+     * - If `T` is not trivial and not complex, the data is default constructed by placement new operator calls.
      * - Otherwise, the data is not initialized.
      *
      * @param size Size of the data (number of elements).
@@ -319,7 +324,7 @@ namespace nda::mem {
 
     /**
      * @brief Check if the handle is in a null state.
-     * @return True if the data is a nullptr (and the size is 0).
+     * @return True if the data is a `nullptr` (and the size is 0).
      */
     [[nodiscard]] bool is_null() const noexcept {
 #ifdef NDA_DEBUG
@@ -345,7 +350,7 @@ namespace nda::mem {
   /**
    * @brief A handle for a memory block on the stack.
    *
-   * @note This handle only works with nda::mem::Host.
+   * @note This handle only works with the `Host` nda::mem::AddressSpace.
    *
    * @tparam T Value type of the data.
    * @tparam Size Size of the data (number of elements).
@@ -363,14 +368,12 @@ namespace nda::mem {
     /// Value type of the data.
     using value_type = T;
 
-    /// nda::mem::AddressSpace in which the memory is allocated (always on Host).
+    /// nda::mem::AddressSpace in which the memory is allocated (always on `Host`).
     static constexpr auto address_space = Host;
 
     /**
      * @brief Destructor for the handle.
-     *
-     * @details For non-trivial objects, it explicitly calls their destructors. Otherwise,
-     * it does nothing.
+     * @details For non-trivial objects, it explicitly calls their destructors. Otherwise, it does nothing.
      */
     ~handle_stack() noexcept {
       if constexpr (!std::is_trivial_v<T>) {
@@ -407,9 +410,7 @@ namespace nda::mem {
     handle_stack(handle_stack const &h) noexcept { operator=(h); }
 
     /**
-     * @brief Copy assignment operator makes a deep copy of the data from the source
-     * handle using placement new.
-     *
+     * @brief Copy assignment operator makes a deep copy of the data from the source handle using placement new.
      * @param h Source handle.
      */
     handle_stack &operator=(handle_stack const &h) {
@@ -430,8 +431,7 @@ namespace nda::mem {
      * @brief Construct a handle and initialize the data depending on the value type.
      *
      * @details The data is initialized as follows:
-     * - If `T` is not trivial and not complex, the data is default constructed by placement
-     * new operator calls.
+     * - If `T` is not trivial and not complex, the data is default constructed by placement new operator calls.
      * - Otherwise, the data is not initialized.
      */
     handle_stack(long /*size*/) : handle_stack{} {
@@ -478,13 +478,12 @@ namespace nda::mem {
   /**
    * @brief A handle for a memory block on the heap or stack depending on the size of the data.
    *
-   * @details If the size of the data is less than or equal to the template parameter `Size`, the
-   * data is stored on the stack, otherwise it is stored on the heap (nda::mem::mallocator is used
-   * to allocate/deallocate memory on the heap).
+   * @details If the size of the data is less than or equal to the template parameter `Size`, the data is stored on the
+   * stack, otherwise it is stored on the heap (nda::mem::mallocator is used to allocate/deallocate memory on the heap).
    *
    * It simulates the small string optimization (SSO) for strings.
    *
-   * @note This handle only works with nda::mem::Host.
+   * @note This handle only works with the `Host` nda::mem::AddressSpace.
    *
    * @tparam T Value type of the data.
    * @tparam Size Max. size of the data to store on the stack (number of elements).
@@ -524,29 +523,20 @@ namespace nda::mem {
     /// nda::mem::AddressSpace in which the memory is allocated.
     static constexpr auto address_space = Host;
 
-    /**
-     * @brief Default constructor.
-     *
-     * @details We need to provide a user-defined constructor to avoid value initialization
-     * of the buffer.
-     */
-    handle_sso(){}; // NOLINT (see explanation above)
+    /// Default constructor.
+    handle_sso(){}; // NOLINT (user-defined constructor to avoid value initialization of the buffer)
 
     /**
      * @brief Destructor for the handle.
      *
-     * @details For non-trivial objects, it explicitly calls their destructors. Additionally,
-     * it deallocates the memory if it is stored on the heap and resets the handle to its null
-     * state.
+     * @details For non-trivial objects, it explicitly calls their destructors. Additionally, it deallocates the memory
+     * if it is stored on the heap and resets the handle to its null state.
      */
     ~handle_sso() noexcept { clean(); }
 
     /**
-     * @brief Move constructor either copies the heap pointers or makes a deep copy of the
-     * stack data.
-     *
+     * @brief Move constructor either copies the heap pointers or makes a deep copy of the stack data.
      * @details In both cases, it resets the source handle to a null state.
-     *
      * @param h Source handle.
      */
     handle_sso(handle_sso &&h) noexcept : _size(h._size) {
@@ -563,10 +553,10 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Move assignment operator first releases the resources held by the current handle
-     * and then either copies the heap pointers or makes a deep copy of the stack data.
+     * @brief Move assignment operator first releases the resources held by the current handle and then either copies
+     * the heap pointers or makes a deep copy of the stack data.
      *
-     * @details In both cases it resets the source handle to a null state.
+     * @details In both cases, it resets the source handle to a null state.
      *
      * @param h Source handle.
      */
@@ -600,8 +590,8 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Copy assignment operator first cleans up the current handle and then makes a deep
-     * copy of the data from the source handle.
+     * @brief Copy assignment operator first cleans up the current handle and then makes a deep copy of the data from
+     * the source handle.
      *
      * @param h Source handle.
      */
@@ -623,10 +613,7 @@ namespace nda::mem {
 
     /**
      * @brief Construct a handle by making a deep copy of the data from another owning handle.
-     *
-     * @details Depending on the size, the memory of the data is either allocated on the
-     * heap or on the stack.
-     *
+     * @details Depending on the size, the memory of the data is either allocated on the heap or on the stack.
      * @param h Source handle.
      */
     template <OwningHandle<value_type> H>
@@ -643,10 +630,7 @@ namespace nda::mem {
 
     /**
      * @brief Construct a handle for the data of a given size and do not initialize it.
-     *
-     * @details Depending on the size, the memory of the data is either allocated on the
-     * heap or on the stack.
-     *
+     * @details Depending on the size, the memory of the data is either allocated on the heap or on the stack.
      * @param size Size of the data (number of elements).
      */
     handle_sso(long size, do_not_initialize_t) {
@@ -662,11 +646,10 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Construct a handle for the data of a given size and initialize it to zero (only
-     * for scalar and complex types).
+     * @brief Construct a handle for the data of a given size and initialize it to zero (only for scalar and complex
+     * types).
      *
-     * @details Depending on the size, the memory of the data is either allocated on the heap
-     * or on the stack.
+     * @details Depending on the size, the memory of the data is either allocated on the heap or on the stack.
      *
      * @param size Size of the data (number of elements).
      */
@@ -685,14 +668,11 @@ namespace nda::mem {
     }
 
     /**
-     * @brief Construct a handle for the data of a given size and initialize it depending
-     * on the value type.
+     * @brief Construct a handle for the data of a given size and initialize it depending on the value type.
      *
      * @details The data is initialized as follows:
-     * - If `T` is std::complex and nda::mem::init_dcmplx is true, the data is initialized
-     * to zero.
-     * - If `T` is not trivial and not complex, the data is default constructed by placement
-     * new operator calls.
+     * - If `T` is std::complex and nda::mem::init_dcmplx is true, the data is initialized to zero.
+     * - If `T` is not trivial and not complex, the data is default constructed by placement new operator calls.
      * - Otherwise, the data is not initialized.
      *
      * @param size Size of the data (number of elements).
@@ -736,13 +716,13 @@ namespace nda::mem {
 
     /**
      * @brief Check if the data is/should be stored on the heap.
-     * @return True if the size is greater than the threshold.
+     * @return True if the size is greater than the `Size`.
      */
     [[nodiscard]] bool on_heap() const { return _size > Size; }
 
     /**
      * @brief Check if the handle is in a null state.
-     * @return True if the data is a nullptr (and the size is 0).
+     * @return True if the data is a `nullptr` (and the size is 0).
      */
     [[nodiscard]] bool is_null() const noexcept {
 #ifdef NDA_DEBUG
@@ -794,7 +774,7 @@ namespace nda::mem {
     /// nda::mem::AddressSpace in which the memory is allocated.
     static constexpr auto address_space = AdrSp;
 
-    /// Default constructor leaves the handle in a null state (nullptr and size 0).
+    /// Default constructor leaves the handle in a null state (`nullptr` and size 0).
     handle_shared() = default;
 
     /**
@@ -811,7 +791,7 @@ namespace nda::mem {
     /**
      * @brief Construct a shared handle from an nda::mem::handle_heap.
      *
-     * @tparam A Allocator type of the source handle.
+     * @tparam A nda::mem::Allocator type of the source handle.
      * @param h Source handle.
      */
     template <Allocator A>
@@ -839,7 +819,7 @@ namespace nda::mem {
 
     /**
      * @brief Check if the handle is in a null state.
-     * @return True if the data is a nullptr (and the size is 0).
+     * @return True if the data is a `nullptr` (and the size is 0).
      */
     [[nodiscard]] bool is_null() const noexcept {
 #ifdef NDA_DEBUG
@@ -914,7 +894,7 @@ namespace nda::mem {
     /**
      * @brief Construct a borrowed handle from a another handle.
      *
-     * @tparam H nda::Handle type.
+     * @tparam H nda::mem::Handle type.
      * @param h Other handle.
      * @param offset Pointer offset from the start of the data (in number of elements).
      */
@@ -943,7 +923,7 @@ namespace nda::mem {
 
     /**
      * @brief Check if the handle is in a null state.
-     * @return True if the data is a nullptr.
+     * @return True if the data is a `nullptr`.
      */
     [[nodiscard]] bool is_null() const noexcept { return _data == nullptr; }
 
@@ -959,5 +939,7 @@ namespace nda::mem {
      */
     [[nodiscard]] T *data() const noexcept { return _data; }
   };
+
+  /** @} */
 
 } // namespace nda::mem

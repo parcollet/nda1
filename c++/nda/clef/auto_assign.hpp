@@ -34,6 +34,11 @@
 namespace nda::clef {
 
   /**
+   * @addtogroup clef_autoassign
+   * @{
+   */
+
+  /**
    * @brief Overload of `clef_auto_assign` function for std::reference_wrapper objects.
    *
    * @details Simply calls the `clef_auto_assign` for the object contained in the wrapper.
@@ -64,27 +69,9 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Overload of `clef_auto_assign` for rvalue references of generic expressions.
-   *
-   * @details It calls the specialized `operator<<` function for the given expression and
-   * right-hand side.
-   *
-   * @tparam Tag Tag of the expression.
-   * @tparam Childs Types of the child nodes.
-   * @tparam RHS Type of the right-hand side.
-   * @param ex Rvalue reference of an nda::clef::expr object.
-   * @param rhs Right-hand side object.
-   */
-  template <typename Tag, typename... Childs, typename RHS>
-  FORCEINLINE void clef_auto_assign(expr<Tag, Childs...> &&ex, RHS const &rhs) { // NOLINT (is the rvalue reference overload needed?)
-    ex << rhs;
-  }
-
-  /**
    * @brief Overload of `clef_auto_assign` function for generic expressions.
    *
-   * @details It calls the specialized `operator<<` function for the given expression and
-   * right-hand side.
+   * @details It calls the specialized `operator<<` function for the given expression and right-hand side.
    *
    * @tparam Tag Tag of the expression.
    * @tparam Childs Types of the child nodes.
@@ -97,23 +84,17 @@ namespace nda::clef {
     ex << rhs;
   }
 
+  // Overload of `clef_auto_assign` for rvalue references of generic expressions.
+  template <typename Tag, typename... Childs, typename RHS>
+  FORCEINLINE void clef_auto_assign(expr<Tag, Childs...> &&ex, RHS const &rhs) { // NOLINT (is the rvalue reference overload needed?)
+    ex << rhs;
+  }
+
   /**
    * @brief Assign values to the underlying object of a lazy function call expression.
    *
-   * @details This calls the `clef_auto_assign` overload for the underlying object of the
-   * given expression using ADL. It has to be implemented for all supported types.
-   *
-   * The following example shows how to fill a 1D nda::array of size 3 with the values
-   * 10, 20 and 30:
-   *
-   * @code{.cpp}
-   * nda::clef::placeholder<0> i_;
-   * nda::array<int, 1> a(3);
-   * a(i_) << 10 * i_;
-   * @endcode
-   *
-   * Note that the `operator<<` in line 3 calls the `clef_auto_assign overload` for
-   * nda::array objects.
+   * @details This calls the `clef_auto_assign` overload for the underlying object of the given expression using ADL.
+   * It has to be implemented for all supported types.
    *
    * @tparam F Type of the callable object in the function call expression.
    * @tparam RHS Type of the right-hand side.
@@ -127,14 +108,14 @@ namespace nda::clef {
     clef_auto_assign(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
   }
 
-  /// Overload of nda::clef::operator<< for rvalue reference expressions.
+  // Overload of nda::clef::operator<< for rvalue reference expressions.
   template <typename F, typename RHS, int... Is>
   FORCEINLINE void operator<<(expr<tags::function, F, placeholder<Is>...> &&ex, RHS &&rhs) { // NOLINT (is the rvalue reference overload needed?)
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
     clef_auto_assign(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
   }
 
-  /// Overload of nda::clef::operator<< for lvalue reference expressions.
+  // Overload of nda::clef::operator<< for lvalue reference expressions.
   template <typename F, typename RHS, int... Is>
   FORCEINLINE void operator<<(expr<tags::function, F, placeholder<Is>...> &ex, RHS &&rhs) {
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
@@ -148,5 +129,7 @@ namespace nda::clef {
   void operator<<(expr<tags::function, F, T...> &ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
   template <typename F, typename RHS, typename... T>
   void operator<<(expr<tags::function, F, T...> const &ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
+
+  /** @} */
 
 } // namespace nda::clef

@@ -30,6 +30,11 @@
 namespace nda {
 
   /**
+   * @addtogroup utils_type_traits
+   * @{
+   */
+
+  /**
    * @brief Check if type `T` is of type `TMPLT<...>`.
    *
    * @details For example, the following code will compile:
@@ -86,15 +91,15 @@ namespace nda {
   inline constexpr bool is_scalar_v = std::is_arithmetic_v<std::remove_cvref_t<S>> or is_complex_v<S>;
 
   /**
-   * @brief Constexpr variable that is true if type `S` is a scalar type (see nda::is_scalar_v)
-   * or if a `std::complex<double>` can be constructed from it.
+   * @brief Constexpr variable that is true if type `S` is a scalar type (see nda::is_scalar_v) or if a
+   * `std::complex<double>` can be constructed from it.
    */
   template <typename S>
   inline constexpr bool is_scalar_or_convertible_v = is_scalar_v<S> or std::is_constructible_v<std::complex<double>, S>;
 
   /**
-   * @brief Constexpr variable used to check requirements when initializing an nda::basic_array
-   * or nda::basic_array_view of type `A` with some object/value of type `S`.
+   * @brief Constexpr variable used to check requirements when initializing an nda::basic_array or nda::basic_array_view
+   * of type `A` with some object/value of type `S`.
    */
   template <typename S, typename A>
   inline constexpr bool is_scalar_for_v =
@@ -108,17 +113,24 @@ namespace nda {
   template <typename T>
   inline constexpr bool is_blas_lapack_v = is_double_or_complex_v<T>;
 
+  /** @} */
+
+  /**
+   * @addtogroup av_utils
+   * @{
+   */
+
   /**
    * @brief Constexpr variable that specifies the algebra of a type.
    *
    * @details The possible values are:
-   * - 'N' = None
-   * - 'A' = Array
-   * - 'M' = Matrix
-   * - 'V' = Vector
+   * - 'N' = none
+   * - 'A' = array
+   * - 'M' = matrix
+   * - 'V' = vector
    *
-   * The algebra defines the behavior of objects in certain situations, e.g. matrix multiplication of two
-   * matrices ('M' algebra) vs. element-wise multiplication of two arrays ('A' algebra).
+   * The algebra defines the behavior of objects in certain situations, e.g. matrix multiplication of two matrices
+   * ('M' algebra) vs. element-wise multiplication of two arrays ('A' algebra).
    *
    * @tparam A Type to get the algebra of.
    */
@@ -199,6 +211,13 @@ namespace nda {
   template <typename A0, typename... As>
   inline constexpr bool have_same_rank_v = ((get_rank<A0> == get_rank<As>)and... and true);
 
+  /** @} */
+
+  /**
+   * @addtogroup layout_utils
+   * @{
+   */
+
   /**
    * @brief Compile-time guarantees of the memory layout of an array/view.
    *
@@ -278,16 +297,15 @@ namespace nda {
   /**
    * @brief Stores information about the memory layout and the stride order of an array/view.
    *
-   * @details The stride order of an N-dimensional array/view is a specific permutation of the integers
-   * from 0 to N-1, i.e. `(i1, i2, ..., iN)`, which is encoded in a `uint64_t` (note that this limits
-   * the max. number of dimensions to 16). It specifies the order in which the dimensions are traversed
-   * with `i1` being the slowest and `iN` the fastest.
+   * @details The stride order of an N-dimensional array/view is a specific permutation of the integers from 0 to N-1,
+   * i.e. `(i1, i2, ..., iN)`, which is encoded in a `uint64_t` (note that this limits the max. number of dimensions to
+   * 16). It specifies the order in which the dimensions are traversed with `i1` being the slowest and `iN` the fastest.
    *
-   * For example, a 3D array/view with C-order has a stride order of `(0, 1, 2)`, while the Fortran-order
-   * would be `(2, 1, 0)`.
+   * For example, a 3D array/view with C-order has a stride order of `(0, 1, 2)`, while the Fortran-order would be
+   * `(2, 1, 0)`.
    */
   struct layout_info_t {
-    /// Stride order of the array./view
+    /// Stride order of the array/view.
     uint64_t stride_order = 0;
 
     /// Memory layout properties of the array/view.
@@ -331,16 +349,14 @@ namespace nda {
   template <typename A>
   constexpr bool has_layout_smallest_stride_is_one = (has_smallest_stride_is_one(get_layout_info<A>.prop));
 
-  /// A small wrapper around a single long integer to be used as a linear index.
+  /**
+   * @brief A small wrapper around a single long integer to be used as a linear index.
+   */
   struct _linear_index_t {
     /// Linear index.
     long value;
   };
 
-  /**
-   * @deprecated Deprecated debug tool.
-   */
-  template <typename T>
-  [[deprecated]] void show_the_type(T &&) {} // NOLINT (is deprecated anyway)
+  /** @} */
 
 } // namespace nda

@@ -40,11 +40,15 @@
 namespace nda {
 
   /**
+   * @addtogroup av_ops
+   * @{
+   */
+
+  /**
    * @brief Lazy unary expression for nda::Array types.
    *
-   * @details A lazy unary expression contains a single operand and a unary operation. It fulfills
-   * the nda::Array concept and can therefore be used in any other expression or function that expects
-   * an nda::Array type.
+   * @details A lazy unary expression contains a single operand and a unary operation. It fulfills the nda::Array
+   * concept and can therefore be used in any other expression or function that expects an nda::Array type.
    *
    * The only supported unary operation is the negation operation ('-').
    *
@@ -65,8 +69,8 @@ namespace nda {
      *
      * @tparam Args Types of the arguments.
      * @param args Function call arguments.
-     * @return If the result of the forwarded function call is another nda::Array, a new lazy expression
-     * is returned. Otherwise the result is negated and returned.
+     * @return If the result of the forwarded function call is another nda::Array, a new lazy expression is returned.
+     * Otherwise the result is negated and returned.
      */
     template <typename... Args>
     auto operator()(Args &&...args) const {
@@ -75,7 +79,7 @@ namespace nda {
 
     /**
      * @brief Get the shape of the nda::Array operand.
-     * @return std::array<long, Rank> object specifying the shape of the operand.
+     * @return `std::array<long, Rank>` object specifying the shape of the operand.
      */
     [[nodiscard]] constexpr auto shape() const { return a.shape(); }
 
@@ -89,12 +93,10 @@ namespace nda {
   /**
    * @brief Lazy binary expression for nda::ArrayOrScalar types.
    *
-   * @details A lazy binary expression contains a two operands and a binary operation. It fulfills
-   * the nda::Array concept and can therefore be used in any other expression or function that expects
-   * an nda::Array type.
+   * @details A lazy binary expression contains a two operands and a binary operation. It fulfills the nda::Array
+   * concept and can therefore be used in any other expression or function that expects an nda::Array type.
    *
-   * The supported binary operations are addition (= '+'), substraction (= '-'), multiplication (= '*')
-   * and division (= '/').
+   * The supported binary operations are addition ('+'), substraction ('-'), multiplication ('*') and division ('/').
    *
    * @tparam OP Char representing the unary operation.
    * @param L nda::ArrayOrScalar type of left hand side.
@@ -136,7 +138,7 @@ namespace nda {
 
     /**
      * @brief Get the shape of the expression (result of the operation).
-     * @return std::array<long, Rank> object specifying the shape of the expression.
+     * @return `std::array<long, Rank>` object specifying the shape of the expression.
      */
     [[nodiscard]] constexpr decltype(auto) shape() const {
       if constexpr (l_is_scalar) {
@@ -171,8 +173,8 @@ namespace nda {
      *
      * @tparam Args Types of the arguments.
      * @param args Function call arguments.
-     * @return If the result of the forwarded function calls contains another nda::Array, a new lazy expression
-     * is returned. Otherwise the result of the binary operation is returned.
+     * @return If the result of the forwarded function calls contains another nda::Array, a new lazy expression is
+     * returned. Otherwise the result of the binary operation is returned.
      */
     template <typename... Args>
     auto operator()(Args const &...args) const {
@@ -273,6 +275,8 @@ namespace nda {
   /**
    * @brief Unary minus operator for nda::Array types.
    *
+   * @details It performs lazy elementwise negation.
+   *
    * @tparam A nda::Array type.
    * @param a nda::Array operand.
    * @return Lazy unary expression for the negation operation.
@@ -284,6 +288,8 @@ namespace nda {
 
   /**
    * @brief Addition operator for two nda::Array types.
+   *
+   * @details It performs lazy elementwise addition.
    *
    * @tparam L nda::Array type of left hand side.
    * @tparam R nda::Array type of right hand side.
@@ -300,6 +306,10 @@ namespace nda {
   /**
    * @brief Addition operator for an nda::Array and an nda::Scalar.
    *
+   * @details Depending on the algebra of the nda::Array, it performs the following lazy operations:
+   * - 'A': Elementwise addition.
+   * - 'M': Addition of the nda::Scalar to the elements on the shorter diagonal of the matrix.
+   *
    * @tparam A nda::Array type.
    * @tparam S nda::Scalar type.
    * @param a nda::Array left hand side operand.
@@ -314,6 +324,10 @@ namespace nda {
   /**
    * @brief Addition operator for an nda::Scalar and an nda::Array.
    *
+   * @details Depending on the algebra of the nda::Array, it performs the following lazy operations:
+   * - 'A': Elementwise addition.
+   * - 'M': Addition of the nda::Scalar to the elements on the shorter diagonal of the matrix.
+   *
    * @tparam S nda::Scalar type.
    * @tparam A nda::Array type.
    * @param s nda::Scalar left hand side operand.
@@ -327,6 +341,8 @@ namespace nda {
 
   /**
    * @brief Subtraction operator for two nda::Array types.
+   *
+   * @details It performs lazy elementwise subtraction.
    *
    * @tparam L nda::Array type of left hand side.
    * @tparam R nda::Array type of right hand side.
@@ -343,6 +359,10 @@ namespace nda {
   /**
    * @brief Subtraction operator for an nda::Array and an nda::Scalar.
    *
+   * @details Depending on the algebra of the nda::Array, it performs the following lazy operations:
+   * - 'A': Elementwise subtraction.
+   * - 'M': Subtraction of the nda::Scalar from the elements on the shorter diagonal of the matrix.
+   *
    * @tparam A nda::Array type.
    * @tparam S nda::Scalar type.
    * @param a nda::Array left hand side operand.
@@ -356,6 +376,10 @@ namespace nda {
 
   /**
    * @brief Subtraction operator for an nda::Scalar and an nda::Array.
+   *
+   * @details Depending on the algebra of the nda::Array, it performs the following lazy operations:
+   * - 'A': Elementwise subtraction.
+   * - 'M': Subtraction of the elements on the shorter diagonal of the matrix from the nda::Scalar.
    *
    * @tparam S nda::Scalar type.
    * @tparam A nda::Array type.
@@ -373,7 +397,7 @@ namespace nda {
    *
    * @details The input arrays must have one of the following algebras:
    * - 'A' * 'A': Elementwise multiplication of two arrays returns a lazy nda::expr object.
-   * - 'M' * 'M': Matrix multiplication of two matrices calls nda::matmul and returns the result.
+   * - 'M' * 'M': Matrix-matrix multiplication calls nda::matmul and returns the result.
    * - 'M' * 'V': Matrix-vector multiplication calls nda::matvecmul and returns the result.
    *
    * Obvious restrictons on the ranks and shapes of the input arrays apply.
@@ -417,6 +441,8 @@ namespace nda {
   /**
    * @brief Multiplication operator for an nda::Array and an nda::Scalar.
    *
+   * @details It performs lazy elementwise multiplication.
+   *
    * @tparam A nda::Array type.
    * @tparam S nda::Scalar type.
    * @param a nda::Array left hand side operand.
@@ -430,6 +456,8 @@ namespace nda {
 
   /**
    * @brief Multiplication operator for an nda::Scalar and an nda::Array.
+   *
+   * @details It performs elementwise multiplication.
    *
    * @tparam S nda::Scalar type.
    * @tparam A nda::Array type.
@@ -485,6 +513,8 @@ namespace nda {
   /**
    * @brief Divsion operator for an nda::Array and an nda::Scalar.
    *
+   * @details It performs lazy elementwise division.
+   *
    * @tparam A nda::Array type.
    * @tparam S nda::Scalar type.
    * @param a nda::Array left hand side operand.
@@ -499,8 +529,9 @@ namespace nda {
   /**
    * @brief Division operator for an nda::Scalar and an nda::Array.
    *
-   * @details In case the nda::Array has an algebra 'M', the inverse of the matrix is computed and multiplied by the
-   * scalar from the right.
+   * @details Depending on the algebra of the nda::Array, it performs the following lazy operations:
+   * - 'A': Elementwise division.
+   * - 'M': Multiplication of the nda::Scalar with the inverse of the matrix.
    *
    * @tparam S nda::Scalar type.
    * @tparam A nda::Array type.
@@ -516,5 +547,7 @@ namespace nda {
     else
       return expr<'/', std::decay_t<S>, A>{s, std::forward<A>(a)};
   }
+
+  /** @} */
 
 } // namespace nda

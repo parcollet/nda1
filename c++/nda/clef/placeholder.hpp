@@ -29,9 +29,16 @@
 
 namespace nda::clef {
 
+  /**
+   * @addtogroup clef_placeholders
+   * @{
+   */
+
+  /// @cond
   // Forward declarations.
   template <int N, typename T>
   struct pair;
+  /// @endcond
 
   /**
    * @brief A placeholder is an empty struct, labelled by an int.
@@ -45,9 +52,8 @@ namespace nda::clef {
    * auto res = nda::clef::eval(expr, i_ = 1.0, j_ = 2.0); // double res = 3.0;
    * @endcode
    *
-   * Here `expr` is a lazy binary nda::clef::expr with the nda::clef::tag::plus tag,
-   * which can be evaluated later on with the nda::clef::eval function and by assigning
-   * values to the placeholders (see nda::clef::pair).
+   * Here `expr` is a lazy binary nda::clef::expr with the nda::clef::tags::plus tag, which can be evaluated later on
+   * with the nda::clef::eval function and by assigning values to the placeholders (see nda::clef::pair).
    *
    * @tparam N Integer label (must be < 64).
    */
@@ -63,8 +69,7 @@ namespace nda::clef {
      *
      * @tparam RHS Type of the right-hand side.
      * @param rhs Right-hand side of the assignment.
-     * @return An nda::clef::pair object, containing the integer label of the placeholder
-     * and the value assigned to it.
+     * @return An nda::clef::pair object, containing the integer label of the placeholder and the value assigned to it.
      */
     template <typename RHS>
     pair<N, RHS> operator=(RHS &&rhs) const { // NOLINT (we want to return a pair)
@@ -76,12 +81,12 @@ namespace nda::clef {
      *
      * @tparam Args Types of the function call arguments.
      * @param args Function call arguments.
-     * @return An nda::clef::expr object with the nda::clef::tag::function tag containing
-     * the placeholder (for the callable) and the given arguments.
+     * @return An nda::clef::expr object with the nda::clef::tags::function tag containing the placeholder (for the
+     * callable) and the given arguments.
      */
     template <typename... Args>
-    expr<tags::function, placeholder, expr_storage_t<Args>...> operator()(Args &&...args) const {
-      return {tags::function{}, *this, std::forward<Args>(args)...};
+    auto operator()(Args &&...args) const {
+      return expr<tags::function, placeholder, expr_storage_t<Args>...>{tags::function{}, *this, std::forward<Args>(args)...};
     }
 
     /**
@@ -89,21 +94,21 @@ namespace nda::clef {
      *
      * @tparam T Type of the subscript argument.
      * @param t Subscript argument.
-     * @return An nda::clef::expr object with the nda::clef::tag::subscript tag containing
-     * the placeholder (for the object to be accessed) and the given argument.
+     * @return An nda::clef::expr object with the nda::clef::tags::subscript tag containing the placeholder (for the
+     * object to be accessed) and the given argument.
      */
     template <typename T>
-    expr<tags::subscript, placeholder, expr_storage_t<T>> operator[](T &&t) const {
-      return {tags::subscript{}, *this, std::forward<T>(t)};
+    auto operator[](T &&t) const {
+      return expr<tags::subscript, placeholder, expr_storage_t<T>>{tags::subscript{}, *this, std::forward<T>(t)};
     }
   };
 
   /**
    * @brief A pair consisting of a placeholder and its assigned value.
    *
-   * @details In most cases, the user should not have to explicitly create or handle pair
-   * objects. Instead, they are constructed indirectly by assigning a value to a placeholder
-   * when calling nda::clef::eval (see nda::clef::placeholder for an example).
+   * @details In most cases, the user should not have to explicitly create or handle pair objects. Instead, they are
+   * constructed indirectly by assigning a value to a placeholder when calling nda::clef::eval
+   * (see nda::clef::placeholder for an example).
    *
    * @tparam N Integer label of the placeholder.
    * @tparam T Value type.
@@ -141,5 +146,7 @@ namespace nda::clef {
     constexpr bool is_lazy_impl<placeholder<N>> = true;
 
   } // namespace detail
+
+  /** @} */
 
 } // namespace nda::clef

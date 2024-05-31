@@ -14,6 +14,11 @@
 //
 // Authors: Thomas Hahn, Olivier Parcollet, Nils Wentzell
 
+/**
+ * @file
+ * @brief Provides HDF5 support for the nda library.
+ */
+
 #pragma once
 
 #include "./concepts.hpp"
@@ -37,6 +42,11 @@
 
 namespace nda {
 
+  /**
+   * @addtogroup av_hdf5
+   * @{
+   */
+
   namespace detail {
 
     // Resize a given array to fit a given shape or check if a given view fits the shape.
@@ -49,8 +59,7 @@ namespace nda {
       }
     }
 
-    // Given an array/view, prepare and return the corresponding h5::array_view to be
-    // written/read into.
+    // Given an array/view, prepare and return the corresponding h5::array_view to be written/read into.
     template <MemoryArray A>
     auto prepare_h5_array_view(const A &a) {
       auto [parent_shape, h5_strides] = h5::array_interface::get_parent_shape_and_h5_strides(a.indexmap().strides().data(), A::rank, a.size());
@@ -106,16 +115,13 @@ namespace nda {
    * @brief Write an nda::MemoryArray to a new dataset/subgroup into an HDF5 file.
    *
    * @details The following arrays/views can be written to HDF5:
-   * - 1-dimensional array/view of strings: It is first converted to an h5::char_buf before
-   * it is written.
-   * - arbitrary array/view of scalars: The data is written directly into an h5::dataset with
-   * the same shape. If the stride order is not C-order, the elements of the array/view are
-   * first copied into an array with C-order layout.
-   * - arbitrary array/view of some generic type: The elements are written one-by-one into a
-   * subgroup.
+   * - 1-dimensional array/view of strings: It is first converted to an `h5::char_buf` before it is written.
+   * - arbitrary array/view of scalars: The data is written directly into an `h5::dataset` with the same shape. If the
+   * stride order is not C-order, the elements of the array/view are first copied into an array with C-order layout.
+   * - arbitrary array/view of some generic type: The elements are written one-by-one into a subgroup.
    *
    * @tparam A nda::MemoryArray type.
-   * @param g h5::group in which the dataset/subgroup is created.
+   * @param g `h5::group` in which the dataset/subgroup is created.
    * @param name Name of the dataset/subgroup to which the nda::MemoryArray is written.
    * @param a nda::MemoryArray to be written.
    * @param compress Whether to compress the dataset.
@@ -149,16 +155,15 @@ namespace nda {
   }
 
   /**
-   * @brief Construct an h5::hyperslab and the corresponding shape from a given slice, i.e. a
-   * tuple containing integer, nda::range, nda::range::all_t and nda::ellipsis objects.
+   * @brief Construct an `h5::array_interface::hyperslab` and the corresponding shape from a given slice, i.e. a tuple
+   * containing integer, `nda::range`, `nda::range::all_t` and nda::ellipsis objects.
    *
-   * @details The hyperslab will have the same number of dimensions as the underlying dataspace,
-   * whereas the shape will only contain the selected dimensions. For example, a 1-dimensional
-   * slice of a 3-dimensional dataset will return a hyperslab with 3 dimensions and a shape with
-   * 1 dimension.
+   * @details The hyperslab will have the same number of dimensions as the underlying dataspace, whereas the shape will
+   * only contain the selected dimensions. For example, a 1-dimensional slice of a 3-dimensional dataset will return a
+   * hyperslab with 3 dimensions and a shape with 1 dimension.
    *
    * @tparam NDim Number of selected dimensions (== Rank of the array/view to be written/read into).
-   * @tparam IRs Types in the slice, i.e. integer, nda::range, nda::range::all_t or nda::ellipsis.
+   * @tparam IRs Types in the slice, i.e. integer, `nda::range`, `nda::range::all_t` or nda::ellipsis.
    * @param slice Tuple specifying the slice of the dataset to which the nda::MemoryArray is written.
    * @param ds_shape Shape of the underlying dataset.
    * @param is_complex Whether the data is complex valued.
@@ -232,18 +237,17 @@ namespace nda {
   }
 
   /**
-   * @brief Write an nda::MemoryArray into a slice (hyperslab) of an existing dataset in an
-   * HDF5 file.
+   * @brief Write an nda::MemoryArray into a slice (hyperslab) of an existing dataset in an HDF5 file.
    *
-   * @details The hyperslab in the dataset is specified by providing a tuple of integer,
-   * nda::range, nda::range::all_t or nda::ellipsis objects. It's shape must match the shape
-   * of the nda::MemoryArray to be written, otherwise an exception is thrown.
+   * @details The hyperslab in the dataset is specified by providing a tuple of integer, `nda::range`,
+   * `nda::range::all_t` or nda::ellipsis objects. It's shape must match the shape of the nda::MemoryArray to be
+   * written, otherwise an exception is thrown.
    *
    * Only arrays/views with scalar types can be written to a slice.
    *
    * @tparam A nda::MemoryArray type.
-   * @tparam IRs Types in the slice, i.e. integer, nda::range, nda::range::all_t or nda::ellipsis.
-   * @param g h5::group which contains the dataset.
+   * @tparam IRs Types in the slice, i.e. integer, `nda::range`, `nda::range::all_t` or nda::ellipsis.
+   * @param g `h5::group` which contains the dataset.
    * @param name Name of the dataset.
    * @param a nda::MemoryArray to be written.
    * @param slice Tuple specifying the slice of the dataset to which the nda::MemoryArray is written.
@@ -283,22 +287,19 @@ namespace nda {
    * @brief Read into an nda::MemoryArray from an HDF5 file.
    *
    * @details The following arrays/views are supported:
-   * - 1-dimensional arrays/views of strings: The data is read into an h5::char_buf and then
-   * copied into the array/view.
-   * - arbitrary arrays/views of scalars: The data is read directly from an h5::dataset into
-   * the array/view. If the stride order is not C-order, the data is first read into an array
-   * with C-order layout, before it is copied into the array/view. The data to be read from
-   * the dataset can be restricted by providing a slice.
-   * - arbitrary arrays/views of some generic type: The elements are read one-by-one from the
-   * subgroup.
+   * - 1-dimensional arrays/views of strings: The data is read into an `h5::char_buf` and then copied into the
+   * array/view.
+   * - arbitrary arrays/views of scalars: The data is read directly from an `h5::dataset` into the array/view. If the
+   * stride order is not C-order, the data is first read into an array with C-order layout, before it is copied into the
+   * array/view. The data to be read from the dataset can be restricted by providing a slice.
+   * - arbitrary arrays/views of some generic type: The elements are read one-by-one from the subgroup.
    *
-   * @note While array objects will always be resized to fit the shape of the data read from
-   * the file, views must have the same shape as the data to be read. If this is not the case,
-   * an exception is thrown.
+   * @note While array objects will always be resized to fit the shape of the data read from the file, views must have
+   * the same shape as the data to be read. If this is not the case, an exception is thrown.
    *
    * @tparam A nda::MemoryArray type.
-   * @tparam IRs Types in the slice, i.e. integer, nda::range, nda::range::all_t or nda::ellipsis.
-   * @param g h5::group which contains the dataset/subgroup to read from.
+   * @tparam IRs Types in the slice, i.e. integer, `nda::range`, `nda::range::all_t` or nda::ellipsis.
+   * @param g `h5::group` which contains the dataset/subgroup to read from.
    * @param name Name of the dataset/subgroup.
    * @param a nda::MemoryArray object to be read into.
    * @param slice Optional tuple specifying the slice of the dataset to be read.
@@ -376,5 +377,7 @@ namespace nda {
       nda::for_each(a.shape(), [&](auto... is) { h5_read(g2, make_name(is...), a(is...)); });
     }
   }
+
+  /** @} */
 
 } // namespace nda

@@ -32,12 +32,14 @@
 
 namespace nda {
 
+  /// @cond
   // Forward declarations.
   template <typename F, Array... A>
   struct expr_call;
 
   template <class F>
   struct mapped;
+  /// @endcond
 
   namespace detail {
 
@@ -50,10 +52,10 @@ namespace nda {
   } // namespace detail
 
   /**
+   * @ingroup av_utils
    * @brief Get the resulting algebra of a function call expression involving arrays/views.
    *
-   * @details If one of the algebras of the arguments is different, the resulting algebra
-   * is 'N'.
+   * @details If one of the algebras of the arguments is different, the resulting algebra is 'N'.
    *
    * @tparam F Callable object of the expression.
    * @tparam As nda::Array argument types.
@@ -62,18 +64,22 @@ namespace nda {
   constexpr char get_algebra<expr_call<F, As...>> = detail::_impl_find_common_algebra(get_algebra<As>...);
 
   /**
+   * @addtogroup av_math
+   * @{
+   */
+
+  /**
    * @brief A lazy function call expression on arrays/views.
    *
-   * @details The lazy expression call fullfils the nda::Array concept and can therefore be
-   * assigned to other nda::basic_array or nda::basic_array_view objects. For example:
+   * @details The lazy expression call fullfils the nda::Array concept and can therefore be assigned to other
+   * nda::basic_array or nda::basic_array_view objects. For example:
    *
    * @code{.cpp}
    * nda::matrix<int> mat{{1, 2}, {3, 4}};
    * nda::matrix<int> pmat = nda::pow(mat, 2);
    * @endcode
    *
-   * Here, `nda::pow(mat, 2)` return a lazy expression call object which is then used in the
-   * constructor of `pmat`.
+   * Here, `nda::pow(mat, 2)` returns a lazy expression call object which is then used in the constructor of `pmat`.
    *
    * The callable object should take the array/view elements as arguments.
    *
@@ -101,19 +107,23 @@ namespace nda {
     }
 
     // Implementation of the subscript operator.
-    template <size_t... Is, typename Args>
-    [[gnu::always_inline]] auto _call_bra(std::index_sequence<Is...>, Args const &args) const {
-      return f(std::get<Is>(a)[args]...);
+    template <size_t... Is, typename Arg>
+    [[gnu::always_inline]] auto _call_bra(std::index_sequence<Is...>, Arg const &arg) const {
+      return f(std::get<Is>(a)[arg]...);
     }
 
     public:
     /**
      * @brief Function call operator.
      *
+     * @details The arguments (usually multi-dimensional indices) are passed to all the nda::Array objects stored in the
+     * tuple and the results are then passed to the callable object.
+     *
+     * If the arguments contain a range, a new lazy function call expression is returned.
+     *
      * @tparam Args Argument types.
-     * @param args Function call arguments (usually multi-dimensional indexes which are passed
-     * to the arrays).
-     * @return The result of the function call (depends on the callable).
+     * @param args Function call arguments.
+     * @return The result of the function call (depends on the callable and the arguments).
      */
     template <typename... Args>
     auto operator()(Args const &...args) const {
@@ -123,9 +133,14 @@ namespace nda {
     /**
      * @brief Subscript operator.
      *
+     * @details The argument (usually a 1-dimensional index) is passed to all the nda::Array objects stored in the tuple
+     * and the results are then passed to the callable object.
+     *
+     * If the argument is a range, a new lazy function call expression is returned.
+     *
      * @tparam Args Argument types.
-     * @param args Subscript argument (usually 1-dimensional index which is passed to the arrays).
-     * @return The result of the subscript operation (depends on the callable).
+     * @param args Subscript argument.
+     * @return The result of the subscript operation (depends on the callable and the arguments).
      */
     template <typename Arg>
     auto operator[](Arg const &arg) const {
@@ -134,14 +149,14 @@ namespace nda {
 
     // FIXME copy needed for the && case only. Overload ?
     /**
-     * @brief Get the total size of one of the nda::Array arguments.
-     * @return Number of elements contained in each nda::Array argument.
+     * @brief Get the shape of the nda::Array objects.
+     * @return `std::array<long, Rank>` object specifying the shape of each nda::Array object.
      */
     [[nodiscard]] auto shape() const { return std::get<0>(a).shape(); }
 
     /**
-     * @brief Get the shape of one of the nda::Array arguments.
-     * @return std::array<long, Rank> object specifying the shape of each of the arguments.
+     * @brief Get the total size of the nda::Array objects.
+     * @return Number of elements contained in each nda::Array object.
      */
     [[nodiscard]] long size() const { return std::get<0>(a).size(); }
   };
@@ -184,5 +199,7 @@ namespace nda {
   mapped<F> map(F f) {
     return {std::move(f)};
   }
+
+  /** @} */
 
 } // namespace nda
