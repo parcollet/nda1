@@ -36,18 +36,19 @@ namespace nda {
 
   /**
    * @addtogroup layout_utils
+   * @{
    */
 
   /**
    * @brief Write an nda::layout_prop_e to a std::ostream.
    *
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @param p nda::layout_prop_e object.
    * @return Reference to std::ostream object.
    */
-  inline std::ostream &operator<<(std::ostream &out, layout_prop_e p) {
-    return out << (has_contiguous(p) ? "contiguous   " : " ") << (has_strided_1d(p) ? "strided_1d   " : " ")
-               << (has_smallest_stride_is_one(p) ? "smallest_stride_is_one   " : " ");
+  inline std::ostream &operator<<(std::ostream &sout, layout_prop_e p) {
+    return sout << (has_contiguous(p) ? "contiguous   " : " ") << (has_strided_1d(p) ? "strided_1d   " : " ")
+                << (has_smallest_stride_is_one(p) ? "smallest_stride_is_one   " : " ");
   }
 
   /**
@@ -57,17 +58,17 @@ namespace nda {
    * @tparam StaticExtents StaticExtents of the nda::idx_map.
    * @tparam StrideOrder StrideOrder of the nda::idx_map.
    * @tparam LayoutProp Layout property of the nda::idx_map.
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @param idxm nda::idx_map object.
    * @return Reference to std::ostream object.
    */
   template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp>
-  std::ostream &operator<<(std::ostream &out, idx_map<Rank, StaticExtents, StrideOrder, LayoutProp> const &idxm) {
-    return out << "  Lengths  : " << idxm.lengths() << "\n"
-               << "  Strides  : " << idxm.strides() << "\n"
-               << "  StaticExtents  : " << decode<Rank>(StaticExtents) << "\n"
-               << "  MemoryStrideOrder   : " << idxm.stride_order << "\n"
-               << "  Flags   :  " << LayoutProp << "\n";
+  std::ostream &operator<<(std::ostream &sout, idx_map<Rank, StaticExtents, StrideOrder, LayoutProp> const &idxm) {
+    return sout << "  Lengths  : " << idxm.lengths() << "\n"
+                << "  Strides  : " << idxm.strides() << "\n"
+                << "  StaticExtents  : " << decode<Rank>(StaticExtents) << "\n"
+                << "  MemoryStrideOrder   : " << idxm.stride_order << "\n"
+                << "  Flags   :  " << LayoutProp << "\n";
   }
 
   /** @} */
@@ -81,46 +82,46 @@ namespace nda {
    * @brief Write an nda::basic_array or nda::basic_array_view to a std::ostream.
    *
    * @tparam A Type of the nda::basic_array or nda::basic_array_view.
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @param a nda::basic_array or nda::basic_array_view object.
    * @return Reference to std::ostream object.
    */
   template <typename A>
-  std::ostream &operator<<(std::ostream &out, A const &a)
+  std::ostream &operator<<(std::ostream &sout, A const &a)
     requires(is_regular_or_view_v<A>)
   {
     // 1-dimensional array/view
     if constexpr (A::rank == 1) {
-      out << "[";
+      sout << "[";
       auto const &len = a.indexmap().lengths();
-      for (size_t i = 0; i < len[0]; ++i) out << (i > 0 ? "," : "") << a(i);
-      out << "]";
+      for (size_t i = 0; i < len[0]; ++i) sout << (i > 0 ? "," : "") << a(i);
+      sout << "]";
     }
 
     // 2-dimensional array/view
     if constexpr (A::rank == 2) {
       auto const &len = a.indexmap().lengths();
-      out << "\n[";
+      sout << "\n[";
       for (size_t i = 0; i < len[0]; ++i) {
-        out << (i == 0 ? "[" : " [");
-        for (size_t j = 0; j < len[1]; ++j) out << (j > 0 ? "," : "") << a(i, j);
-        out << "]" << (i == len[0] - 1 ? "" : "\n");
+        sout << (i == 0 ? "[" : " [");
+        for (size_t j = 0; j < len[1]; ++j) sout << (j > 0 ? "," : "") << a(i, j);
+        sout << "]" << (i == len[0] - 1 ? "" : "\n");
       }
-      out << "]";
+      sout << "]";
     }
 
     // FIXME : not very pretty, do better here, but that was the arrays way
     // higher-dimensional array/view (flat representation)
     if constexpr (A::rank > 2) {
-      out << "[";
+      sout << "[";
       for (bool first = true; auto &v : a) {
-        out << (first ? "" : ",") << v;
+        sout << (first ? "" : ",") << v;
         first = false;
       }
-      out << "]";
+      sout << "]";
     }
 
-    return out;
+    return sout;
   }
 
   /**
@@ -128,13 +129,13 @@ namespace nda {
    *
    * @tparam R Rank of the nda::array_adapter.
    * @tparam F Callable type of the nda::array_adapter.
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @param aa nda::array_adapter object.
    * @return Reference to std::ostream object.
    */
   template <int R, typename F>
-  std::ostream &operator<<(std::ostream &out, array_adapter<R, F> const &aa) {
-    return out << "array_adapter of shape " << aa.shape();
+  std::ostream &operator<<(std::ostream &sout, array_adapter<R, F> const &aa) {
+    return sout << "array_adapter of shape " << aa.shape();
   }
 
   /// @cond
@@ -151,13 +152,13 @@ namespace nda {
    *
    * @tparam OP Unary operator.
    * @tparam A nda::Array type.
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @param ex nda::expr_unary object.
    * @return Reference to std::ostream object.
    */
   template <char OP, Array A>
-  std::ostream &operator<<(std::ostream &out, expr_unary<OP, A> const &ex) {
-    return out << OP << ex.a;
+  std::ostream &operator<<(std::ostream &sout, expr_unary<OP, A> const &ex) {
+    return sout << OP << ex.a;
   }
 
   /**
@@ -166,7 +167,7 @@ namespace nda {
    * @tparam OP Binary operator.
    * @tparam L nda::ArrayOrScalar type of left hand side.
    * @tparam R nda::ArrayOrScalar type of right hand side.
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @param ex nda::expr object.
    * @return Reference to std::ostream object.
    */
@@ -180,12 +181,12 @@ namespace nda {
    *
    * @tparam F Callable type.
    * @tparam As Argument types.
-   * @param out std::ostream object.
+   * @param sout std::ostream object.
    * @return Reference to std::ostream object.
    */
   template <typename F, typename... As>
-  std::ostream &operator<<(std::ostream &out, expr_call<F, As...> const &) {
-    return out << "mapped"; //array<value_type, std::decay_t<A>::rank>(x);
+  std::ostream &operator<<(std::ostream &sout, expr_call<F, As...> const &) {
+    return sout << "mapped"; //array<value_type, std::decay_t<A>::rank>(x);
   }
 
   /** @} */

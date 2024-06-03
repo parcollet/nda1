@@ -321,9 +321,9 @@ namespace nda {
    * nda::layout_prop_e. If the stride orders are different, the stride order is set to -1 (undefined, no
    * permutation) and no memory layout guarantee can be made.
    */
-  constexpr layout_info_t operator&(layout_info_t a, layout_info_t b) {
-    if (a.stride_order == b.stride_order)
-      return layout_info_t{a.stride_order, layout_prop_e(uint64_t(a.prop) & uint64_t(b.prop))};
+  constexpr layout_info_t operator&(layout_info_t lhs, layout_info_t rhs) {
+    if (lhs.stride_order == rhs.stride_order)
+      return layout_info_t{lhs.stride_order, layout_prop_e(uint64_t(lhs.prop) & uint64_t(rhs.prop))};
     else
       return layout_info_t{uint64_t(-1), layout_prop_e::none};
   }

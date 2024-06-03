@@ -103,6 +103,7 @@ namespace nda {
 
   /**
    * @addtogroup layout_utils
+   * @{
    */
 
   /**
@@ -150,7 +151,6 @@ namespace nda {
    * @tparam IdxGrps Groups of indices.
    *
    * @param idxm Original nda::idx_map.
-   * @param IdxGrps nda::idx_group_t objects.
    * @return New nda::idx_map with the grouped indices.
    */
   template <int Rank, uint64_t StaticExtents, uint64_t StrideOrder, layout_prop_e LayoutProp, typename... IdxGrps>

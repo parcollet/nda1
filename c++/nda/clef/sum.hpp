@@ -69,7 +69,7 @@ namespace nda::clef {
    * @tparam N Integer label of the placeholder to be replaced by the domain.
    * @tparam D Type of the domain.
    * @param ex Lazy expression.
-   * @param p Pair containing the nda::clef::placeholder and the domain.
+   * @param d Pair containing the nda::clef::placeholder and the domain.
    * @return Either the result of the summation or a new lazy expression.
    */
   template <typename Expr, int N, typename D>
@@ -96,18 +96,18 @@ namespace nda::clef {
    * @endcode
    *
    * @tparam Expr Type of the expression.
-   * @tparam A0 nda::clef::pair type.
-   * @tparam A1 nda::clef::pair type.
-   * @tparam As Parameter pack of the remaining nda::clef::pair types.
+   * @tparam D0 nda::clef::pair type.
+   * @tparam D1 nda::clef::pair type.
+   * @tparam Ds Parameter pack of the remaining nda::clef::pair types.
    * @param ex Lazy expression.
-   * @param a0 Pair containing an nda::clef::placeholder and a domain.
-   * @param a1 Pair containing an nda::clef::placeholder and another domain.
-   * @param as Parameter pack of the remaining pairs.
+   * @param d0 Pair containing an nda::clef::placeholder and a domain.
+   * @param d1 Pair containing an nda::clef::placeholder and another domain.
+   * @param ds Parameter pack of the remaining pairs.
    * @return Either the result of the summation or a new lazy expression.
    */
-  template <typename Expr, typename A0, typename A1, typename... As>
-  auto sum(Expr const &f, A0 &&a0, A1 &&a1, As &&...as) {
-    return sum(sum(f, std::forward<A0>(a0)), std::forward<A1>(a1), std::forward<As>(as)...);
+  template <typename Expr, typename D0, typename D1, typename... Ds>
+  auto sum(Expr const &ex, D0 &&d0, D1 &&d1, Ds &&...ds) {
+    return sum(sum(ex, std::forward<D0>(d0)), std::forward<D1>(d1), std::forward<Ds>(ds)...);
   }
 
   /** @} */

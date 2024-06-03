@@ -57,28 +57,28 @@ namespace nda::clef {
    * @return Reference to the std::ostream.
    */
   template <typename T>
-  std::ostream &operator<<(std::ostream &out, std::reference_wrapper<T> const &wrapper) {
-    return out << wrapper.get();
+  std::ostream &operator<<(std::ostream &sout, std::reference_wrapper<T> const &wrapper) {
+    return sout << wrapper.get();
   }
 
   // Overload of nda::clef::variadic_print for the case of an empty list of arguments.
-  inline std::ostream &variadic_print(std::ostream &out) { return out; }
+  inline std::ostream &variadic_print(std::ostream &sout) { return sout; }
 
   /**
    * @brief Print a variadic list of arguments to std::ostream.
    *
    * @tparam T0 Type of the first argument.
    * @tparam Ts Types of the remaining arguments.
-   * @param out std::ostream object to print to.
+   * @param sout std::ostream object to print to.
    * @param t0 First argument to print.
    * @param ts Remaining arguments to print.
    * @return Reference to the std::ostream.
    */
   template <typename T0, typename... Ts>
-  std::ostream &variadic_print(std::ostream &out, T0 &&t0, Ts &&...ts) {
-    out << std::forward<T0>(t0) << (sizeof...(Ts) > 0 ? ", " : "");
-    variadic_print(out, std::forward<Ts>(ts)...);
-    return out;
+  std::ostream &variadic_print(std::ostream &sout, T0 &&t0, Ts &&...ts) {
+    sout << std::forward<T0>(t0) << (sizeof...(Ts) > 0 ? ", " : "");
+    variadic_print(sout, std::forward<Ts>(ts)...);
+    return sout;
   }
 
   namespace detail {

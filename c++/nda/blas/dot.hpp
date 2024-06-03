@@ -193,7 +193,7 @@ namespace nda::blas {
    * @tparam X Vector/Scalar type.
    * @tparam Y Vector/Scalar type.
    * @param x Input vector/scalar.
-   * @param b Input vector/scalar.
+   * @param y Input vector/scalar.
    * @return Vector/scalar result of the dot product.
    */
   template <typename X, typename Y>

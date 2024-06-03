@@ -293,12 +293,12 @@ namespace nda {
    * @param m nda::MemoryMatrix object to be inverted.
    * @return Inverse of the matrix.
    */
-  template <Matrix A>
-  auto inverse(A const &a)
-    requires(get_algebra<A> == 'M')
+  template <Matrix M>
+  auto inverse(M const &m)
+    requires(get_algebra<M> == 'M')
   {
-    EXPECTS(is_matrix_square(a, true));
-    auto r = make_regular(a);
+    EXPECTS(is_matrix_square(m, true));
+    auto r = make_regular(m);
     inverse_in_place(r);
     return r;
   }

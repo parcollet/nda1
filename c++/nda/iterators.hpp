@@ -430,7 +430,7 @@ namespace nda {
      * @param rhs Right hand side operand.
      * @return True if the positions of the iterators are not equal, false otherwise.
      */
-    [[nodiscard]] bool operator!=(array_iterator const &other) const { return (!operator==(other)); }
+    [[nodiscard]] bool operator!=(array_iterator const &rhs) const { return (!operator==(rhs)); }
 
     /**
      * @brief Compound assignment addition operator increments the iterator a given number of times.

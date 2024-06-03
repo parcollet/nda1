@@ -138,8 +138,8 @@ namespace nda {
      *
      * If the argument is a range, a new lazy function call expression is returned.
      *
-     * @tparam Args Argument types.
-     * @param args Subscript argument.
+     * @tparam Arg Argument types.
+     * @param arg Subscript argument.
      * @return The result of the subscript operation (depends on the callable and the arguments).
      */
     template <typename Arg>
