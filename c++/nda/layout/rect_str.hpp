@@ -264,7 +264,7 @@ namespace nda {
       // type of sliced nda::rect_str
       using new_rect_str_t = typename detail::rect_str_from_base<std::decay_t<decltype(idxm2)>>::type;
 
-      // if the string indices have not been intialized, simply return a new nda::rect_str with the sliced nda::idx_map
+      // if the string indices have not been initialized, simply return a new nda::rect_str with the sliced nda::idx_map
       if (not s_indices) return std::make_pair(offset, new_rect_str_t{idxm2});
 
       // otherwise slice the string indices as well (not optimized but simple)
@@ -336,7 +336,7 @@ namespace nda {
       // type of transposed nda::rect_str
       using new_rect_str_t = typename detail::rect_str_from_base<std::decay_t<decltype(idxm2)>>::type;
 
-      // if the string indices have not been intialized, simply return the transposed nda::rect_str
+      // if the string indices have not been initialized, simply return the transposed nda::rect_str
       if (not s_indices) return new_rect_str_t{idxm2};
 
       // otherwise transpose the string indices as well
@@ -361,7 +361,7 @@ namespace nda {
   /// @endcond
 
   /**
-   * @brief Contigous layout policy with C-order (row-major order) and possible string indices.
+   * @brief Contiguous layout policy with C-order (row-major order) and possible string indices.
    * @details The last dimension varies the fastest, the first dimension varies the slowest.
    */
   struct C_layout_str {
@@ -377,7 +377,7 @@ namespace nda {
   };
 
   /**
-   * @brief Contigous layout policy with Fortran-order (column-major order) and possible string indices.
+   * @brief Contiguous layout policy with Fortran-order (column-major order) and possible string indices.
    * @details The first dimension varies the fastest, the last dimension varies the slowest.
    */
   struct F_layout_str {

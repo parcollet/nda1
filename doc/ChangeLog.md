@@ -90,7 +90,7 @@ Find below an itemized list of changes in this release.
 * Enable slicing with ranges that have negative steps + test
 * Make basic_array(idx_map, &&mem_handle) constructor public
 * Allow temporaries in calls to lapack wrapping functions
-* Generlize nda_lapack test to run both double and complex versions
+* Generalize nda_lapack test to run both double and complex versions
 * Add blas::has_C_layout and blas::has_F_layout traits and use for cleanup
 * Generalize nda_blas and nda_cublas test for various value_t and layout combinations
 * In make_regular do not invoke copy of regular arrays
@@ -120,9 +120,9 @@ Find below an itemized list of changes in this release.
 * Remove REQUIRES macro and use 'requires'
 * Enable slicing also for h5_write operations, assume existing dataset
 * Make pivot array const in getri signature
-* Minor cleanup in nda/h5.hpp template contraints and doc
+* Minor cleanup in nda/h5.hpp template constraints and doc
 * Allow to pass dimensions as integers to factory functions basic_array::ones/zeros/rand
-* Add the 1d array factory nda::arange mimicing numpy arange + test
+* Add the 1d array factory nda::arange mimicking numpy arange + test
 * Allow bound checks also for array.extent(int) function
 * Configure and install nda/version.hpp header
 * Synchronize clang-tidy config file with app4triqs
@@ -159,7 +159,7 @@ Find below an itemized list of changes in this release.
 ### Concepts
 * Use C++20 concepts to constrain various generic functions and classes
 * Introduce concepts: Array, MemoryArray, Matrix, Vector, Handle
-* Various concept related simplififications and refactorings
+* Various concept related simplifications and refactoring
 
 ### GPU Support
 * Introduce GPU support for arrays and views

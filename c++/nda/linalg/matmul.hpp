@@ -156,7 +156,7 @@ namespace nda {
     // check address space compatibility
     static constexpr auto L_adr_spc = mem::get_addr_space<A>;
     static constexpr auto R_adr_spc = mem::get_addr_space<X>;
-    static_assert(L_adr_spc == R_adr_spc, "Error in nda::matvecmul: Matrix-vector product requires arguments with same adress spaces");
+    static_assert(L_adr_spc == R_adr_spc, "Error in nda::matvecmul: Matrix-vector product requires arguments with same address spaces");
     static_assert(L_adr_spc != mem::None);
 
     // get resulting value type and vector type

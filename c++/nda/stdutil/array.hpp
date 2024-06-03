@@ -234,7 +234,7 @@ namespace nda::stdutil {
    * @tparam R Size of the input array.
    * @param a Input std::array.
    * @param x Element to prepend.
-   * @return A copy of the input array with the additonal element prepended at the front.
+   * @return A copy of the input array with the additional element prepended at the front.
    */
   template <typename T, typename U, size_t R>
   constexpr std::array<T, R + 1> front_append(std::array<T, R> const &a, U const &x) {

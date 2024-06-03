@@ -55,7 +55,7 @@ namespace nda {
      * @brief Multiplication operator for two operations.
      *
      * @details The sign flip (complex conjugation) operation is set to true in the resulting product iff one of the two
-     * (exlusive or!) input operations has the sign flip (complex conjugation) operation set to true.
+     * (exclusive or!) input operations has the sign flip (complex conjugation) operation set to true.
      *
      * @param rhs Right hand side operation.
      * @return The resulting operation.

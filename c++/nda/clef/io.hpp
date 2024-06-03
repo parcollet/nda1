@@ -234,7 +234,7 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::make_fun_impl obejct to std::ostream.
+   * @brief Print an nda::clef::make_fun_impl object to std::ostream.
    *
    * @tparam Expr Type of the expression.
    * @tparam Is Integer labels of the placeholders in the expression.

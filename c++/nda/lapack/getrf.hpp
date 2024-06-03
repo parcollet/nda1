@@ -65,7 +65,7 @@ namespace nda::lapack {
     auto dm = std::min(a.extent(0), a.extent(1));
     if (ipiv.size() < dm) ipiv.resize(dm); // ipiv needs to be a regular array?
 
-    // must be lapack compatiblem
+    // must be lapack compatible
     EXPECTS(a.indexmap().min_stride() == 1);
     EXPECTS(ipiv.indexmap().min_stride() == 1);
 

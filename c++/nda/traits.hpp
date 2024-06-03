@@ -281,7 +281,7 @@ namespace nda {
    * @brief Checks if a layout property has the `smallest_stride_is_one` property.
    *
    * @param lp nda::layout_prop_e to check.
-   * @return True if it has the `smalles_stride_is_one` property, false otherwise.
+   * @return True if it has the `smallest_stride_is_one` property, false otherwise.
    */
   inline constexpr bool has_smallest_stride_is_one(layout_prop_e lp) { return uint64_t(lp) & uint64_t(layout_prop_e::smallest_stride_is_one); }
 

@@ -63,7 +63,7 @@ namespace nda::clef {
   template <typename Tag>
   struct operation;
 
-  /// Specializtion of nda::clef::operation for nda::clef::tags::terminal.
+  /// Specialization of nda::clef::operation for nda::clef::tags::terminal.
   template <>
   struct operation<tags::terminal> {
     /**

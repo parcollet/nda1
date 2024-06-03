@@ -92,7 +92,7 @@ namespace nda {
   /**
    * @brief Reshape an nda::basic_array or nda::basic_array_view.
    *
-   * @details The input array/view is assumed to be contiguous and in C- or Fortan-order and the size of the reshaped
+   * @details The input array/view is assumed to be contiguous and in C- or Fortran-order and the size of the reshaped
    * array/view must be the same as the input.
    *
    * It calls nda::map_layout_transform with the given shape.

@@ -96,7 +96,7 @@ namespace nda {
    * @details A lazy binary expression contains a two operands and a binary operation. It fulfills the nda::Array
    * concept and can therefore be used in any other expression or function that expects an nda::Array type.
    *
-   * The supported binary operations are addition ('+'), substraction ('-'), multiplication ('*') and division ('/').
+   * The supported binary operations are addition ('+'), subtraction ('-'), multiplication ('*') and division ('/').
    *
    * @tparam OP Char representing the unary operation.
    * @param L nda::ArrayOrScalar type of left hand side.
@@ -116,7 +116,7 @@ namespace nda {
     /// Decay type of the right hand side operand.
     using R_t = std::decay_t<R>;
 
-    // FIXME : we should use is_scalar_for_v but the trait needs work to accomodate scalar L or R
+    // FIXME : we should use is_scalar_for_v but the trait needs work to accommodate scalar L or R
     /// Constexpr variable that is true if the left hand side operand is a scalar.
     static constexpr bool l_is_scalar = nda::is_scalar_v<L>;
 
@@ -259,7 +259,7 @@ namespace nda {
     /**
      * @brief Subscript operator.
      *
-     * @details Simply fowards the argument to the function call operator.
+     * @details Simply forwards the argument to the function call operator.
      *
      * @tparam Arg Type of the argument.
      * @param arg Subscript argument.
@@ -400,7 +400,7 @@ namespace nda {
    * - 'M' * 'M': Matrix-matrix multiplication calls nda::matmul and returns the result.
    * - 'M' * 'V': Matrix-vector multiplication calls nda::matvecmul and returns the result.
    *
-   * Obvious restrictons on the ranks and shapes of the input arrays apply.
+   * Obvious restrictions on the ranks and shapes of the input arrays apply.
    *
    * @tparam L nda::Array type of left hand side.
    * @tparam R nda::Array type of right hand side.
@@ -471,13 +471,13 @@ namespace nda {
   }
 
   /**
-   * @brief Divison operator for two nda::Array types.
+   * @brief Division operator for two nda::Array types.
    *
    * @details The input arrays must have one of the following algebras:
    * - 'A' / 'A': Elementwise division of two arrays returns a lazy nda::expr object.
    * - 'M' / 'M': Multiplies the lhs matrix with the inverse of the rhs matrix and returns the result.
    *
-   * Obvious restrictons on the ranks and shapes of the input arrays apply.
+   * Obvious restrictions on the ranks and shapes of the input arrays apply.
    *
    * @tparam L nda::Array type of left hand side.
    * @tparam R nda::Array type of right hand side.
@@ -511,7 +511,7 @@ namespace nda {
   }
 
   /**
-   * @brief Divsion operator for an nda::Array and an nda::Scalar.
+   * @brief Division operator for an nda::Array and an nda::Scalar.
    *
    * @details It performs lazy elementwise division.
    *
@@ -537,7 +537,7 @@ namespace nda {
    * @tparam A nda::Array type.
    * @param s nda::Scalar left hand side operand.
    * @param a nda::Array right hand side operand.
-   * @return Lazy binary expression for the divsion operation (multiplication in case of a matrix).
+   * @return Lazy binary expression for the division operation (multiplication in case of a matrix).
    */
   template <Scalar S, Array A>
   Array auto operator/(S &&s, A &&a) { // NOLINT (S&& is mandatory for proper concept Array <: typename to work)

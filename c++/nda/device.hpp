@@ -136,7 +136,7 @@ namespace nda {
 
 #else
 
-/// Trigger a compilation error everytime the nda::device_error_check function is called.
+/// Trigger a compilation error every time the nda::device_error_check function is called.
 #define device_error_check(ARG1, ARG2) compile_error_no_gpu()
 
   /// Constexpr variable that is true if the project is configured with GPU support.

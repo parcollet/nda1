@@ -39,7 +39,7 @@ namespace nda {
     // N-dimensional rectangular grid iterator in C traversal order.
     template <int Rank>
     class grid_iterator {
-      // Stride or number of elements to skip when incresing the iterator in the current dimension.
+      // Stride or number of elements to skip when increasing the iterator in the current dimension.
       long stri = 0;
 
       // Position of the iterator in the current dimension.
@@ -117,7 +117,7 @@ namespace nda {
     // Specialization of nda::grid_iterator for 1-dimensional grids.
     template <>
     class grid_iterator<1> {
-      // Stride or number of elements to skip when incresing the iterator.
+      // Stride or number of elements to skip when increasing the iterator.
       long stri = 0;
 
       // Position of the iterator.
@@ -169,7 +169,7 @@ namespace nda {
         return *this;
       }
 
-      // Compund assignment addition operator increments the offset by n times the stride and the position by n.
+      // Compound assignment addition operator increments the offset by n times the stride and the position by n.
       grid_iterator &operator+=(std::ptrdiff_t n) {
         offset += n * stri;
         pos += n;
@@ -179,7 +179,7 @@ namespace nda {
       // Binary addition of a grid iterator and an integer.
       [[nodiscard]] friend grid_iterator operator+(grid_iterator it, std::ptrdiff_t n) { return it += n; }
 
-      // Binaray subtraction of two grid iterators.
+      // Binary subtraction of two grid iterators.
       [[nodiscard]] friend std::ptrdiff_t operator-(grid_iterator const &lhs, grid_iterator const &rhs) { return lhs.pos - rhs.pos; }
 
       // True if the position of the left hand side iterator is less than the position of the right hand side iterator,
@@ -433,7 +433,7 @@ namespace nda {
     [[nodiscard]] bool operator!=(array_iterator const &other) const { return (!operator==(other)); }
 
     /**
-     * @brief Compund assignment addition operator increments the iterator a given number of times.
+     * @brief Compound assignment addition operator increments the iterator a given number of times.
      *
      * @param n Number of times to increment the iterator.
      * @return Reference to the current iterator.
@@ -444,7 +444,7 @@ namespace nda {
     }
 
     /**
-     * @brief Compund assignment subtraction operator decrements the iterator a given number of times.
+     * @brief Compound assignment subtraction operator decrements the iterator a given number of times.
      *
      * @param n Number of times to decrement the iterator.
      * @return Reference to the current iterator.

@@ -71,7 +71,7 @@ namespace nda {
   /**
    * @brief A lazy function call expression on arrays/views.
    *
-   * @details The lazy expression call fullfils the nda::Array concept and can therefore be assigned to other
+   * @details The lazy expression call fulfils the nda::Array concept and can therefore be assigned to other
    * nda::basic_array or nda::basic_array_view objects. For example:
    *
    * @code{.cpp}

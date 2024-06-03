@@ -107,7 +107,7 @@ namespace nda::lapack {
     gelss_worker(matrix<T> A_) : M(A_.extent(0)), N(A_.extent(1)), A(std::move(A_)), s_vec(std::min(M, N)) {
       if (N > M) NDA_RUNTIME_ERROR << "Error in nda::lapack::gelss_worker: Matrix A cannot have more columns than rows";
 
-      // intialize matrices
+      // initialize matrices
       matrix<T, F_layout> A_FL{A};
       matrix<T, F_layout> U(M, M);
       matrix<T, F_layout> VH(N, N);
@@ -220,8 +220,8 @@ namespace nda::lapack {
 
         // We reshape the Matrix into a dim=4 array and swap the two innermost indices
 
-        // FIXME OLD CODE  SUPRRESS AFTER PORTING
-        // FIXME We would like to write: tranpose(reshape(idx_map, {l[0], N, d, d}), {0, 1, 3, 2})
+        // FIXME OLD CODE  SURPRESS AFTER PORTING
+        // FIXME We would like to write: transpose(reshape(idx_map, {l[0], N, d, d}), {0, 1, 3, 2})
         // auto idx_map_inner_transpose = array_view<dcomplex, 4>::layout_t{{l[0], N, d, d}, {s[0], d * d * s[1], s[1], d * s[1]}};
         // Deep copy
         //array<dcomplex, 4> arr_dag = conj(array_const_view<dcomplex, 4>{idx_map_inner_transpose, M.storage()});

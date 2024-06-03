@@ -122,7 +122,7 @@ namespace nda::clef {
     clef_auto_assign(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
   }
 
-  // Delete functions to avoid non-sensical cases, e.g. f(x_ + y_) << RHS.
+  // Delete functions to avoid nonsensical cases, e.g. f(x_ + y_) << RHS.
   template <typename F, typename RHS, typename... T>
   void operator<<(expr<tags::function, F, T...> &&ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
   template <typename F, typename RHS, typename... T>

@@ -50,7 +50,7 @@ namespace nda::lapack {
    *
    * @tparam A nda::MemoryMatrix with complex value type.
    * @tparam TAU nda::MemoryVector with complex value type.
-   * @param a Input/output matrix. On entry, the i-th column must contain the vector whichdefines the elementary
+   * @param a Input/output matrix. On entry, the i-th column must contain the vector which defines the elementary
    * reflector \f$ H(i) \; , i = 1,2,...,K \f$, as returned by `geqrf` in the first k columns. On exit, the m-by-n
    * matrix \f$ \mathbf{Q} \f$.
    * @param tau Input vector. `tau(i)` must contain the scalar factor of the elementary reflector \f$ \mathbf{H}(i) \f$,

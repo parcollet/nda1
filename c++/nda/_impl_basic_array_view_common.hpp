@@ -110,7 +110,7 @@
 
 /**
  * @brief Get a range that generates all valid index tuples.
- * @return An `itertools::mulitplied` range that can be used to iterate over all valid index tuples.
+ * @return An `itertools::multiplied` range that can be used to iterate over all valid index tuples.
  */
 [[nodiscard]] auto indices() const noexcept { return itertools::product_range(shape()); }
 
@@ -227,7 +227,7 @@ public:
  * @brief Function call operator to access the view/array.
  *
  * @details Depending on the type of the calling object and the given arguments, this function call does the following:
- * - If any of the arugments is lazy, an nda::clef::expr with the nda::clef::tags::function tag is returned.
+ * - If any of the arguments is lazy, an nda::clef::expr with the nda::clef::tags::function tag is returned.
  * - If no arguments are given, a full view of the calling object is returned:
  *   - If the calling object itself or its value type is const, a view with a const value type is returned.
  *   - Otherwise, a view with a non-const value type is returned.

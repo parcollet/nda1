@@ -112,7 +112,7 @@ namespace nda {
   concept StdArrayOfLong = detail::is_std_array_of_long_v<T>;
 
   /**
-   * @brief Check if a given type is either an arthmetic or complex type.
+   * @brief Check if a given type is either an arithmetic or complex type.
    * @tparam S Type to check.
    */
   template <typename S>

@@ -49,7 +49,7 @@ namespace nda::mem {
    */
 
   /**
-   * @brief Enum providing idientifiers for the different memory address spaces.
+   * @brief Enum providing identifiers for the different memory address spaces.
    *
    * @details The following address spaces are available:
    * - `None`: No address space.

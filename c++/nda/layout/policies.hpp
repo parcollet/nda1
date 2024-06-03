@@ -41,7 +41,7 @@ namespace nda {
   /// @endcond
 
   /**
-   * @brief Contigous layout policy with C-order (row-major order).
+   * @brief Contiguous layout policy with C-order (row-major order).
    * @details The last dimension varies the fastest, the first dimension varies the slowest.
    */
   struct C_layout {
@@ -57,7 +57,7 @@ namespace nda {
   };
 
   /**
-   * @brief Contigous layout policy with Fortran-order (column-major order).
+   * @brief Contiguous layout policy with Fortran-order (column-major order).
    * @details The first dimension varies the fastest, the last dimension varies the slowest.
    */
   struct F_layout {
