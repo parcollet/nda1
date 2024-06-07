@@ -57,8 +57,8 @@ namespace {
 
 // manually define dot routines since cblas_f77.h uses "_sub" to wrap the Fortran routines
 #define F77_ddot F77_GLOBAL(ddot, DDOT)
-#define F77_zdotu F77_GLOBAL(zdotu, DDOT)
-#define F77_zdotc F77_GLOBAL(zdotc, DDOT)
+#define F77_zdotu F77_GLOBAL(zdotu, ZDOTU)
+#define F77_zdotc F77_GLOBAL(zdotc, ZDOTC)
 extern "C" {
 double F77_ddot(FINT, const double *, FINT, const double *, FINT);
 nda_complex_double F77_zdotu(FINT, const double *, FINT, const double *, FINT);
