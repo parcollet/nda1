@@ -14,6 +14,8 @@
 //
 // Authors: Nils Wentzell
 
+#pragma once
+
 #include "../basic_array.hpp"
 #include "../concepts.hpp"
 #include "../blas.hpp"
