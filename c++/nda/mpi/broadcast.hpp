@@ -40,6 +40,18 @@ namespace nda {
    *
    * Throws an exception, if a given view does not have the correct shape.
    *
+   * @code{.cpp}
+   * // create an array on all processes
+   * nda::array<int, 2> arr(3, 4);
+   *
+   * // ...
+   * // fill array on root process
+   * // ...
+   *
+   * // broadcast the array to all processes
+   * mpi::broadcast(arr);
+   * @endcode
+   *
    * @tparam A nda::basic_array or nda::basic_array_view type.
    * @param a Array or view to be broadcasted from/into.
    * @param comm `mpi::communicator` object.

@@ -76,6 +76,14 @@ namespace nda {
   /**
    * @brief Does any of the elements of the array evaluate to true?
    *
+   * @details The given nda::Array object can also be some lazy expression that evaluates to a boolean. For example:
+   *
+   * @code{.cpp}
+   * auto A = nda::array<double, 2>::rand(2, 3);
+   * auto greater05 = nda::map([](auto x) { return x > 0.5; })(A);
+   * auto res = nda::any(greater05);
+   * @endcode
+   *
    * @tparam A nda::Array type.
    * @param a nda::Array object.
    * @return True if at least one element of the array evaluates to true, false otherwise.
@@ -88,6 +96,14 @@ namespace nda {
 
   /**
    * @brief Do all elements of the array evaluate to true?
+   *
+   * @details The given nda::Array object can also be some lazy expression that evaluates to a boolean. For example:
+   *
+   * @code{.cpp}
+   * auto A = nda::array<double, 2>::rand(2, 3);
+   * auto greater0 = nda::map([](auto x) { return x > 0.0; })(A);
+   * auto res = nda::all(greater0);
+   * @endcode
    *
    * @tparam A nda::Array type.
    * @param a nda::Array object.

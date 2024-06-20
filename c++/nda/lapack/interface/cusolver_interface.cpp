@@ -20,6 +20,7 @@
  */
 
 #include "./cusolver_interface.hpp"
+#include "../../basic_array.hpp"
 #include "../../blas/tools.hpp"
 #include "../../declarations.hpp"
 #include "../../device.hpp"

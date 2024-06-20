@@ -54,7 +54,7 @@ namespace nda::blas {
    * @param y Input/Output vector of size m.
    */
   template <typename A, typename X, typename Y>
-  void gemv_generic(get_value_t<A> alpha, A const &a, X const &x, get_value_t<A> beta, Y &y) {
+  void gemv_generic(get_value_t<A> alpha, A const &a, X const &x, get_value_t<A> beta, Y &&y) { // NOLINT (temporary views are allowed here)
     EXPECTS(a.extent(1) == x.extent(0));
     EXPECTS(a.extent(0) == y.extent(0));
     for (int i = 0; i < a.extent(0); ++i) {

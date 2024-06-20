@@ -60,7 +60,7 @@ namespace nda {
 
   /**
    * @ingroup av_math
-   * @brief Get the trace of a 2-dimensional array/view.
+   * @brief Get the trace of a 2-dimensional square array/view.
    *
    * @tparam M nda::ArrayOfRank<2> type.
    * @param m 2-dimensional array/view.

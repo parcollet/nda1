@@ -199,8 +199,8 @@ namespace nda {
      * @details The missing extents are taken from the static extents.
      * @param shape sta::array containing the dynamic extents only.
      */
-    rect_str(std::array<long, n_dynamic_extents> const &shape) noexcept
-      requires((n_dynamic_extents != Rank) and (n_dynamic_extents != 0))
+    rect_str(std::array<long, base_t::n_dynamic_extents> const &shape) noexcept
+      requires((base_t::n_dynamic_extents != Rank) and (base_t::n_dynamic_extents != 0))
        : base_t{shape} {}
 
     /// Default copy constructor.

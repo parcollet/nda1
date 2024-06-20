@@ -305,8 +305,10 @@ namespace nda {
   /**
    * @brief Resize a given regular array to the given shape or check if a given view as the correct shape.
    *
-   * @details Regular types are resized (if necessary) while views are checked for the correct shape. Throws an
-   * exception if the shape of the view does not match the given shape.
+   * @details Regular types are resized (if necessary) by calling nda::basic_array::resize while views are checked for
+   * the correct shape.
+   *
+   * Throws an exception if the shape of the view does not match the given shape.
    *
    * @tparam A Type of the object.
    * @param a Object to resize or check.

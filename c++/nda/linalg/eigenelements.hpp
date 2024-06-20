@@ -132,7 +132,7 @@ namespace nda::linalg {
    */
   template <typename M>
   auto eigenvalues_in_place(M &m) {
-    return _eigen_element_impl(m, 'N');
+    return detail::_eigen_element_impl(m, 'N');
   }
 
   /** @} */

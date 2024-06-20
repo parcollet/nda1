@@ -21,6 +21,8 @@
  * @brief Provides the p-norm for general arrays/views of rank 1 and with scalar elements.
  */
 
+#pragma once
+
 #include "../algorithms.hpp"
 #include "../basic_functions.hpp"
 #include "../blas/dot.hpp"

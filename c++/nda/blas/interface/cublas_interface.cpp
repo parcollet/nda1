@@ -53,7 +53,7 @@ namespace nda::blas::device {
   }
 
   // Local function to get Magma queue.
-  magma_queue_t &get_magma_queue() {
+  auto &get_magma_queue() {
     struct queue_t {
       queue_t() {
         int device{};

@@ -196,7 +196,7 @@ namespace nda {
     }
 
     /// Default constructor constructs an empty array with a default constructed memory handle and layout.
-    basic_array(){}; // NOLINT (user-defined constructor to avoid value initialization of the sso buffer)
+    basic_array() {}; // NOLINT (user-defined constructor to avoid value initialization of the sso buffer)
 
     /// Default move constructor moves the memory handle and layout.
     basic_array(basic_array &&) = default;
@@ -497,8 +497,8 @@ namespace nda {
     /**
      * @brief Assignment operator makes a deep copy of another array with a different algebra and/or container policy.
      *
-     * @details The array is first resized to the shape of the right hand side and the elements are copied. This might
-     * invalidate all references/views to the existing storage.
+     * @details A new array object is constructed from the right hand side array and then moved into the current array.
+     * This will invalidate all references/views to the existing storage.
      *
      * @tparam A Algebra of the other array.
      * @tparam CP Container policy of the other array.

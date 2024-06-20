@@ -56,7 +56,8 @@ namespace nda::blas {
    * @param c Input/Output matrix of size m by n.
    */
   template <Matrix A, Matrix B, MemoryMatrix C>
-  void gemm_generic(typename A::value_type alpha, A const &a, B const &b, typename A::value_type beta, C &c) {
+  void gemm_generic(typename A::value_type alpha, A const &a, B const &b, typename A::value_type beta,
+                    C &&c) { // NOLINT (temporary views are allowed here)
     EXPECTS(a.extent(1) == b.extent(0));
     EXPECTS(a.extent(0) == c.extent(0));
     EXPECTS(b.extent(1) == c.extent(1));
