@@ -124,3 +124,15 @@ TEST(NDA, AmbiguousAssignmentOperatorIssue) {
   B = std::array{1, 2, 3};
   for (int i = 0; i < 3; ++i) { EXPECT_EQ(B(i), (std::array{1, 2, 3})); }
 }
+
+TEST(NDA, AssignmentTo1DNegativeStridedViewsIssue) {
+  // issue concerning the assignment of scalar values to 1D strided views with negative strides
+  nda::array<int, 1> A(10);
+  for (int i = 0; auto &x : A) x = i++;
+
+  auto B = A(nda::range(9, -1, -1));
+  for (int i = 9; auto x : B) EXPECT_EQ(x, i--);
+
+  B = 1;
+  for (auto x : B) EXPECT_EQ(x, 1);
+}
