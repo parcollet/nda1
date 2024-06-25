@@ -553,6 +553,27 @@ TEST_F(NDAArrayAndView, SliceAccessFull) {
   auto A_s2 = A_3d(nda::range::all, nda::range::all, nda::range::all);
   EXPECT_EQ(A_s2.shape(), shape_3d);
   EXPECT_EQ(A_s2, A_3d);
+
+  // full slice with negative strides
+  auto A_s3 = A_3d(nda::range(1, -1, -1), nda::range(2, -1, -1), nda::range(3, -1, -1));
+  EXPECT_EQ(A_s3.shape(), shape_3d);
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 3; ++j) {
+      for (long k = 0; k < 4; ++k) EXPECT_EQ(A_s3(i, j, k), A_3d(1 - i, 2 - j, 3 - k));
+    }
+  }
+  A_s3 = 42;
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 3; ++j) {
+      for (long k = 0; k < 4; ++k) EXPECT_EQ(A_3d(i, j, k), 42);
+    }
+  }
+  A_s3 = A_3d;
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 3; ++j) {
+      for (long k = 0; k < 4; ++k) EXPECT_EQ(A_s3(i, j, k), A_3d(1 - i, 2 - j, 3 - k));
+    }
+  }
 }
 
 TEST_F(NDAArrayAndView, SliceAccess1D) {
@@ -579,6 +600,32 @@ TEST_F(NDAArrayAndView, SliceAccess1D) {
   for (long i = 0; i < 2; ++i) EXPECT_EQ(C_s(i), A_3d(0, 1, 1 + 2 * i));
   C_s = 42;
   EXPECT_NE(C, A_3d);
+
+  // full 1D slice with negative strides
+  auto D   = A_3d;
+  auto D_s = D(0, nda::range(2, -1, -1), 2);
+  static_assert(D_s.rank == 1);
+  EXPECT_EQ(D_s.size(), 3);
+  EXPECT_EQ(D_s.strides(), (std::array<long, 1>{-4}));
+  for (long i = 0; i < 3; ++i) EXPECT_EQ(D_s(i), A_3d(0, 2 - i, 2));
+  D_s = 42;
+  EXPECT_NE(D, A_3d);
+  for (long i = 0; i < 3; ++i) EXPECT_EQ(D(0, i, 2), 42);
+  D_s = nda::array<int, 1>{1, 2, 3};
+  for (long i = 0; i < 3; ++i) EXPECT_EQ(D(0, i, 2), 3 - i);
+
+  // partial 1D slice with negative strides
+  auto E   = A_3d;
+  auto E_s = E(0, 1, nda::range(3, 0, -2));
+  static_assert(E_s.rank == 1);
+  EXPECT_EQ(E_s.size(), 2);
+  EXPECT_EQ(E_s.strides(), (std::array<long, 1>{-2}));
+  for (long i = 0; i < 2; ++i) EXPECT_EQ(E_s(i), A_3d(0, 1, 3 - 2 * i));
+  E_s = 42;
+  EXPECT_NE(E, A_3d);
+  for (long i = 0; i < 2; ++i) EXPECT_EQ(E(0, 1, 1 + 2 * i), 42);
+  E_s = nda::array<int, 1>{1, 2};
+  for (long i = 0; i < 2; ++i) EXPECT_EQ(E(0, 1, 1 + 2 * i), 2 - i);
 }
 
 TEST_F(NDAArrayAndView, SliceAccess2D) {
@@ -634,6 +681,80 @@ TEST_F(NDAArrayAndView, SliceAccess2D) {
   static_assert(C_s3.rank == 2);
   EXPECT_EQ(C_s3.shape(), (std::array<long, 2>{2, 2}));
   EXPECT_EQ(C_s3.strides(), (std::array<long, 2>{12, 8}));
+
+  // full 2D slice with negative strides
+  auto D   = A_3d;
+  auto D_s = D(nda::range(1, -1, -1), 1, nda::range(3, -1, -1));
+  static_assert(D_s.rank == 2);
+  EXPECT_EQ(D_s.shape(), (std::array<long, 2>{2, 4}));
+  EXPECT_EQ(D_s.strides(), (std::array<long, 2>{-12, -1}));
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 4; ++j) EXPECT_EQ(D_s(i, j), A_3d(1 - i, 1, 3 - j));
+  }
+  D_s = 42;
+  EXPECT_NE(D, A_3d);
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 4; ++j) EXPECT_EQ(D(i, 1, j), 42);
+  }
+  D_s = A_3d(nda::range::all, 1, nda::range::all);
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 4; ++j) EXPECT_EQ(D(i, 1, j), A_3d(1 - i, 1, 3 - j));
+  }
+
+  D         = A_3d;
+  auto D_s2 = D(1, nda::range(2, -1, -1), nda::range::all);
+  static_assert(D_s2.rank == 2);
+  EXPECT_EQ(D_s2.shape(), (std::array<long, 2>{3, 4}));
+  EXPECT_EQ(D_s2.strides(), (std::array<long, 2>{-4, 1}));
+  for (long i = 0; i < 3; ++i) {
+    for (long j = 0; j < 4; ++j) EXPECT_EQ(D_s2(i, j), A_3d(1, 2 - i, j));
+  }
+  D_s2 = 42;
+  EXPECT_NE(D, A_3d);
+  for (long i = 0; i < 3; ++i) {
+    for (long j = 0; j < 4; ++j) EXPECT_EQ(D(1, i, j), 42);
+  }
+  D_s2 = A_3d(1, nda::range::all, nda::range::all);
+  for (long i = 0; i < 3; ++i) {
+    for (long j = 0; j < 4; ++j) EXPECT_EQ(D(1, i, j), A_3d(1, 2 - i, j));
+  }
+
+  // partial 2D slice with negative strides
+  auto E   = A_3d;
+  auto E_s = E(0, nda::range(1, -1, -1), nda::range(3, 0, -2));
+  static_assert(E_s.rank == 2);
+  EXPECT_EQ(E_s.shape(), (std::array<long, 2>{2, 2}));
+  EXPECT_EQ(E_s.strides(), (std::array<long, 2>{-4, -2}));
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 2; ++j) EXPECT_EQ(E_s(i, j), A_3d(0, 1 - i, 3 - 2 * j));
+  }
+  E_s = 42;
+  EXPECT_NE(E, A_3d);
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 2; ++j) EXPECT_EQ(E(0, i, 1 + 2 * j), 42);
+  }
+  E_s = A_3d(0, nda::range(0, 2), nda::range(1, 4, 2));
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 2; ++j) EXPECT_EQ(E(0, i, 1 + 2 * j), A_3d(0, 1 - i, 3 - 2 * j));
+  }
+
+  E         = A_3d;
+  auto E_s2 = E(nda::range::all, nda::range(2, -1, -2), 3);
+  static_assert(E_s2.rank == 2);
+  EXPECT_EQ(E_s2.shape(), (std::array<long, 2>{2, 2}));
+  EXPECT_EQ(E_s2.strides(), (std::array<long, 2>{12, -8}));
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 2; ++j) EXPECT_EQ(E_s2(i, j), A_3d(i, 2 - 2 * j, 3));
+  }
+  E_s2 = 42;
+  EXPECT_NE(E, A_3d);
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 2; ++j) EXPECT_EQ(E(i, 2 * j, 3), 42);
+  }
+  E_s2 = A_3d(nda::range::all, nda::range(0, 3, 2), 3);
+  for (long i = 0; i < 2; ++i) {
+    for (long j = 0; j < 2; ++j) EXPECT_EQ(E(i, 2 * j, 3), A_3d(i, 2 - 2 * j, 3));
+  }
 }
 
 TEST_F(NDAArrayAndView, SliceAccess3D) {
