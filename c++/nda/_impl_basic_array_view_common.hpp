@@ -516,7 +516,7 @@ void fill_with_scalar(Scalar const &scalar) noexcept {
     } else {
       const long stri  = indexmap().min_stride();
       const long Lstri = L * stri;
-      for (long i = 0; i < Lstri; i += stri) p[i] = scalar;
+      for (long i = 0; i != Lstri; i += stri) p[i] = scalar;
     }
   } else {
     // no compile-time memory layout guarantees
