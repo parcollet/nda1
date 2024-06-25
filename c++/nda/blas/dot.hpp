@@ -45,12 +45,9 @@ namespace nda::blas {
    * @brief Interface to the BLAS `dot` routine.
    *
    * @details This function forms the dot product of two vectors. It calculates
-   * - \f$ \mathbf{x}^T \mathbf{y} \f$ in case that both \f$ \mathbf{x} \f$ and
-   * \f$ \mathbf{y} \f$ are vectors,
-   * - \f$ x \mathbf{y} \f$ in case that \f$ x \f$ is a scalar and \f$ \mathbf{y} \f$
-   * is a vector,
-   * - \f$ \mathbf{x} y \f$ in case that \f$ \mathbf{x} \f$ is a vector and \f$ y \f$
-   * is a scalar or
+   * - \f$ \mathbf{x}^T \mathbf{y} \f$ in case that both \f$ \mathbf{x} \f$ and \f$ \mathbf{y} \f$ are vectors,
+   * - \f$ x \mathbf{y} \f$ in case that \f$ x \f$ is a scalar and \f$ \mathbf{y} \f$ is a vector,
+   * - \f$ \mathbf{x} y \f$ in case that \f$ \mathbf{x} \f$ is a vector and \f$ y \f$ is a scalar or
    * - \f$ x y \f$ in case that both \f$ x \f$ and \f$ y \f$ are scalars.
    *
    * @tparam X nda::MemoryVector or nda::Scalar type.
@@ -90,12 +87,9 @@ namespace nda::blas {
    * @brief Interface to the BLAS `dotc` routine.
    *
    * @details This function forms the dot product of two vectors. It calculates
-   * - \f$ \mathbf{x}^H \mathbf{y} \f$ in case that both \f$ \mathbf{x} \f$ and
-   * \f$ \mathbf{y} \f$ are vectors,
-   * - \f$ \bar{x} \mathbf{y} \f$ in case that \f$ x \f$ is a scalar and \f$ \mathbf{y} \f$
-   * is a vector,
-   * - \f$ \mathbf{x}^H y \f$ in case that \f$ \mathbf{x} \f$ is a vector and \f$ y \f$
-   * is a scalar or
+   * - \f$ \mathbf{x}^H \mathbf{y} \f$ in case that both \f$ \mathbf{x} \f$ and \f$ \mathbf{y} \f$ are vectors,
+   * - \f$ \bar{x} \mathbf{y} \f$ in case that \f$ x \f$ is a scalar and \f$ \mathbf{y} \f$ is a vector,
+   * - \f$ \mathbf{x}^H y \f$ in case that \f$ \mathbf{x} \f$ is a vector and \f$ y \f$ is a scalar or
    * - \f$ \bar{x} y \f$ in case that both \f$ x \f$ and \f$ y \f$ are scalars.
    *
    * @tparam X nda::MemoryVector or nda::Scalar type.

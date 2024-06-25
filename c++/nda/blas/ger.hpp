@@ -52,8 +52,8 @@ namespace nda::blas {
    * \f[
    *   \mathbf{M} \leftarrow \alpha \mathbf{x} \mathbf{y}^H + \mathbf{M} ;,
    * \f]
-   * where \f$ \alpha \f$ is a scalar, \f$ \mathbf{x} \f$ is an m element vector, \f$ \mathbf{y} \f$
-   * is an n element vector and \f$ \mathbf{M} \f$ is an m by n matrix.
+   * where \f$ \alpha \f$ is a scalar, \f$ \mathbf{x} \f$ is an m element vector, \f$ \mathbf{y} \f$ is an n element
+   * vector and \f$ \mathbf{M} \f$ is an m-by-n matrix.
    *
    * @tparam X nda::MemoryVector type.
    * @tparam Y nda::MemoryVector type.
@@ -61,7 +61,7 @@ namespace nda::blas {
    * @param alpha Input scalar.
    * @param x Input left vector (column vector) of size m.
    * @param y Input right vector (row vector) of size n.
-   * @param m Input/Output matrix of size m by n to which the outer product is added.
+   * @param m Input/Output matrix of size m-by-n to which the outer product is added.
    */
   template <MemoryVector X, MemoryVector Y, MemoryMatrix M>
     requires(have_same_value_type_v<X, Y, M> and mem::have_compatible_addr_space<X, Y, M> and is_blas_lapack_v<get_value_t<X>>)
@@ -92,13 +92,12 @@ namespace nda::blas {
   /**
    * @brief Calculate the outer product of two contiguous arrays/views/scalars.
    *
-   * @details For general multidimensional arrays/views, it calculates their tensor outer
-   * product, i.e.
+   * @details For general multidimensional arrays/views, it calculates their tensor outer product, i.e.
    * ```
    * c(i,j,k,...,u,v,w,...) = a(i,j,k,...) * b(u,v,w,...)
    * ```
-   * If one of the arguments is a scalar, it multiplies each element of the other argument by the scalar
-   * which returns a lazy nda::expr object.
+   * If one of the arguments is a scalar, it multiplies each element of the other argument by the scalar which returns a
+   * lazy nda::expr object.
    *
    * If both arguments are scalars, it returns their products.
    *

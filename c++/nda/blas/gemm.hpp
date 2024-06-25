@@ -50,10 +50,10 @@ namespace nda::blas {
    * @tparam B Some matrix type.
    * @tparam C Some matrix type.
    * @param alpha Input scalar.
-   * @param a Input matrix of size m by k.
-   * @param b Input matrix of size k by n.
+   * @param a Input matrix of size m-by-k.
+   * @param b Input matrix of size k-by-n.
    * @param beta Input scalar.
-   * @param c Input/Output matrix of size m by n.
+   * @param c Input/Output matrix of size m-by-n.
    */
   template <Matrix A, Matrix B, MemoryMatrix C>
   void gemm_generic(typename A::value_type alpha, A const &a, B const &b, typename A::value_type beta,
@@ -83,17 +83,17 @@ namespace nda::blas {
    * - \f$ \mathrm{op}(\mathbf{X}) = \mathbf{X}^H \f$.
    *
    * Here, \f$ \alpha \f$ and \f$ \beta \f$ are scalars, and \f$ \mathbf{A} \f$, \f$ \mathbf{B} \f$ are matrices with
-   * \f$ \mathrm{op}(\mathbf{A}) \f$ is an m by k matrix, \f$ \mathrm{op}(\mathbf{B}) \f$ is a k by n matrix and
-   * \f$ \mathrm{op}(\mathbf{C}) \f$ is an m by n matrix.
+   * \f$ \mathrm{op}(\mathbf{A}) \f$ is an m-by-k matrix, \f$ \mathrm{op}(\mathbf{B}) \f$ is a k-by-n matrix and
+   * \f$ \mathrm{op}(\mathbf{C}) \f$ is an m-by-n matrix.
    *
    * @tparam A nda::Matrix type.
    * @tparam B nda::Matrix type.
    * @tparam C nda::MemoryMatrix type.
    * @param alpha Input scalar.
-   * @param a Input matrix.
-   * @param b Input matrix.
+   * @param a Input matrix of size m-by-k.
+   * @param b Input matrix of size k-by-n.
    * @param beta Input scalar.
-   * @param c Input/Output matrix of size m by n.
+   * @param c Input/Output matrix of size m-by-n.
    */
   template <Matrix A, Matrix B, MemoryMatrix C>
     requires((MemoryMatrix<A> or is_conj_array_expr<A>) and (MemoryMatrix<B> or is_conj_array_expr<B>)

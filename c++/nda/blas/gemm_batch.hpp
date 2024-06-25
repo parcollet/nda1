@@ -50,8 +50,8 @@ namespace nda::blas {
   /**
    * @brief Implements a batched version of nda::blas::gemm taking vectors of matrices as arguments.
    *
-   * @details This routine is a batched version of nda::blas::gemm, performing multiple `gemm` operations
-   * in a single call. Each `gemm` operation performs a matrix-matrix product with general matrices.
+   * @details This routine is a batched version of nda::blas::gemm, performing multiple `gemm` operations in a single
+   * call. Each `gemm` operation performs a matrix-matrix product with general matrices.
    *
    * @tparam VBATCH Allow for variable sized matrices.
    * @tparam A nda::Matrix type.
@@ -201,12 +201,10 @@ namespace nda::blas {
   }
 
   /**
-   * @brief Implements a strided batched version of nda::blas::gemm taking 3-dimensional
-   * arrays as arguments.
+   * @brief Implements a strided batched version of nda::blas::gemm taking 3-dimensional arrays as arguments.
    *
-   * @details This function is similar to nda::blas::gemm_batch except that it takes
-   * 3-dimensional arrays as arguments instead of vectors of matrices. The first dimension
-   * of the arrays indexes the matrices to be multiplied.
+   * @details This function is similar to nda::blas::gemm_batch except that it takes 3-dimensional arrays as arguments
+   * instead of vectors of matrices. The first dimension of the arrays indexes the matrices to be multiplied.
    *
    * @tparam A nda::ArrayOfRank<3> type.
    * @tparam B nda::ArrayOfRank<3> type.

@@ -81,8 +81,8 @@ namespace nda::blas {
   }();
 
   /**
-   * @brief Variable template that determines the BLAS matrix operation tag ('N','T','C')
-   * based on the given boolean flags for conjugation and transposition.
+   * @brief Variable template that determines the BLAS matrix operation tag ('N','T','C') based on the given boolean
+   * flags for conjugation and transposition.
    *
    * @tparam conj Boolean flag for conjugation.
    * @tparam transpose Boolean flag for transposition.

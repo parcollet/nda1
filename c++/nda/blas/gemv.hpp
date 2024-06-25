@@ -48,7 +48,7 @@ namespace nda::blas {
    * @tparam X Some vector type.
    * @tparam Y Some vector type.
    * @param alpha Input scalar.
-   * @param a Input matrix of size m by n.
+   * @param a Input matrix of size m-by-n.
    * @param x Input vector of size n.
    * @param beta Input scalar.
    * @param y Input/Output vector of size m.
@@ -72,14 +72,14 @@ namespace nda::blas {
    * - \f$ \mathbf{y} \leftarrow \alpha \mathbf{A}^T \mathbf{x} + \beta \mathbf{y} \f$,
    * - \f$ \mathbf{y} \leftarrow \alpha \mathbf{A}^H \mathbf{x} + \beta \mathbf{y} \f$,
    *
-   * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, \f$ \mathbf{x} \f$ and \f$ \mathbf{y} \f$
-   * are vectors and \f$ \mathbf{A} \f$ is an m by n matrix.
+   * where \f$ \alpha \f$ and \f$ \beta \f$ are scalars, \f$ \mathbf{x} \f$ and \f$ \mathbf{y} \f$ are vectors and
+   * \f$ \mathbf{A} \f$ is an m-by-n matrix.
    *
    * @tparam A nda::Matrix type.
    * @tparam X nda::MemoryVector type.
    * @tparam Y nda::MemoryVector type.
    * @param alpha Input scalar.
-   * @param a Input matrix of size m by n.
+   * @param a Input matrix of size m-by-n.
    * @param x Input vector of size n.
    * @param beta Input scalar.
    * @param y Input/Output vector of size m.
