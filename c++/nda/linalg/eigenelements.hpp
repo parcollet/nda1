@@ -45,7 +45,8 @@ namespace nda::linalg {
       // runtime checks
       EXPECTS((not m.empty()));
       EXPECTS(is_matrix_square(m, true));
-      EXPECTS(m.indexmap().is_contiguous());
+      EXPECTS(m.is_contiguous());
+      EXPECTS(m.has_positive_strides());
 
       // set up the workspace
       int dim   = m.extent(0);

@@ -136,3 +136,36 @@ TEST(NDA, AssignmentTo1DNegativeStridedViewsIssue) {
   B = 1;
   for (auto x : B) EXPECT_EQ(x, 1);
 }
+
+TEST(NDA, IsStrided1DAndIsContiguousIssue) {
+  // issue concerning the nda::idx_map::is_strided_1d and the nda::idx_map::is_contiguous function
+  nda::array<int, 2> A(10, 10);
+  EXPECT_TRUE(A.indexmap().is_contiguous());
+  EXPECT_TRUE(A.indexmap().has_positive_strides());
+  EXPECT_TRUE(A.indexmap().is_strided_1d());
+
+  auto A_v1 = A(nda::range::all, nda::range(9, -1, -1));
+  EXPECT_TRUE(A_v1.indexmap().is_contiguous());
+  EXPECT_FALSE(A_v1.indexmap().has_positive_strides());
+  EXPECT_TRUE(A_v1.indexmap().is_strided_1d());
+
+  auto A_v2 = A(nda::range(9, -1, -1), nda::range::all);
+  EXPECT_TRUE(A_v2.indexmap().is_contiguous());
+  EXPECT_FALSE(A_v2.indexmap().has_positive_strides());
+  EXPECT_TRUE(A_v2.indexmap().is_strided_1d());
+
+  auto A_v3 = A(nda::range(9, -1, -1), nda::range(9, -1, -1));
+  EXPECT_TRUE(A_v3.indexmap().is_contiguous());
+  EXPECT_FALSE(A_v3.indexmap().has_positive_strides());
+  EXPECT_TRUE(A_v3.indexmap().is_strided_1d());
+
+  nda::array<int, 2> B(10, 1);
+  EXPECT_TRUE(B.indexmap().is_contiguous());
+  EXPECT_TRUE(B.indexmap().has_positive_strides());
+  EXPECT_TRUE(B.indexmap().is_strided_1d());
+
+  auto B_v1 = B(nda::range(0, 10, 2), nda::range::all);
+  EXPECT_FALSE(B_v1.indexmap().is_contiguous());
+  EXPECT_TRUE(B_v1.indexmap().has_positive_strides());
+  EXPECT_TRUE(B_v1.indexmap().is_strided_1d());
+}

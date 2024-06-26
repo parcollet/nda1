@@ -88,7 +88,9 @@ struct mpi::lazy<mpi::tag::reduce, A> {
   template <nda::Array T>
   void invoke(T &&target) const { // NOLINT (temporary views are allowed here)
     // check if the arrays can be used in the MPI call
-    if (not target.is_contiguous()) NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Target array needs to be contiguous";
+    if (not target.is_contiguous() or not target.has_positive_strides())
+      NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Target array needs to be contiguous with positive strides";
+
     static_assert(std::decay_t<A>::layout_t::stride_order_encoded == std::decay_t<T>::layout_t::stride_order_encoded,
                   "Error in MPI reduce for nda::Array: Incompatible stride orders");
 
@@ -166,7 +168,8 @@ namespace nda {
                                                                MPI_Op op = MPI_SUM)
     requires(is_regular_or_view_v<A>)
   {
-    if (not a.is_contiguous()) NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Array needs to be contiguous";
+    if (not a.is_contiguous() or not a.has_positive_strides())
+      NDA_RUNTIME_ERROR << "Error in MPI reduce for nda::Array: Array needs to be contiguous with positive strides";
     return mpi::lazy<mpi::tag::reduce, A>{std::forward<A>(a), comm, root, all, op};
   }
 

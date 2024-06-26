@@ -83,6 +83,12 @@
 [[nodiscard]] long is_contiguous() const noexcept { return lay.is_contiguous(); }
 
 /**
+ * @brief Are all the strides of the memory layout of the view/array positive?
+ * @return True if the nda::idx_map has positive strides, false otherwise.
+ */
+[[nodiscard]] long has_positive_strides() const noexcept { return lay.has_positive_strides(); }
+
+/**
  * @brief Is the view/array empty?
  * @return True if the view/array does not contain any elements.
  */

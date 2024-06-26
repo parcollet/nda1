@@ -91,7 +91,9 @@ struct mpi::lazy<mpi::tag::scatter, A> {
    */
   template <nda::Array T>
   void invoke(T &&target) const { // NOLINT (temporary views are allowed here)
-    if (not target.is_contiguous()) NDA_RUNTIME_ERROR << "Error in MPI scatter for nda::Array: Target array needs to be contiguous";
+    if (not target.is_contiguous() or not target.has_positive_strides())
+      NDA_RUNTIME_ERROR << "Error in MPI scatter for nda::Array: Target array needs to be contiguous with positive strides";
+
     static_assert(std::decay_t<A>::layout_t::stride_order_encoded == std::decay_t<T>::layout_t::stride_order_encoded,
                   "Error in MPI scatter for nda::Array: Incompatible stride orders");
 
@@ -156,7 +158,8 @@ namespace nda {
   ArrayInitializer<std::remove_reference_t<A>> auto mpi_scatter(A &&a, mpi::communicator comm = {}, int root = 0, bool all = false)
     requires(is_regular_or_view_v<A>)
   {
-    if (not a.is_contiguous()) NDA_RUNTIME_ERROR << "Error in MPI scatter for nda::Array: Array needs to be contiguous";
+    if (not a.is_contiguous() or not a.has_positive_strides())
+      NDA_RUNTIME_ERROR << "Error in MPI scatter for nda::Array: Array needs to be contiguous with positive strides";
     return mpi::lazy<mpi::tag::scatter, A>{std::forward<A>(a), comm, root, all};
   }
 

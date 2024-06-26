@@ -184,7 +184,7 @@ namespace nda {
     [[nodiscard]] std::array<long, Rank> const &strides() const noexcept { return str; }
 
     /**
-     * @brief Get the value of the smallest stride.
+     * @brief Get the value of the smallest stride (positive or negative).
      * @return Stride of the fastest varying dimension.
      */
     [[nodiscard]] long min_stride() const noexcept { return str[stride_order[Rank - 1]]; }
@@ -193,31 +193,39 @@ namespace nda {
      * @brief Is the data contiguous in memory?
      *
      * @details The data is contiguous in memory if the size of the map is equal to the number of memory locations
-     * spanned by the map, i.e. the product of the largest stride times the length of the corresponding dimension.
+     * spanned by the map, i.e. the absolute value of the product of the largest stride times the length of the
+     * corresponding dimension.
      *
      * @return True if the data is contiguous in memory, false otherwise.
      */
     [[nodiscard]] bool is_contiguous() const noexcept {
       auto s = size();
       if (s == 0) return true;
-      auto const str_x_len = str * len;
-      return (*std::max_element(str_x_len.cbegin(), str_x_len.cend()) == s);
+      return (std::abs(str[stride_order[0]] * len[stride_order[0]]) == s);
     }
+
+    /**
+     * @brief Are all strides positive?
+     * @return True if all strides are positive, false otherwise.
+     */
+    [[nodiscard]] bool has_positive_strides() const noexcept { return (*std::min_element(str.cbegin(), str.cend()) >= 0); }
 
     /**
      * @brief Is the data strided in memory with a constant stride?
      *
-     * @details The data is strided in memory with a constant stride if the size of the map times the stride of the
-     * fastest dimension with an extent bigger than 1 is equal to the number of memory locations spanned by the map,
-     * i.e. the product of the largest stride times the length of the corresponding dimension.
+     * @details The data is strided in memory with a constant stride if the size of the map times the absolute value of
+     * the stride of the fastest dimension with an extent bigger than 1 is equal to the number of memory locations
+     * spanned by the map, i.e. the absolute value of the product of the largest stride times the length of the
+     * corresponding dimension.
      *
      * @return True if the data is strided in memory with a constant stride, false otherwise.
      */
     [[nodiscard]] bool is_strided_1d() const noexcept {
       auto s = size();
       if (s == 0) return true;
-      auto const str_x_len = str * len;
-      return (*std::max_element(str_x_len.cbegin(), str_x_len.cend()) == s * min_stride());
+      int i = Rank - 1;
+      for (; len[stride_order[i]] == 1; --i);
+      return (std::abs(str[stride_order[0]] * len[stride_order[0]]) == s * std::abs(str[stride_order[i]]));
     }
 
     /**

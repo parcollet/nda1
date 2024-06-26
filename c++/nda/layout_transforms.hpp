@@ -109,7 +109,8 @@ namespace nda {
     // check size and contiguity of new shape
     EXPECTS_WITH_MESSAGE(a.size() == (std::accumulate(new_shape.cbegin(), new_shape.cend(), Int{1}, std::multiplies<>{})),
                          "Error in nda::reshape: New shape has an incorrect number of elements");
-    EXPECTS_WITH_MESSAGE(a.indexmap().is_contiguous(), "Error in nda::reshape: Only contiguous arrays/views are supported");
+    EXPECTS_WITH_MESSAGE(a.is_contiguous(), "Error in nda::reshape: Only contiguous arrays/views are supported");
+    EXPECTS_WITH_MESSAGE(a.has_positive_strides(), "Error in nda::reshape: Only arrays/views with positive strides are supported")
 
     // restrict supported layouts (why?)
     using A_t = std::remove_cvref_t<A>;
