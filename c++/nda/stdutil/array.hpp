@@ -153,16 +153,6 @@ namespace std { // has to be in the right namespace for ADL
 
 namespace nda::stdutil {
 
-  namespace detail {
-
-    // Helper function to create a std::array filled with a constant value.
-    template <typename T, size_t... Is>
-    constexpr std::array<T, sizeof...(Is)> make_initialized_array(T v, std::index_sequence<Is...>) {
-      return {(Is ? v : v)...}; // NOLINT (always v, just a trick to have the pack)
-    }
-
-  } // namespace detail
-
   /**
    * @brief Create a new std::array object initialized with a specific value.
    *
@@ -173,7 +163,9 @@ namespace nda::stdutil {
    */
   template <size_t R, typename T>
   constexpr std::array<T, R> make_initialized_array(T v) {
-    return detail::make_initialized_array(v, std::make_index_sequence<R>{});
+    return [&v]<size_t... Is>(std::index_sequence<Is...>) {
+      return std::array<T, R>{(Is, v)...}; // NOLINT (always v, just a trick to have the pack)
+    }(std::make_index_sequence<R>{});
   }
 
   /**
@@ -220,7 +212,7 @@ namespace nda::stdutil {
    */
   template <typename T, auto R, typename U>
   constexpr std::array<T, R + 1> append(std::array<T, R> const &a, U const &x) {
-    std::array<T, R + 1> res = make_initialized_array<R + 1>(T{}); // FIXME : c++20 defect
+    std::array<T, R + 1> res;
     for (int i = 0; i < R; ++i) res[i] = a[i];
     res[R] = x;
     return res;
@@ -238,24 +230,9 @@ namespace nda::stdutil {
    */
   template <typename T, typename U, size_t R>
   constexpr std::array<T, R + 1> front_append(std::array<T, R> const &a, U const &x) {
-    std::array<T, R + 1> res = make_initialized_array<R + 1>(T{});
-    res[0]                   = x;
+    std::array<T, R + 1> res;
+    res[0] = x;
     for (int i = 0; i < R; ++i) res[i + 1] = a[i];
-    return res;
-  }
-
-  /**
-   * @brief Make a new std::array by popping the last element of an existing std::array.
-   *
-   * @tparam T Value type of the input array.
-   * @tparam R Size of the input array.
-   * @param a Input std::array.
-   * @return A copy of the input array with the last element removed.
-   */
-  template <typename T, size_t R>
-  constexpr std::array<T, R - 1> pop(std::array<T, R> const &a) {
-    std::array<T, R - 1> res = make_initialized_array<R - 1>(T{});
-    for (int i = 0; i < R - 1; ++i) res[i] = a[i];
     return res;
   }
 
@@ -270,24 +247,22 @@ namespace nda::stdutil {
    */
   template <int N, typename T, size_t R>
   constexpr std::array<T, R - N> mpop(std::array<T, R> const &a) {
-    std::array<T, R - N> res = make_initialized_array<R - N>(T{});
+    std::array<T, R - N> res;
     for (int i = 0; i < R - N; ++i) res[i] = a[i];
     return res;
   }
 
   /**
-   * @brief Make a new std::array by popping the first element of an existing std::array.
+   * @brief Make a new std::array by popping the last element of an existing std::array.
    *
    * @tparam T Value type of the input array.
    * @tparam R Size of the input array.
    * @param a Input std::array.
-   * @return A copy of the input array with the first element removed.
+   * @return A copy of the input array with the last element removed.
    */
   template <typename T, size_t R>
-  constexpr std::array<T, R - 1> front_pop(std::array<T, R> const &a) {
-    std::array<T, R - 1> res = make_initialized_array<R - 1>(T{});
-    for (int i = 1; i < R; ++i) res[i - 1] = a[i];
-    return res;
+  constexpr std::array<T, R - 1> pop(std::array<T, R> const &a) {
+    return mpop<1>(a);
   }
 
   /**
@@ -301,9 +276,22 @@ namespace nda::stdutil {
    */
   template <int N, typename T, size_t R>
   constexpr std::array<T, R - N> front_mpop(std::array<T, R> const &a) {
-    std::array<T, R - N> res = make_initialized_array<R - N>(T{});
+    std::array<T, R - N> res;
     for (int i = N; i < R; ++i) res[i - N] = a[i];
     return res;
+  }
+
+  /**
+   * @brief Make a new std::array by popping the first element of an existing std::array.
+   *
+   * @tparam T Value type of the input array.
+   * @tparam R Size of the input array.
+   * @param a Input std::array.
+   * @return A copy of the input array with the first element removed.
+   */
+  template <typename T, size_t R>
+  constexpr std::array<T, R - 1> front_pop(std::array<T, R> const &a) {
+    return front_mpop<1>(a);
   }
 
   /**
@@ -319,7 +307,7 @@ namespace nda::stdutil {
    */
   template <typename T, size_t R1, size_t R2>
   constexpr std::array<T, R1 + R2> join(std::array<T, R1> const &a1, std::array<T, R2> const &a2) {
-    std::array<T, R1 + R2> res = make_initialized_array<R1 + R2>(T{});
+    std::array<T, R1 + R2> res;
     for (int i = 0; i < R1; ++i) res[i] = a1[i];
     for (int i = 0; i < R2; ++i) res[R1 + i] = a2[i];
     return res;

@@ -44,7 +44,7 @@ namespace nda {
    * static_assert(not nda::is_instantiation_of<std::complex, double>::value);
    * @endcode
    *
-   * @tparam TMPLT Template template type to check against.
+   * @tparam TMPLT Template type to check against.
    * @tparam T Type to check.
    */
   template <template <typename...> class TMPLT, typename T>
@@ -69,18 +69,6 @@ namespace nda {
   /// Constexpr variable that is always false regardless of the types in `Ts` (used to trigger `static_assert`).
   template <typename... Ts>
   static constexpr bool always_false = false;
-
-  /// Constexpr variable that is always false regardless of the types in `Ts` (used to trigger `static_assert`).
-  template <typename... Ts>
-  static constexpr bool with_Args = false;
-
-  /// Constexpr variable that is always false regardless of the type `T` (used to trigger `static_assert`).
-  template <typename T>
-  static constexpr bool with_Array = false;
-
-  /// Constexpr variable that is always false regardless of the value of `R` (used to trigger `static_assert`).
-  template <int R>
-  static constexpr bool with_Rank = false;
 
   /// Constexpr variable that is true if type `T` is a std::complex type.
   template <typename T>

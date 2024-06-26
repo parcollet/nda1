@@ -137,11 +137,11 @@ template <typename X>
   nda::array<nda::get_value_t<X>, nda::get_rank<X>> x_reg = x;
 
   constexpr double eps = 1.e-10;
-  const auto maxdiff   = max_element(abs(x_reg));
-  if (x_reg.size() == 0 || maxdiff < eps)
+  const auto max = max_element(abs(x_reg));
+  if (x_reg.size() == 0 || max < eps)
     return ::testing::AssertionSuccess();
   else
-    return ::testing::AssertionFailure() << "max_element(abs(X)) = " << maxdiff << "\n X = " << x_reg;
+    return ::testing::AssertionFailure() << "max_element(abs(X)) = " << max << "\n X = " << x_reg;
 }
 
 /// Macro that expects ::array_almost_zero to return true.

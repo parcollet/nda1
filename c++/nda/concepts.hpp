@@ -126,7 +126,7 @@ namespace nda {
   concept DoubleOrComplex = nda::is_double_or_complex_v<S>;
 
   /**
-   * @brief Check if a given type is an instantiation of some other template template type.
+   * @brief Check if a given type is an instantiation of some other template type.
    *
    * @details See nda::is_instantiation_of for more information.
    *
@@ -236,8 +236,9 @@ namespace nda {
   /**
    * @brief Check if a given type satisfies the memory array concept.
    *
-   * @details In addition to the requirements of the nda::Array concept, memory arrays provide access to the underlying
-   * memory storage and use an nda::idx_map to specify the layout of the data in memory.
+   * @details In addition to the requirements of the nda::Array concept, memory arrays
+   * provide access to the underlying memory storage and use an nda::idx_map to specify the
+   * layout of the data in memory.
    *
    * An example of a type satisfying the nda::Array but not the nda::MemoryArray concept is nda::expr.
    *
