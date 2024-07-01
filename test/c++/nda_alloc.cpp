@@ -14,7 +14,8 @@
 //
 // Authors: Olivier Parcollet, Nils Wentzell
 
-#include "./test_common.hpp"
+#include <nda/nda.hpp>
+#include <gtest/gtest.h>
 
 #if defined(__has_feature)
 #if !__has_feature(address_sanitizer)
