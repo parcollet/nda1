@@ -27,6 +27,7 @@
 #include <cstddef>
 
 #ifdef NDA_USE_MKL
+#include "../../basic_array.hpp"
 #include "../../declarations.hpp"
 
 #include <mkl.h>
