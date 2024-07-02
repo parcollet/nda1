@@ -151,9 +151,9 @@ jobs:
         key: ccache-${{ matrix.os }}-${{ matrix.cc }}-${{ github.run_id }}
 
     - name: Deploy documentation
-      if: matrix.doc == 'ON' && github.ref == 'refs/heads/unstable'
+      if: matrix.doc == 'ON' && github.ref == 'refs/heads/1.3.x'
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         folder: build/doc/html
         branch: github.io
-        target-folder: docs/unstable
+        target-folder: docs/1.3.x
