@@ -224,7 +224,7 @@ namespace nda {
       auto s = size();
       if (s == 0) return true;
       int i = Rank - 1;
-      for (; len[stride_order[i]] == 1; --i);
+      while (len[stride_order[i]] == 1 and i > 0) --i;
       return (std::abs(str[stride_order[0]] * len[stride_order[0]]) == s * std::abs(str[stride_order[i]]));
     }
 

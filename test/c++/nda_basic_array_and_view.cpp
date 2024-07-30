@@ -568,10 +568,11 @@ TEST_F(NDAArrayAndView, SliceAccessFull) {
       for (long k = 0; k < 4; ++k) EXPECT_EQ(A_3d(i, j, k), 42);
     }
   }
-  A_s3 = A_3d;
+  auto A_3d_copy = A_3d;
+  A_s3           = A_3d_copy;
   for (long i = 0; i < 2; ++i) {
     for (long j = 0; j < 3; ++j) {
-      for (long k = 0; k < 4; ++k) EXPECT_EQ(A_s3(i, j, k), A_3d(1 - i, 2 - j, 3 - k));
+      for (long k = 0; k < 4; ++k) EXPECT_EQ(A_3d(i, j, k), A_3d_copy(1 - i, 2 - j, 3 - k));
     }
   }
 }
@@ -965,8 +966,6 @@ TEST_F(NDAArrayAndView, StrideOrderOfArrays) {
 
 #if defined(__has_feature)
 #if !__has_feature(address_sanitizer)
-TEST_F(NDAArrayAndView, BadAlloc) {
-  EXPECT_THROW(nda::vector<int>(long(1e16)), std::bad_alloc);
-}
+TEST_F(NDAArrayAndView, BadAlloc) { EXPECT_THROW(nda::vector<int>(long(1e16)), std::bad_alloc); }
 #endif
 #endif
