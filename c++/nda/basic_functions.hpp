@@ -499,7 +499,8 @@ namespace nda {
    * @param rg Right hand side range operand.
    * @return True if all elements are equal, false otherwise.
    */
-  template <ArrayOfRank<1> A, std::ranges::contiguous_range R>
+  template <ArrayOfRank<1> A, typename R> 
+    requires (std::ranges::contiguous_range<R> and not Array<R>)
   bool operator==(A const &a, R const &rg) {
     return a == basic_array_view{rg};
   }
@@ -514,7 +515,8 @@ namespace nda {
    * @param a Right hand side array operand.
    * @return True if all elements are equal, false otherwise.
    */
-  template <std::ranges::contiguous_range R, ArrayOfRank<1> A>
+  template <typename R, ArrayOfRank<1> A>
+    requires (std::ranges::contiguous_range<R> and not Array<R>)
   bool operator==(R const &rg, A const &a) {
     return a == rg;
   }

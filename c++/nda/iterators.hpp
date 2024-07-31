@@ -211,7 +211,7 @@ namespace nda {
    * @tparam Pointer Type of the pointer used to access the elements in the array (might be restricted depending on the
    * accessor).
    */
-  template <int Rank, typename T, typename Pointer, bool Unused>
+  template <int Rank, typename T, typename Pointer, bool Unused = false>
   class array_iterator {
     // Pointer to the data (to the first element).
     T *data = nullptr;

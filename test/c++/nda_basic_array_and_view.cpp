@@ -54,6 +54,8 @@ static_assert(nda::get_rank<nda::array<int, 3>> == 3);
 }
 
 
+
+
 /*
 // Test fixture for testing arrays and views.
 struct NDAArrayAndView : public ::testing::Test {

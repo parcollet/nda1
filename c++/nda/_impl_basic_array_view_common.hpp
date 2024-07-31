@@ -438,7 +438,8 @@ auto &operator/=(RHS const &rhs) noexcept {
  * @param rhs Right hand side range object.
  * @return Reference to this object.
  */
-template <std::ranges::contiguous_range R>
+template <typename R>
+requires(std::ranges::contiguous_range<R> and not Array<R>)
 auto &operator=(R const &rhs) noexcept
   requires(Rank == 1 and not MemoryArray<R> and not is_scalar_for_v<R, self_t>)
 {
