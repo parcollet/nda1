@@ -138,6 +138,9 @@ namespace nda {
       return 1;
     else
       return std::tuple_size_v<std::remove_cvref_t<decltype(std::declval<A const>().shape())>>;
+  //if constexpr (requires { std::declval<A const>().shape(); })
+   //   return std::tuple_size_v<std::remove_cvref_t<decltype(std::declval<A const>().shape())>>;
+  //else return 1; // for a vector e.g. 
   }();
 
   /// Constexpr variable that is true if type `A` is a regular array, i.e. an nda::basic_array.

@@ -24,6 +24,37 @@
 #include <vector>
 #include <tuple>
 
+
+#include <span>
+
+static_assert(not std::ranges::contiguous_range<nda::array<long, 3>>);
+
+using it1_t = nda::array_iterator<1, long, long *, true>;
+using it2_t = nda::array_iterator<1, long, long *, false>;
+
+static_assert(std::contiguous_iterator<it1_t>);
+static_assert(not std::contiguous_iterator<it2_t>);
+
+//using GG = nda::array<long, 3>::iterator::lll;
+
+static_assert(not std::contiguous_iterator<nda::array<long, 3>::iterator>);
+static_assert(not std::contiguous_iterator<nda::array_iterator<3, long, long *, true>>);
+
+TEST(NDA, span) {
+  auto v= nda::vector<long>{1,2,3};
+  v(0); 
+  //std::to_address(v.begin());
+
+ nda::array<int, 3> A_3d;
+static_assert(nda::get_rank<nda::array<int, 3>> == 3);
+ nda::array_view<int, 3> A_3d_v{A_3d};
+
+ // auto s =  std::span<long>{v.data(), static_cast<size_t>(v.size())};
+  auto s =  std::span<long>{v.begin(), v.end()};
+}
+
+
+/*
 // Test fixture for testing arrays and views.
 struct NDAArrayAndView : public ::testing::Test {
   protected:
@@ -969,3 +1000,4 @@ TEST_F(NDAArrayAndView, StrideOrderOfArrays) {
 TEST_F(NDAArrayAndView, BadAlloc) { EXPECT_THROW(nda::vector<int>(long(1e16)), std::bad_alloc); }
 #endif
 #endif
+ */

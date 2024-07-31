@@ -34,8 +34,8 @@ TEST(NDA, ArrayIterator1D) {
   for (int s = 1; s <= size; ++s) {
     auto shape   = std::array<long, 1>{size / s};
     auto strides = std::array<long, 1>{s};
-    auto it      = nda::array_iterator<1, int, int *>(shape, strides, vec.data(), false);
-    auto it_end  = nda::array_iterator<1, int, int *>(shape, strides, vec.data(), true);
+    auto it      = nda::array_iterator<1, int, int *, false>(shape, strides, vec.data(), false);
+    auto it_end  = nda::array_iterator<1, int, int *, false >(shape, strides, vec.data(), true);
     int exp_val  = 0;
     for (; it != it_end; ++it, exp_val += s) { EXPECT_EQ(*it, exp_val); }
   }

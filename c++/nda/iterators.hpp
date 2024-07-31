@@ -211,7 +211,7 @@ namespace nda {
    * @tparam Pointer Type of the pointer used to access the elements in the array (might be restricted depending on the
    * accessor).
    */
-  template <int Rank, typename T, typename Pointer>
+  template <int Rank, typename T, typename Pointer, bool Unused>
   class array_iterator {
     // Pointer to the data (to the first element).
     T *data = nullptr;
@@ -317,8 +317,8 @@ namespace nda {
    * @tparam Pointer Type of the pointer used to access the elements in the array (might be restricted
    * depending on the accessor).
    */
-  template <typename T, typename Pointer>
-  class array_iterator<1, T, Pointer> {
+  template <typename T, typename Pointer, bool IsContiguous>
+  class array_iterator<1, T, Pointer, IsContiguous> {
     // Pointer to the data.
     T *data = nullptr;
 
@@ -333,7 +333,7 @@ namespace nda {
 
     public:
     /// Iterator category.
-    using iterator_category = std::random_access_iterator_tag;
+    using iterator_category = std::conditional_t<IsContiguous, std::contiguous_iterator_tag, std::random_access_iterator_tag>;
 
     /// Value type.
     using value_type = T;
@@ -378,7 +378,8 @@ namespace nda {
      * @brief Member access operator.
      * @return Reference to the element at the position of the iterator.
      */
-    T &operator->() const { return operator*(); }
+    T *operator->() const { return &(operator*()); }
+    //T &operator->() const { return (operator*()); }
 
     /**
      * @brief Prefix increment operator.
@@ -496,7 +497,7 @@ namespace nda {
      * @param n Number of times to increment the iterator before dereferencing it.
      * @return Reference to the element at the position of the incremented iterator.
      */
-    [[nodiscard]] T &operator[](std::ptrdiff_t n) { return ((Pointer)data)[*(iter + n)]; }
+    [[nodiscard]] decltype(auto) operator[](std::ptrdiff_t n) const { return ((Pointer)data)[*(iter + n)]; }
 
     // FIXME C++20 ? with <=> operator
     /**

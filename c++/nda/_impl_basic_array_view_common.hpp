@@ -314,10 +314,10 @@ decltype(auto) operator[](T const &x) && noexcept(has_no_boundcheck) {
 static constexpr int iterator_rank = (has_strided_1d(layout_t::layout_prop) ? 1 : Rank);
 
 /// Const iterator type of the view/array.
-using const_iterator = array_iterator<iterator_rank, ValueType const, typename AccessorPolicy::template accessor<ValueType>::pointer>;
+using const_iterator = array_iterator<iterator_rank, ValueType const, typename AccessorPolicy::template accessor<ValueType>::pointer, (rank ==1) and has_contiguous(layout_t::layout_prop)>;
 
 /// Iterator type of the view/array.
-using iterator = array_iterator<iterator_rank, ValueType, typename AccessorPolicy::template accessor<ValueType>::pointer>;
+using iterator = array_iterator<iterator_rank, ValueType, typename AccessorPolicy::template accessor<ValueType>::pointer, (rank ==1) and has_contiguous(layout_t::layout_prop)>;
 
 private:
 // Make an iterator for the view/array depending on its type.
