@@ -53,10 +53,6 @@ static_assert(nda::get_rank<nda::array<int, 3>> == 3);
   auto s =  std::span<long>{v.begin(), v.end()};
 }
 
-
-
-
-/*
 // Test fixture for testing arrays and views.
 struct NDAArrayAndView : public ::testing::Test {
   protected:
@@ -1002,4 +998,4 @@ TEST_F(NDAArrayAndView, StrideOrderOfArrays) {
 TEST_F(NDAArrayAndView, BadAlloc) { EXPECT_THROW(nda::vector<int>(long(1e16)), std::bad_alloc); }
 #endif
 #endif
- */
+
