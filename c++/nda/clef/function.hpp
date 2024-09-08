@@ -67,7 +67,7 @@ namespace nda::clef {
     /// Expression to be evaluated.
     Expr ex;
 
-    // internal. Use CTAD to construct
+    // internal use only. Use CTAD to construct, cf example.
     template <typename E, auto... Is>
     function(E &&ex, placeholder<Is>...) : ex{std::forward<E>(ex)} {}
 
@@ -86,7 +86,7 @@ namespace nda::clef {
     }
   };
 
-  // CTAD for function
+  /// CTAD for function
   template <typename Expr, auto... Is>
   function(Expr &&ex, placeholder<Is>...) -> function<std::decay_t<Expr>, placeholder<Is>::index...>;
 
@@ -96,7 +96,7 @@ namespace nda::clef {
     return function{std::forward<Expr>(ex), p...};
   }
 
-  // is_function<T> is true iif T is a function
+  /// is_function<T> is true iif T is a clef::function
   template <typename Expr, int... Is>
   inline constexpr bool is_function<function<Expr, Is...>> = true;
 

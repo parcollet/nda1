@@ -63,6 +63,8 @@ namespace nda::clef {
     };
   } // namespace detail
 
+  // ------------------------ arithmetic operations --------------------------
+
 // Define and implement all lazy binary operations.
 #define CLEF_OPERATION(TAG, OP)                                                                                                                      \
   namespace tags {                                                                                                                                   \
@@ -115,7 +117,7 @@ namespace nda::clef {
   /** @brief Implementation of the lazy unary `OP` operation. */                                                                                     \
   template <typename L>                                                                                                                              \
   FORCEINLINE auto operator OP(L &&l)                                                                                                                \
-    requires(is_any_lazy<L>)                                                                                                                         \
+    requires(is_lazy<L>)                                                                                                                             \
   {                                                                                                                                                  \
     return expr{tags::TAG{}, std::forward<L>(l)};                                                                                                    \
   }                                                                                                                                                  \
@@ -136,6 +138,7 @@ namespace nda::clef {
   CLEF_OPERATION(loginot, !);
 #undef CLEF_OPERATION
 
+  // ------------------------ if_else node --------------------------
   namespace detail {
 
     /// Specialization of nda::clef::operation for nda::clef::tags::if_else.
