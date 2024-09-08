@@ -218,16 +218,16 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print an nda::clef::make_fun_impl object to std::ostream.
+   * @brief Print an nda::clef::function object to std::ostream.
    *
    * @tparam Expr Type of the expression.
    * @tparam Is Integer labels of the placeholders in the expression.
    * @param sout std::ostream object to print to.
-   * @param f nda::clef::make_fun_impl object to print.
+   * @param f nda::clef::function object to print.
    * @return Reference to the std::ostream.
    */
   template <typename Expr, int... Is>
-  std::ostream &operator<<(std::ostream &sout, make_fun_impl<Expr, Is...> const &f) {
+  std::ostream &operator<<(std::ostream &sout, function<Expr, Is...> const &f) {
     sout << "lazy function : (";
     variadic_print(sout, placeholder<Is>()...);
     return sout << ") --> " << f.ex;

@@ -77,7 +77,7 @@ namespace nda::clef {
   template <typename... Ts>
   constexpr bool is_clef_expression = is_any_lazy<Ts...>;
 
-  /// Constexpr variable that is true if the type `T` is an nda::clef::make_fun_impl type.
+  /// Constexpr variable that is true if the type `T` is an nda::clef::function type.
   template <typename T>
   inline constexpr bool is_function = false;
 

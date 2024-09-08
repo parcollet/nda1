@@ -73,13 +73,13 @@
         <tab type="usergroup" url="@ref clef_eval" title="Evaluation of lazy objects">
           <tab type="user" url="@ref nda::clef::evaluator" title="clef::evaluator"/>
           <tab type="user" url="@ref nda::clef::evaluator< expr< Tag, Childs... >, Pairs... >" title="clef::evaluator<expr<Tag,Childs...>, Pairs...>"/>
-          <tab type="user" url="@ref nda::clef::evaluator< make_fun_impl< T, Is... >, Pairs... >" title="clef::evaluator<make_fun_impl<T,Is...>,Pairs...>"/>
+          <tab type="user" url="@ref nda::clef::evaluator< function< T, Is... >, Pairs... >" title="clef::evaluator<function<T,Is...>,Pairs...>"/>
           <tab type="user" url="@ref nda::clef::evaluator< placeholder< N >, pair< Is, Ts >... >" title="clef::evaluator<placeholder<N>, pair<Is,Ts >...>"/>
           <tab type="user" url="@ref nda::clef::evaluator< std::reference_wrapper< T >, Pairs... >" title="clef::evaluator<std::reference_wrapper<T>, Pairs...>"/>
         </tab>
         <tab type="usergroup" url="@ref clef_expr" title="Lazy expressions, functions and operations">
           <tab type="user" url="@ref nda::clef::expr" title="clef::expr"/>
-          <tab type="user" url="@ref nda::clef::make_fun_impl" title="clef::make_fun_impl"/>
+          <tab type="user" url="@ref nda::clef::function" title="clef::function"/>
           <tab type="user" url="@ref nda::clef::operation" title="clef::operation"/>
           <tab type="user" url="@ref nda::clef::operation< tags::divides >" title="clef::operation<tags::divides>"/>
           <tab type="user" url="@ref nda::clef::operation< tags::eq >" title="clef::operation<tags::eq>"/>

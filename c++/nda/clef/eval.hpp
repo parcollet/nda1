@@ -97,15 +97,15 @@ namespace nda::clef {
     return eval(wrapper.get(), pairs...);
   }
 
-  // ---------- make_fun_impl -------------
+  // ---------- function -------------
 
   //Evaluates the underlying expression and rebuild the function.
   template <typename T, int... Is, typename... Pairs>
-  FORCEINLINE decltype(auto) eval_impl(make_fun_impl<T, Is...> const &f, Pairs &...pairs) {
+  FORCEINLINE decltype(auto) eval_impl(function<T, Is...> const &f, Pairs &...pairs) {
     // makes no sense if some of the Pairs placeholders are included in the Is.
     constexpr uint64_t I = ((1ull << Is) + ...);
     constexpr uint64_t J = ((1ull << Pairs::p) + ...);
-    static_assert((I & J) == 0, "Impossible evaluation. You can not evaluate a make_fun_impl on the placeholders used to define the function");
+    static_assert((I & J) == 0, "Impossible evaluation. You can not evaluate a function on the placeholders used to define the function");
     return make_function(eval(f.ex, pairs...), placeholder<Is>{}...);
   }
 
@@ -126,7 +126,7 @@ namespace nda::clef {
    *    a clef::expr, replace the placeholders by their value and recompute the expression.
    *        if all the placeholders are specified (full evaluation), return the result. 
    *        Otherwise (partial evaluation), return another clef::expr<> with only the remaining placeholders.
-   *    a make_fun_impl, evaluate the underlying expression and reconstructs a new function from the expression.
+   *    a function, evaluate the underlying expression and reconstructs a new function from the expression.
    *      FIXME: EXAMPLE
    *    anything else, pass x through.
    *

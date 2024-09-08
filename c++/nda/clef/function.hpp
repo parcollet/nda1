@@ -63,13 +63,13 @@ namespace nda::clef {
    * @tparam PlaceholderIndex Indices of the placeholders
    */
   template <typename Expr, int... PlaceholderIndex>
-  struct make_fun_impl {
+  struct function {
     /// Expression to be evaluated.
     Expr ex;
 
     // internal. Use CTAD to construct
     template <typename E, auto... Is>
-    make_fun_impl(E &&ex, placeholder<Is>...) : ex{std::forward<E>(ex)} {}
+    function(E &&ex, placeholder<Is>...) : ex{std::forward<E>(ex)} {}
 
     // FIXME : this comment is really empty...
     /**
@@ -88,17 +88,17 @@ namespace nda::clef {
 
   // CTAD for function
   template <typename Expr, auto... Is>
-  make_fun_impl(Expr &&ex, placeholder<Is>...) -> make_fun_impl<std::decay_t<Expr>, placeholder<Is>::index...>;
+  function(Expr &&ex, placeholder<Is>...) -> function<std::decay_t<Expr>, placeholder<Is>::index...>;
 
   /// [deprecated] Backward compatibility maker for function. Prefer function{} instead.
   template <typename Expr, auto... Is>
   FORCEINLINE auto make_function(Expr &&ex, placeholder<Is>... p) {
-    return make_fun_impl{std::forward<Expr>(ex), p...};
+    return function{std::forward<Expr>(ex), p...};
   }
 
-  // is_function<T> is true iif T is a make_fun_impl
+  // is_function<T> is true iif T is a function
   template <typename Expr, int... Is>
-  inline constexpr bool is_function<make_fun_impl<Expr, Is...>> = true;
+  inline constexpr bool is_function<function<Expr, Is...>> = true;
 
   /** @} */
 
@@ -106,15 +106,11 @@ namespace nda::clef {
 
     // phset is the set of ph of the Expr, excluding the Is
     template <typename Expr, int... Is>
-    constexpr uint64_t ph_set<make_fun_impl<Expr, Is...>> = (ph_set<Expr> & (~((1ull << Is) + ...)));
+    constexpr uint64_t ph_set<function<Expr, Is...>> = (ph_set<Expr> & (~((1ull << Is) + ...)));
 
-    // Specialization of is_lazy_impl for nda::clef::make_fun_impl types.
+    // Specialization of is_lazy_impl for nda::clef::function types.
     template <typename Expr, int... Is>
-    constexpr bool is_lazy_impl<make_fun_impl<Expr, Is...>> = (ph_set<make_fun_impl<Expr, Is...>> != 0);
-
-    // // Specialization of force_copy_in_expr_impl for nda::clef::make_fun_impl types (always true).
-    // template <typename Expr, int... Is>
-    // constexpr bool force_copy_in_expr_impl<make_fun_impl<Expr, Is...>> = true;
+    constexpr bool is_lazy_impl<function<Expr, Is...>> = (ph_set<function<Expr, Is...>> != 0);
 
   } // namespace detail
 

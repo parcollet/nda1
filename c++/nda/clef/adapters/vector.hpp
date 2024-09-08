@@ -43,8 +43,8 @@ namespace nda::clef {
 
     // Helper function to auto assign to a std::vector object.
     template <typename Expr, int... Is, typename T>
-    void clef_auto_assign_std_vector_impl(T &x, make_fun_impl<Expr, Is...> &&rhs) { // NOLINT (why rvalue reference?)
-      clef_auto_assign_subscript(x, std::forward<make_fun_impl<Expr, Is...>>(rhs));
+    void clef_auto_assign_std_vector_impl(T &x, function<Expr, Is...> &&rhs) { // NOLINT (why rvalue reference?)
+      clef_auto_assign_subscript(x, std::forward<function<Expr, Is...>>(rhs));
     }
 
   } // namespace detail
