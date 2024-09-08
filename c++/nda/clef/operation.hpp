@@ -36,24 +36,6 @@ namespace nda::clef {
    * @{
    */
 
-  namespace detail {
-
-    // REMOVE THIS SUSPICIOUS FUNCTION
-    // Get the value from a std::reference_wrapper or simply forward the argument of any other type.
-    template <typename U>
-    FORCEINLINE U &&fget(U &&x) {
-      return std::forward<U>(x);
-    }
-
-    // Specialization of fget for std::reference_wrapper.
-    template <typename U>
-    FORCEINLINE decltype(auto) fget(std::reference_wrapper<U> x) = delete;
-    // {
-    //   return x.get();
-    // }
-
-  } // namespace detail
-
   /**
    * @brief Generic operation performed on expression nodes.
    *
@@ -95,7 +77,7 @@ namespace nda::clef {
      */
     template <typename F, typename... Args>
     FORCEINLINE decltype(auto) operator()(F &&f, Args &&...args) const {
-      return detail::fget(std::forward<F>(f))(detail::fget(std::forward<Args>(args))...);
+      return std::forward<F>(f)(std::forward<Args>(args)...);
     }
   };
 
@@ -114,7 +96,7 @@ namespace nda::clef {
     template <typename F, typename... Args>
     FORCEINLINE decltype(auto) operator()(F &&f, Args &&...args) const {
       // directly calling [args...] breaks clang
-      return detail::fget(std::forward<F>(f)).operator[](detail::fget(std::forward<Args>(args))...);
+      return std::forward<F>(f).operator[](std::forward<Args>(args)...);
     }
   };
 
@@ -140,7 +122,7 @@ namespace nda::clef {
     /** @brief Function call operator to perform the actual binary `OP` operation. */                                                                \
     template <typename L, typename R>                                                                                                                \
     FORCEINLINE decltype(auto) operator()(L &&l, R &&r) const {                                                                                      \
-      return detail::fget(std::forward<L>(l)) OP detail::fget(std::forward<R>(r));                                                                   \
+      return std::forward<L>(l) OP std::forward<R>(r);                                                                                               \
     }                                                                                                                                                \
   }
 
@@ -179,7 +161,7 @@ namespace nda::clef {
     /** @brief Function call operator to perform the actual unary `OP` operation. */                                                                 \
     template <typename L>                                                                                                                            \
     FORCEINLINE decltype(auto) operator()(L &&l) const {                                                                                             \
-      return OP detail::fget(std::forward<L>(l));                                                                                                    \
+      return OP std::forward<L>(l);                                                                                                                  \
     }                                                                                                                                                \
   }
 
@@ -204,7 +186,7 @@ namespace nda::clef {
      */
     template <typename C, typename A, typename B>
     FORCEINLINE A operator()(C const &c, A const &a, B const &b) const {
-      return detail::fget(c) ? detail::fget(a) : detail::fget(b);
+      return c ? a : b;
     }
   };
 
