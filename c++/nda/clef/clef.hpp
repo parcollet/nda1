@@ -21,12 +21,10 @@
 
 #pragma once
 
-#include "./auto_assign_subscript.hpp"
-#include "./auto_assign.hpp"
-#include "./function.hpp"
-#include "./eval.hpp"
 #include "./expression.hpp"
 #include "./make_lazy.hpp"
-#include "./operation.hpp"
 #include "./placeholder.hpp"
-#include "./utils.hpp"
+#include "./eval.hpp"
+#include "./function.hpp"
+#include "./auto_assign_subscript.hpp"
+#include "./auto_assign.hpp"

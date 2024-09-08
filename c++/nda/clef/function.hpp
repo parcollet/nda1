@@ -21,14 +21,12 @@
  */
 
 #pragma once
+#include <type_traits>
+#include <utility>
 
 #include "./utils.hpp"
 #include "./placeholder.hpp"
 #include "../macros.hpp"
-#include "expression.hpp"
-
-#include <type_traits>
-#include <utility>
 
 namespace nda::clef {
 

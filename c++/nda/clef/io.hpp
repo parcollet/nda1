@@ -21,13 +21,16 @@
 
 #pragma once
 
-#include "./clef.hpp"
-
 #include <functional>
 #include <iostream>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+
+#include "./operation.hpp"
+#include "./placeholder.hpp"
+#include "./expression.hpp"
+#include "./function.hpp"
 
 namespace nda::clef {
 
@@ -81,27 +84,6 @@ namespace nda::clef {
     return sout;
   }
 
-  namespace detail {
-
-    // Helper struct to print a std::tuple recursively to std::ostream.
-    template <int C, int N>
-    struct print_tuple_impl {
-      template <typename Tuple>
-      void operator()(std::ostream &sout, Tuple const &t) {
-        sout << std::get<C>(t) << (C != N - 1 ? ", " : "");
-        print_tuple_impl<C + 1, N>()(sout, t);
-      }
-    };
-
-    // Helper struct to print a std::tuple recursively to std::ostream (end of the recursion).
-    template <int N>
-    struct print_tuple_impl<N, N> {
-      template <typename Tuple>
-      void operator()(std::ostream &, Tuple const &) {}
-    };
-
-  } // namespace detail
-
   /**
    * @brief Print a std::tuple to std::ostream.
    *
@@ -112,7 +94,9 @@ namespace nda::clef {
    */
   template <typename Tuple>
   std::ostream &print_tuple(std::ostream &sout, Tuple const &t) {
-    detail::print_tuple_impl<1, std::tuple_size_v<Tuple>>()(sout, t);
+    [&]<size_t... Is>(std::index_sequence<Is...>) {
+      (void(sout << (Is == 0 ? "" : ", ") << std::get<Is>(t)), ...);
+    }(std::make_index_sequence<std::tuple_size_v<Tuple>>{});
     return sout;
   }
 

@@ -28,7 +28,6 @@
 #include "../macros.hpp"
 
 #include <functional>
-#include <tuple>
 #include <utility>
 
 namespace nda::clef {

@@ -21,9 +21,9 @@
 
 #pragma once
 
-#include "./clef.hpp"
-#include "../basic_functions.hpp"
-#include "../exceptions.hpp"
+#include <stdexcept>
+#include "./placeholder.hpp"
+#include "./make_lazy.hpp"
 
 namespace nda::clef {
 
@@ -41,7 +41,7 @@ namespace nda::clef {
     {
       auto it  = d.begin();
       auto ite = d.end();
-      if (it == ite) NDA_RUNTIME_ERROR << "Error in nda::clef::sum_f_domain_impl: Sum over an empty domain";
+      if (it == ite) throw std::runtime_error{"Error in nda::clef::sum_f_domain_impl: Sum over an empty domain"};
       auto res = make_regular(f(*it));
       ++it;
       for (; it != ite; ++it) res = res + f(*it);
@@ -97,17 +97,15 @@ namespace nda::clef {
    *
    * @tparam Expr Type of the expression.
    * @tparam D0 nda::clef::pair type.
-   * @tparam D1 nda::clef::pair type.
    * @tparam Ds Parameter pack of the remaining nda::clef::pair types.
    * @param ex Lazy expression.
    * @param d0 Pair containing an nda::clef::placeholder and a domain.
-   * @param d1 Pair containing an nda::clef::placeholder and another domain.
    * @param ds Parameter pack of the remaining pairs.
    * @return Either the result of the summation or a new lazy expression.
    */
-  template <typename Expr, typename D0, typename D1, typename... Ds>
-  auto sum(Expr const &ex, D0 &&d0, D1 &&d1, Ds &&...ds) {
-    return sum(sum(ex, std::forward<D0>(d0)), std::forward<D1>(d1), std::forward<Ds>(ds)...);
+  template <typename Expr, typename D0, typename... Ds>
+  auto sum(Expr const &ex, D0 &&d0, Ds &&...ds) {
+    return sum(sum(ex, std::forward<D0>(d0)), std::forward<Ds>(ds)...);
   }
 
   /** @} */

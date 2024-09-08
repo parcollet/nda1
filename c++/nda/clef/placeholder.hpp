@@ -25,7 +25,6 @@
 #include "./utils.hpp"
 
 #include <cstdint>
-#include <type_traits>
 #include <utility>
 
 namespace nda::clef {

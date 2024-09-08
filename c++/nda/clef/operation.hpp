@@ -25,8 +25,6 @@
 #include "./utils.hpp"
 #include "../macros.hpp"
 
-#include <functional>
-#include <type_traits>
 #include <utility>
 
 namespace nda::clef {
