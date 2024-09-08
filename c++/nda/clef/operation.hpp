@@ -38,6 +38,7 @@ namespace nda::clef {
 
   namespace detail {
 
+    // REMOVE THIS SUSPICIOUS FUNCTION
     // Get the value from a std::reference_wrapper or simply forward the argument of any other type.
     template <typename U>
     FORCEINLINE U &&fget(U &&x) {
@@ -129,9 +130,9 @@ namespace nda::clef {
   /** @brief Implementation of the lazy binary `OP` operation. */                                                                                    \
   template <typename L, typename R>                                                                                                                  \
   FORCEINLINE auto operator OP(L &&l, R &&r)                                                                                                         \
-    requires(is_any_lazy<L, R>)                                                                                                                      \
+    requires(is_lazy<L> or is_lazy<R>)                                                                                                               \
   {                                                                                                                                                  \
-    return expr<tags::TAG, expr_storage_t<L>, expr_storage_t<R>>{tags::TAG(), std::forward<L>(l), std::forward<R>(r)};                               \
+    return expr{tags::TAG{}, std::forward<L>(l), std::forward<R>(r)};                                                                                \
   }                                                                                                                                                  \
   /** @brief Specialization of nda::clef::operation for nda::clef::tags::TAG. */                                                                     \
   template <>                                                                                                                                        \
@@ -170,7 +171,7 @@ namespace nda::clef {
   FORCEINLINE auto operator OP(L &&l)                                                                                                                \
     requires(is_any_lazy<L>)                                                                                                                         \
   {                                                                                                                                                  \
-    return expr<tags::TAG, expr_storage_t<L>>{tags::TAG(), std::forward<L>(l)};                                                                      \
+    return expr{tags::TAG{}, std::forward<L>(l)};                                                                                                    \
   }                                                                                                                                                  \
   /** @brief Specialization of nda::clef::operation for nda::clef::tags::TAG. */                                                                     \
   template <>                                                                                                                                        \
@@ -221,8 +222,7 @@ namespace nda::clef {
    */
   template <typename C, typename A, typename B>
   FORCEINLINE auto if_else(C &&c, A &&a, B &&b) {
-    return expr<tags::if_else, expr_storage_t<C>, expr_storage_t<A>, expr_storage_t<B>>{tags::if_else(), std::forward<C>(c), std::forward<A>(a),
-                                                                                        std::forward<B>(b)};
+    return expr{tags::if_else(), std::forward<C>(c), std::forward<A>(a), std::forward<B>(b)};
   }
   /** @} */
 

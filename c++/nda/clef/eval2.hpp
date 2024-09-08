@@ -57,8 +57,10 @@ namespace nda::clef {
 
     if constexpr (N_position == -1) { // N is not one of the Is
       return placeholder<N>{};
-    } else {                                                   // N is one of the Is
-      auto &pair_N = std::get<N_position>(std::tie(pairs...)); // FIXME pairs...[N_position]
+    } else { // N is one of the Is
+      auto &pair_N = std::get<N_position>(std::tie(pairs...));
+      // FIXME in C++26
+      // auto & pair_N = pairs...[N_position];
       // the pair is a temporary constructed for the time of the eval call
       // if it holds a reference, we return it, else we move the rhs object out of the pair
       if constexpr (std::is_lvalue_reference_v<decltype(pair_N.rhs)>)
@@ -74,8 +76,9 @@ namespace nda::clef {
   decltype(auto) eval_impl(expr<Tag, Childs...> const &ex, auto &...pairs) {
 
     return [&]<size_t... Is>(std::index_sequence<Is...>)
+    // For some mysterious reason clang and gcc want the mutable and attribute in different order ?
 #if defined(__GNUC__) and not defined(__clang__)
-       mutable __attribute__((always_inline)) // For some reason clang and gcc need the mutable and attribute in different order ?
+       mutable __attribute__((always_inline))
 #else
        __attribute__((always_inline)) mutable
 #endif

@@ -43,9 +43,10 @@ namespace nda::clef {
    */
   template <typename T>
   auto make_expr(T &&t) {
-    return expr<tags::terminal, expr_storage_t<T>>{tags::terminal(), std::forward<T>(t)};
+    return expr{tags::terminal(), std::forward<T>(t)};
   }
 
+  // FIXME : DEPRECATE : it is now just make_expr(auto{something});
   /**
    * @brief Create a terminal expression node of an object.
    *
@@ -56,13 +57,10 @@ namespace nda::clef {
   template <typename T>
   auto make_expr_from_clone(T &&x) {
     return make_expr(auto{x});
-    //return expr<tags::terminal, std::decay_t<T>>{tags::terminal(), std::forward<T>(x)};
   }
 
   /**
    * @brief Create a function call expression from a callable object and a list of arguments.
-   *
-   * @details Note that this is equivalent to `nda::clef::make_expr(t)(args...)`.
    *
    * @tparam F Type of the callable object.
    * @tparam Args Types of the arguments.
@@ -73,15 +71,13 @@ namespace nda::clef {
    */
   template <typename F, typename... Args>
   auto make_expr_call(F &&f, Args &&...args)
-    requires(is_any_lazy<Args...>)
+    requires((is_lazy<Args> || ...))
   {
-    return expr<tags::function, expr_storage_t<F>, expr_storage_t<Args>...>{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
+    return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
   }
 
   /**
    * @brief Create a subscript expression from an object and a list of arguments.
-   *
-   * @details Note that this is equivalent to `nda::clef::make_expr(t)[args...]`.
    *
    * @tparam T Type of the object to be subscripted.
    * @tparam Args Types of the arguments.
@@ -92,9 +88,9 @@ namespace nda::clef {
    */
   template <typename T, typename... Args>
   auto make_expr_subscript(T &&t, Args &&...args)
-    requires(is_any_lazy<Args...>)
+    requires((is_lazy<Args> || ...))
   {
-    return expr<tags::subscript, expr_storage_t<T>, expr_storage_t<Args>...>{tags::subscript{}, std::forward<T>(t), std::forward<Args>(args)...};
+    return expr{tags::subscript{}, std::forward<T>(t), std::forward<Args>(args)...};
   }
 
   /// Macro to make any function lazy, i.e. accept lazy arguments and return a function call expression node.

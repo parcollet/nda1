@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <functional>
 #include <type_traits>
 
 namespace nda::clef {
@@ -34,50 +33,7 @@ namespace nda::clef {
 
   namespace detail {
 
-    // Helper variable to determine if an objects of type `T` should be forced to be copied into an expression tree.
-    template <typename T>
-    constexpr bool force_copy_in_expr_impl = false;
-
-    // Helper struct to determine how a type should be stored in an expression tree.
-    template <class T>
-    struct expr_storage_impl {
-      using type = T;
-    };
-
-    // FIXME :
-    // default : decay_t<T>
-    // T & -> reference_wrapper
-    // remove force_copy_in_expr_impl
-    // replace by a specialization of expr_storage_impl<T>
-
-    // WHY DO WE STILL NEED THIS ????
-
-    // Specialization of expr_storage_impl for lvalue references.
-    template <class T>
-    struct expr_storage_impl<T &>
-       : std::conditional<force_copy_in_expr_impl<std::remove_const_t<T>>, std::remove_const_t<T>, std::reference_wrapper<T>> {};
-
-    // Specialization of expr_storage_impl for rvalue references.
-    template <class T>
-    struct expr_storage_impl<T &&> {
-      using type = T;
-    };
-
-    // Specialization of expr_storage_impl for const rvalue references.
-    template <class T>
-    struct expr_storage_impl<const T &&> {
-      using type = T;
-    };
-
-    // Specialization of expr_storage_impl for const types.
-    template <class T>
-    struct expr_storage_impl<const T> {
-      using type = T;
-    };
-
-    // Type used to encode which placeholder indices are used in an expression.
-    using ull_t = unsigned long long;
-
+    /// Bitset storage of a the list of the placeholders used in T.
     template <typename T>
     constexpr uint64_t ph_set = 0;
 
@@ -89,10 +45,7 @@ namespace nda::clef {
     template <typename T>
       requires(!std::is_same_v<T, std::remove_cvref_t<T>>)
     constexpr bool is_lazy_impl<T> = is_lazy_impl<std::remove_cvref_t<T>>;
-
-    // Helper variable to determine if a type `T` is an make_fun_impl type.
-    template <typename T>
-    inline constexpr bool is_function_impl = false;
+    //constexpr bool is_lazy_impl<T &> = is_lazy_impl<T>;
 
     // An erroneous diagnostics in gcc: i0 is indeed used. We silence it.
 #if defined(__GNUC__) and not defined(__clang__)
@@ -111,24 +64,6 @@ namespace nda::clef {
 
   } // namespace detail
 
-  /// Constexpr variable that is true if objects of type `T` should be forced to be copied into an expression tree.
-  template <typename T>
-  constexpr bool force_copy_in_expr = false; //detail::force_copy_in_expr_impl<T>;
-
-  /**
-   * @brief Type trait to determine how a type should be stored in an expression tree, i.e. either by reference or by
-   * value?
-   *
-   * @details Rvalue references are copied/moved into the expression tree. Lvalue references are stored as a
-   * std::reference_wrapper, unless the compile-time value of nda::clef::force_copy_in_expr is true.
-   *
-   * @tparam T Type to be stored.
-   */
-  template <class T>
-  using expr_storage_t = typename detail::expr_storage_impl<T>::type;
-
-  // FIXME : why not specialize is_lazy directly ???
-
   /// true iif T is a lazy type.
   template <typename T>
   constexpr bool is_lazy = detail::is_lazy_impl<T>;
@@ -142,10 +77,9 @@ namespace nda::clef {
   template <typename... Ts>
   constexpr bool is_clef_expression = is_any_lazy<Ts...>;
 
-  /// MOVE THIS
   /// Constexpr variable that is true if the type `T` is an nda::clef::make_fun_impl type.
   template <typename T>
-  inline constexpr bool is_function = detail::is_function_impl<T>;
+  inline constexpr bool is_function = false;
 
   /** @} */
 

@@ -22,7 +22,6 @@
 #pragma once
 
 #include "./utils.hpp"
-
 #include <cstdint>
 #include <tuple>
 #include <utility>
@@ -57,6 +56,31 @@ namespace nda::clef {
     /** @} */
 
   } // namespace tags
+  namespace detail {
+
+    // Helper struct to determine how a type should be stored in an expression tree.
+    template <typename T>
+    struct expr_storage_impl : std::decay<T> {};
+
+    // Specialization of expr_storage_impl for lvalue references.
+    template <typename T>
+    struct expr_storage_impl<T &> {
+      using type = std::reference_wrapper<T>;
+    };
+
+  } // namespace detail
+
+  /**
+   * @brief Trait to determine how a type should be stored in an expression tree, i.e. either by reference or by value?
+   *
+   * @details Rvalue references are copied/moved into the expression tree.
+   *          Lvalue references are stored as a std::reference_wrapper.
+   *          placeholders are an exception and always copied (cf placeholders for specialization).
+   * @note Should never be used by user directly.
+   * @tparam T Type to be stored.
+   */
+  template <typename T>
+  using expr_storage_t = typename detail::expr_storage_impl<T>::type;
 
   /**
    * @addtogroup clef_expr
@@ -64,46 +88,29 @@ namespace nda::clef {
    */
 
   /**
-   * @brief Single node of the expression tree.
+   * @brief Node of the expression tree.
    *
    * @details An expression node contains a tag that determines the type of expression and a tuple of child nodes which
-   * are usually either other expression nodes, nda::clef::placeholder objects or specific values/objects like an int or
-   * a double.
+   * are usually either other expression nodes, nda::clef::placeholder objects or other objects (e.g. int, double)
    *
-   * @tparam Tag Tag of the expression.
-   * @tparam Ts Types of the child nodes.
+   * @note expr are not build by the user directly, but by combination, starting from placeholder.
+   * @tparam Tag   Type of the expression node (addition, function call, etc...)
+   * @tparam Childs Types of the children nodes.
    */
-  template <typename Tag, typename... Ts>
+  template <typename Tag, typename... Childs>
   struct expr {
-    /// Tuple type for storing the child nodes.
-    using childs_t = std::tuple<Ts...>;
 
-    /// Child nodes of the current expression node.
-    childs_t childs;
+    /// Children nodes of the current expression node.
+    std::tuple<Childs...> childs; // FIXME in english the plural of child is ... children ?
 
-    /// Default copy constructor.
-    expr(expr const &) = default;
-
-    /**
-     * @brief Move constructor simply moves the child nodes from the source expression.
-     * @param ex Source expression.
-     */
-    expr(expr &&) = default; //noexcept : childs(std::move(ex.childs)) {}
-
-    /// Copy assignment operator is deleted.
+    expr(expr const &)            = default;
+    expr(expr &&)                 = default;
     expr &operator=(expr const &) = delete;
+    expr &operator=(expr &&)      = default;
 
-    /// Default move assignment operator.
-    expr &operator=(expr &&) = default;
-
-    /**
-     * @brief Construct an expression node with a given tag and child nodes.
-     *
-     * @tparam Us Types of the child nodes.
-     * @param us Child nodes.
-     */
-    template <typename... Us>
-    expr(Tag, Us &&...us) : childs(std::forward<Us>(us)...) {}
+    /// Construct from the tag and children nodes. Tag is useful here (for CTAD e.g.)
+    template <typename... Child>
+    expr(Tag, Child &&...child) : childs{std::forward<Child>(child)...} {}
 
     /**
      * @brief Subscript operator.
@@ -113,12 +120,29 @@ namespace nda::clef {
      * @return An nda::clef::expr object with the nda::clef::tags::subscript tag containing the current expression node
      * as the first child node and the other arguments as the remaining child nodes.
      */
+#ifdef __cpp_explicit_this_parameter
+    template <typename Self, typename... Args>
+    auto operator[](this Self &&self, Args &&...args) {
+      // NB : can not use CTAD here, as expr is the class itself...
+      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript{}, std::forward<Self>(self), std::forward<Args>(args)...};
+    }
+#else
+    // workaround for c++23 compiler without the "deducing this" implemented
     template <typename... Args>
-    auto operator[](Args &&...args) const {
+    auto operator[](Args &&...args) const & {
       return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), *this, std::forward<Args>(args)...};
     }
+    template <typename... Args>
+    auto operator[](Args &&...args) & {
+      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), *this, std::forward<Args>(args)...};
+    }
+    template <typename... Args>
+    auto operator[](Args &&...args) && {
+      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), std::move(*this), std::forward<Args>(args)...};
+    }
+#endif
 
-    /**
+/**
      * @brief Function call operator.
      *
      * @tparam Args Types of the function call arguments.
@@ -126,10 +150,26 @@ namespace nda::clef {
      * @return An nda::clef::expr object with the nda::clef::tags::function tag containing the current expression node
      * as the first child node and the other arguments as the remaining child nodes.
      */
+#ifdef __cpp_explicit_this_parameter
+    template <typename Self, typename... Args>
+    auto operator()(this Self &&self, Args &&...args) {
+      // NB : can not use CTAD here, as expr is the class itself...
+      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function{}, std::forward<Self>(self), std::forward<Args>(args)...};
+    }
+#else
     template <typename... Args>
-    auto operator()(Args &&...args) const {
+    auto operator()(Args &&...args) const & {
       return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), *this, std::forward<Args>(args)...};
     }
+    template <typename... Args>
+    auto operator()(Args &&...args) & {
+      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), *this, std::forward<Args>(args)...};
+    }
+    template <typename... Args>
+    auto operator()(Args &&...args) && {
+      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), std::move(*this), std::forward<Args>(args)...};
+    }
+#endif
   };
 
   /// CTAD for expr
@@ -145,10 +185,6 @@ namespace nda::clef {
     // Specialization of is_lazy_impl for nda::clef::expr types (always true).
     template <typename Tag, typename... Ts>
     constexpr bool is_lazy_impl<expr<Tag, Ts...>> = true;
-
-    // Specialization of force_copy_in_expr_impl for nda::clef::expr types (always true).
-    template <typename Tag, typename... Ts>
-    constexpr bool force_copy_in_expr_impl<expr<Tag, Ts...>> = true;
 
   } // namespace detail
 
