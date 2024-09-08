@@ -67,6 +67,7 @@ namespace nda::clef {
     struct expr_storage_impl<T &> {
       using type = std::reference_wrapper<T>;
     };
+    // NB : placeholder will also be specialized to make a copy, cf placeholder.
 
   } // namespace detail
 
