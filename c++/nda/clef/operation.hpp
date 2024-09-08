@@ -58,7 +58,7 @@ namespace nda::clef {
      * @return Forwarded lvalue/rvalue reference of the argument.
      */
     template <typename L>
-    FORCEINLINE L operator()(L &&l) const {
+    FORCEINLINE static L invoke(L &&l) {
       return std::forward<L>(l);
     }
   };
@@ -76,7 +76,7 @@ namespace nda::clef {
      * @return Result of the function call.
      */
     template <typename F, typename... Args>
-    FORCEINLINE decltype(auto) operator()(F &&f, Args &&...args) const {
+    FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
       return std::forward<F>(f)(std::forward<Args>(args)...);
     }
   };
@@ -94,7 +94,7 @@ namespace nda::clef {
      * @return Result of the subscript operation.
      */
     template <typename F, typename... Args>
-    FORCEINLINE decltype(auto) operator()(F &&f, Args &&...args) const {
+    FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
       // directly calling [args...] breaks clang
       return std::forward<F>(f).operator[](std::forward<Args>(args)...);
     }
@@ -121,7 +121,7 @@ namespace nda::clef {
   struct operation<tags::TAG> {                                                                                                                      \
     /** @brief Function call operator to perform the actual binary `OP` operation. */                                                                \
     template <typename L, typename R>                                                                                                                \
-    FORCEINLINE decltype(auto) operator()(L &&l, R &&r) const {                                                                                      \
+    FORCEINLINE static decltype(auto) invoke(L &&l, R &&r) {                                                                                         \
       return std::forward<L>(l) OP std::forward<R>(r);                                                                                               \
     }                                                                                                                                                \
   }
@@ -160,7 +160,7 @@ namespace nda::clef {
   struct operation<tags::TAG> {                                                                                                                      \
     /** @brief Function call operator to perform the actual unary `OP` operation. */                                                                 \
     template <typename L>                                                                                                                            \
-    FORCEINLINE decltype(auto) operator()(L &&l) const {                                                                                             \
+    FORCEINLINE static decltype(auto) invoke(L &&l) {                                                                                                \
       return OP std::forward<L>(l);                                                                                                                  \
     }                                                                                                                                                \
   }
@@ -185,8 +185,8 @@ namespace nda::clef {
      * @return Result of the ternary operation.
      */
     template <typename C, typename A, typename B>
-    FORCEINLINE A operator()(C const &c, A const &a, B const &b) const {
-      return c ? a : b;
+    FORCEINLINE static A invoke(C const &c, A &&a, B &&b) {
+      return c ? std::forward<A>(a) : std::forward<B>(b);
     }
   };
 

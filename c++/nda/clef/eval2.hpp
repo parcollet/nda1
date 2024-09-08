@@ -86,7 +86,7 @@ namespace nda::clef {
       if constexpr ((is_lazy<decltype(eval(std::get<Is>(ex.childs), pairs...))> or ...))
         return expr{Tag{}, eval(std::get<Is>(ex.childs), pairs...)...};
       else
-        return operation<Tag>{}(eval(std::get<Is>(ex.childs), pairs...)...);
+        return operation<Tag>::invoke(eval(std::get<Is>(ex.childs), pairs...)...);
     }
     (std::make_index_sequence<sizeof...(Childs)>{});
   }
