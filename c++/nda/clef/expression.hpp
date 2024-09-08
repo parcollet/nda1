@@ -23,6 +23,7 @@
 
 #include "./utils.hpp"
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 
@@ -87,7 +88,7 @@ namespace nda::clef {
      * @brief Move constructor simply moves the child nodes from the source expression.
      * @param ex Source expression.
      */
-    expr(expr &&ex) noexcept : childs(std::move(ex.childs)) {}
+    expr(expr &&) = default; //noexcept : childs(std::move(ex.childs)) {}
 
     /// Copy assignment operator is deleted.
     expr &operator=(expr const &) = delete;
@@ -137,9 +138,9 @@ namespace nda::clef {
 
   namespace detail {
 
-    // Specialization of ph_set for nda::clef::expr types.
+    // ph_set of an expr is the union of the ph_set of the children
     template <typename Tag, typename... Ts>
-    struct ph_set<expr<Tag, Ts...>> : ph_set<Ts...> {};
+    constexpr uint64_t ph_set<expr<Tag, Ts...>> = (ph_set<Ts> | ...);
 
     // Specialization of is_lazy_impl for nda::clef::expr types (always true).
     template <typename Tag, typename... Ts>

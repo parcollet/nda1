@@ -246,7 +246,7 @@ namespace nda::clef {
   std::ostream &operator<<(std::ostream &sout, make_fun_impl<Expr, Is...> const &f) {
     sout << "lazy function : (";
     variadic_print(sout, placeholder<Is>()...);
-    return sout << ") --> " << f.obj;
+    return sout << ") --> " << f.ex;
   }
 
   /** @} */

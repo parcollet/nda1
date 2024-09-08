@@ -54,8 +54,9 @@ namespace nda::clef {
    * @return An nda::clef::expr with the nda::clef::tags::terminal tag containing a copy of the object.
    */
   template <typename T>
-  auto make_expr_from_clone(T &&t) {
-    return expr<tags::terminal, std::decay_t<T>>{tags::terminal(), std::forward<T>(t)};
+  auto make_expr_from_clone(T &&x) {
+    return make_expr(auto{x});
+    //return expr<tags::terminal, std::decay_t<T>>{tags::terminal(), std::forward<T>(x)};
   }
 
   /**

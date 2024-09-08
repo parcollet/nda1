@@ -383,6 +383,7 @@ TEST_F(CLEF, MakeFunction) {
   // Should not compile
   //auto ferr  = clef::make_function(x0_ + x1_, x0_);
   //auto ferr2 = eval(ferr, x0_ = 10);
+  //EXPECT_EQ(ferr2(2), 12);
 }
 
 TEST_F(CLEF, Literals) {

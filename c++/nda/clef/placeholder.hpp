@@ -24,6 +24,7 @@
 #include "./expression.hpp"
 #include "./utils.hpp"
 
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
@@ -133,13 +134,7 @@ namespace nda::clef {
 
     // Specialization of ph_set for nda::clef::placeholder types.
     template <int N>
-    struct ph_set<placeholder<N>> {
-      static constexpr ull_t value = 1ull << N;
-    };
-
-    // Specialization of ph_set for nda::clef::pair types.
-    template <int N, typename T>
-    struct ph_set<pair<N, T>> : ph_set<placeholder<N>> {};
+    constexpr uint64_t ph_set<placeholder<N>> = 1ull << N;
 
     // Specialization of is_lazy_impl for nda::clef::placeholder types.
     template <int N>

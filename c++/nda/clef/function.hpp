@@ -47,10 +47,10 @@ namespace nda::clef {
    * @tparam T Type of the object.
    * @tparam Is Integer labels of the placeholders in the expression.
    */
-  template <typename T, int... Is>
+  template <typename Expr, int... Is>
   struct make_fun_impl {
-    /// Object to be evaluated.
-    T obj;
+    /// Expression to be evaluated.
+    Expr ex;
 
     /**
      * @brief Function call operator.
@@ -65,7 +65,7 @@ namespace nda::clef {
      */
     template <typename... Args>
     FORCEINLINE decltype(auto) operator()(Args &&...args) const {
-      return eval(obj, pair<Is, Args>{std::forward<Args>(args)}...);
+      return eval(ex, pair<Is, Args>{std::forward<Args>(args)}...);
     }
   };
 
@@ -108,15 +108,13 @@ namespace nda::clef {
     template <typename Expr, int... Is>
     inline constexpr bool is_function_impl<make_fun_impl<Expr, Is...>> = true;
 
-    // Specialization of ph_set for nda::clef::make_fun_impl types.
+    // phset is the set of ph of the Expr, excluding the Is
     template <typename Expr, int... Is>
-    struct ph_set<make_fun_impl<Expr, Is...>> {
-      static constexpr ull_t value = ph_filter<ph_set<Expr>::value, Is...>::value;
-    };
+    constexpr uint64_t ph_set<make_fun_impl<Expr, Is...>> = (ph_set<Expr> & (~((1ull << Is) + ...)));
 
     // Specialization of is_lazy_impl for nda::clef::make_fun_impl types.
     template <typename Expr, int... Is>
-    constexpr bool is_lazy_impl<make_fun_impl<Expr, Is...>> = (ph_set<make_fun_impl<Expr, Is...>>::value != 0);
+    constexpr bool is_lazy_impl<make_fun_impl<Expr, Is...>> = (ph_set<make_fun_impl<Expr, Is...>> != 0);
 
     // Specialization of force_copy_in_expr_impl for nda::clef::make_fun_impl types (always true).
     template <typename Expr, int... Is>

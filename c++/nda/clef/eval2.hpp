@@ -45,7 +45,7 @@ namespace nda::clef {
   template <typename T>
   FORCEINLINE decltype(auto) eval(T &&x, auto &&...pairs);
 
-  // -----------------------
+  // --------- placeholder --------------
 
   template <int N, typename... Pairs>
   FORCEINLINE decltype(auto) eval_impl(placeholder<N>, Pairs &...pairs) {
@@ -68,7 +68,7 @@ namespace nda::clef {
     }
   }
 
-  // -----------------------
+  // ---------- expr -------------
 
   template <typename Tag, typename... Childs>
   decltype(auto) eval_impl(expr<Tag, Childs...> const &ex, auto &...pairs) {
@@ -94,6 +94,8 @@ namespace nda::clef {
     return eval(wrapper.get(), pairs...);
   }
 
+  // ---------- make_fun_impl -------------
+
   //Evaluates the underlying expression and rebuild the function.
   template <typename T, int... Is, typename... Pairs>
   FORCEINLINE decltype(auto) eval_impl(make_fun_impl<T, Is...> const &f, Pairs &...pairs) {
@@ -101,10 +103,11 @@ namespace nda::clef {
     constexpr uint64_t I = ((1ull << Is) + ...);
     constexpr uint64_t J = ((1ull << Pairs::p) + ...);
     static_assert((I & J) == 0, "Impossible evaluation. You can not evaluate a make_fun_impl on the placeholders used to define the function");
-    return make_function(eval(f.obj, pairs...), placeholder<Is>{}...);
+    return make_function(eval(f.ex, pairs...), placeholder<Is>{}...);
   }
 
-  // -----------------------
+  // -----------  eval ------------
+  // The user facing function
 
   /**
    * @brief Evaluate expression on pairs (placeholder = value)
