@@ -46,9 +46,10 @@ namespace nda::clef {
 
     // Specialization of fget for std::reference_wrapper.
     template <typename U>
-    FORCEINLINE decltype(auto) fget(std::reference_wrapper<U> x) {
-      return x.get();
-    }
+    FORCEINLINE decltype(auto) fget(std::reference_wrapper<U> x) = delete;
+    // {
+    //   return x.get();
+    // }
 
   } // namespace detail
 
@@ -223,39 +224,6 @@ namespace nda::clef {
     return expr<tags::if_else, expr_storage_t<C>, expr_storage_t<A>, expr_storage_t<B>>{tags::if_else(), std::forward<C>(c), std::forward<A>(a),
                                                                                         std::forward<B>(b)};
   }
-
-  /**
-   * @brief Dispatch operations containing at least one lazy operand.
-   *
-   * @details Since at least one operand is lazy, the operation is not performed immediately. Instead, a new
-   * nda::clef::expr object is created with the given operation and operands.
-   *
-   * @tparam Tag Tag of the operation.
-   * @tparam Args Types of the operands.
-   * @param args Operands.
-   * @return An nda::clef::expr for the given operation and operands.
-   */
-  template <typename Tag, typename... Args>
-  FORCEINLINE auto op_dispatch(std::true_type, Args &&...args) {
-    return expr<Tag, expr_storage_t<Args>...>{Tag(), std::forward<Args>(args)...};
-  }
-
-  /**
-   * @brief Dispatch operations containing only non-lazy operands.
-   *
-   * @details Since all operands are non-lazy, the operation is performed immediately by calling the corresponding
-   * nda::clef::operation with the forwarded operands.
-   *
-   * @tparam Tag Tag of the operation.
-   * @tparam Args Types of the operands.
-   * @param args Operands.
-   * @return Result of actually performing the operation on the operands.
-   */
-  template <typename Tag, typename... Args>
-  FORCEINLINE decltype(auto) op_dispatch(std::false_type, Args &&...args) {
-    return operation<Tag>()(std::forward<Args>(args)...);
-  }
-
   /** @} */
 
 } // namespace nda::clef

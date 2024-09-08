@@ -131,6 +131,10 @@ namespace nda::clef {
     }
   };
 
+  /// CTAD for expr
+  template <typename Tag, typename... Args>
+  expr(Tag, Args &&...) -> expr<Tag, expr_storage_t<Args>...>;
+
   namespace detail {
 
     // Specialization of ph_set for nda::clef::expr types.

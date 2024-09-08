@@ -210,7 +210,8 @@ TEST_F(CLEF, TerminalExpressions) {
   // reference in terminal expression
   auto ex2 = clef::make_expr(arr);
   static_assert(std::is_same_v<std::tuple_element_t<0, decltype(ex2.childs)>, std::reference_wrapper<decltype(arr)>>);
-  EXPECT_EQ(clef::eval(ex2), arr);
+
+  EXPECT_EQ(clef::eval_impl(ex2), arr);
 
   // clone in terminal expression
   auto ex3 = clef::make_expr_from_clone(arr);
@@ -378,6 +379,10 @@ TEST_F(CLEF, MakeFunction) {
 
   // print to stdout
   std::cout << f1 << std::endl;
+
+  // Should not compile
+  //auto ferr  = clef::make_function(x0_ + x1_, x0_);
+  //auto ferr2 = eval(ferr, x0_ = 10);
 }
 
 TEST_F(CLEF, Literals) {

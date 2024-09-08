@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "./eval.hpp"
 #include "./utils.hpp"
 #include "./placeholder.hpp"
 #include "../macros.hpp"
@@ -102,38 +101,6 @@ namespace nda::clef {
   }
 
   /** @} */
-
-  /**
-   * @ingroup clef_eval
-   * @brief Specialization of nda::clef::evaluator for nda::clef::make_fun_impl types.
-   *
-   * @tparam T Type of the object stored in the nda::clef::make_fun_impl object.
-   * @tparam Is Integer labels of the nda::clef::make_fun_impl type.
-   * @tparam Pairs Types of the nda::clef::pair objects.
-   */
-  template <typename T, int... Is, typename... Pairs>
-  struct evaluator<make_fun_impl<T, Is...>, Pairs...> {
-    /// Type of the evaluator used.
-    using e_t = evaluator<T, Pairs...>;
-
-    /// Constexpr variable that is true if all the placeholders are assigned a value.
-    static constexpr bool is_lazy = (detail::ph_set<make_fun_impl<T, Is...>>::value != detail::ph_set<Pairs...>::value);
-
-    /**
-     * @brief Evaluate the nda::clef::make_fun_impl object.
-     *
-     * @details It first evaluates the object stored in the given nda::clef::make_fun_impl object by applying the given
-     * pairs. The result is then used to construct a new nda::clef::make_fun_impl instance together with the
-     * placeholders from the original nda::clef::make_fun_impl object.
-     *
-     * @param f nda::clef::make_fun_impl object.
-     * @param pairs nda::clef::pair objects.
-     * @return nda::clef::make_fun_impl object containing the evaluated expression.
-     */
-    FORCEINLINE decltype(auto) operator()(make_fun_impl<T, Is...> const &f, Pairs &...pairs) const {
-      return make_function(e_t()(f.obj, pairs...), placeholder<Is>()...);
-    }
-  };
 
   namespace detail {
 
