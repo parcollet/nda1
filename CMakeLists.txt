@@ -154,6 +154,9 @@ include(GNUInstallDirs)
 
 if(CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
  message(STATUS "Using vcpkg for dependency management.")
+ find_package(itertools REQUIRED)
+ find_package(h5 REQUIRED)
+ find_package(mpi REQUIRED)
 else()
 # Find / Build dependencies
 add_subdirectory(deps)
