@@ -152,8 +152,13 @@ include(GNUInstallDirs)
 # #############
 # Build Project
 
+if(CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+ message(STATUS "Using vcpkg for dependency management.")
+ find_package(fmt required)
+else()
 # Find / Build dependencies
 add_subdirectory(deps)
+endif()
 
 # Build and install the library
 add_subdirectory(c++/${PROJECT_NAME})
