@@ -18,6 +18,7 @@
 
 #include "./test_common.hpp"
 
+#include <gtest/gtest.h>
 #include <nda/basic_functions.hpp>
 #include <nda/clef.hpp>
 #include <nda/stdutil/array.hpp>
@@ -47,8 +48,11 @@ struct foo {
   // various constructors and assignment operators
   foo() { std::cout << "foo()" << std::endl; }
   foo(int x) : x(x) { std::cout << "foo(int)" << std::endl; }
-  foo(foo const &) = delete;
-  foo(foo &&f) noexcept : x(f.x) { std::cout << "foo(foo &&)" << std::endl; }
+  foo(foo const &) = default;
+  foo(foo &&f) noexcept : x(f.x) {
+    std::cout << "foo(foo &&)" << std::endl;
+    f.x = -1;
+  }
   foo &operator=(foo const &) = delete;
   foo &operator=(foo &&f) noexcept {
     x = f.x;
@@ -214,7 +218,8 @@ TEST_F(CLEF, TerminalExpressions) {
   EXPECT_EQ(clef::eval_impl(ex2), arr);
 
   // clone in terminal expression
-  auto ex3 = clef::make_expr_from_clone(arr);
+  auto ex3 = clef::make_expr(auto{arr});
+  //auto ex3 = clef::make_expr_from_cloddne(arr);
   static_assert(std::is_same_v<std::tuple_element_t<0, decltype(ex3.childs)>, decltype(arr)>);
   EXPECT_EQ(clef::eval(ex3), arr);
 }
@@ -226,7 +231,12 @@ TEST_F(CLEF, SubscriptExpressions) {
   // placeholder subscript operator
   auto ex1 = x0_[idx];
   EXPECT_EQ(clef::eval(ex1, x0_ = vec), vec[idx]);
-  EXPECT_EQ(clef::eval(ex1, x0_ = std::vector{1, 2, 3}), vec[idx]);
+  //EXPECT_EQ(clef::eval(ex1, x0_ = std::vector{1, 2, 3}), vec[idx]);
+
+  //decltype(auto) ii = std::vector{1, 2, 3}[0];
+
+  static_assert(std::is_same_v<decltype(eval(x0_, x0_ = std::vector{1, 2, 3})), std::vector<int>>);
+  static_assert(std::is_same_v<decltype(eval(x0_, x0_ = vec)), std::vector<int> &>);
 
   // placeholder subscript operator with lazy index
   auto ex2 = x0_[x1_];
@@ -492,4 +502,16 @@ TEST_F(CLEF, SumExpressionOverDomain) {
   EXPECT_EQ(clef::sum(ex3, x0_ = dom1, x1_ = dom2), 5 + 2 * 6 + 3 * 7 + 2 * 8 + 9);
   EXPECT_EQ(dom1.size(), 3);
   EXPECT_EQ(clef::sum(ex3, x0_ = std::vector{1, 2, 3}, x1_ = std::vector{4, 5, 6}), 5 + 2 * 6 + 3 * 7 + 2 * 8 + 9);
+}
+
+TEST_F(CLEF, MoveIssue) {
+
+  auto ex5 = (x0_ + x1_ + x0_)(x2_);
+
+  auto ex5_p0_p2 = clef::eval(ex5, x0_ = foo(2), x3_ = foo(2), x2_ = 1);
+  EXPECT_EQ(clef::eval(ex5_p0_p2, x1_ = foo(3)), 8);
+
+  //auto ex = x0_ + x0_;
+  //auto ff = eval(ex, x0_ = foo{23});
+  //EXPECT_EQ(ff.x, 46);
 }

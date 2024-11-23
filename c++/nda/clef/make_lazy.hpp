@@ -46,19 +46,6 @@ namespace nda::clef {
     return expr{tags::terminal(), std::forward<T>(t)};
   }
 
-  // FIXME : DEPRECATE : it is now just make_expr(auto{something});
-  /**
-   * @brief Create a terminal expression node of an object.
-   *
-   * @tparam T Type of the object.
-   * @param t Given object.
-   * @return An nda::clef::expr with the nda::clef::tags::terminal tag containing a copy of the object.
-   */
-  template <typename T>
-  auto make_expr_from_clone(T &&x) {
-    return make_expr(auto{x});
-  }
-
   /**
    * @brief Create a function call expression from a callable object and a list of arguments.
    *
@@ -71,7 +58,7 @@ namespace nda::clef {
    */
   template <typename F, typename... Args>
   auto make_expr_call(F &&f, Args &&...args)
-    requires((is_lazy<Args> || ...))
+    requires(is_lazy<F> || (is_lazy<Args> || ...))
   {
     return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
   }
@@ -88,7 +75,7 @@ namespace nda::clef {
    */
   template <typename T, typename... Args>
   auto make_expr_subscript(T &&t, Args &&...args)
-    requires((is_lazy<Args> || ...))
+    requires(is_lazy<T> || (is_lazy<Args> || ...))
   {
     return expr{tags::subscript{}, std::forward<T>(t), std::forward<Args>(args)...};
   }
@@ -113,7 +100,16 @@ namespace nda::clef {
        *this, std::forward<A>(__a)...);                                                                                                              \
   }
 
-  /// Macro to make any function call operator lazy, i.e. accept lazy arguments and return a function call expression node.
+#ifdef __cpp_explicit_this_parameter
+#define CLEF_IMPLEMENT_LAZY_CALL(...)                                                                                                                \
+  template <typename Self, typename... Args>                                                                                                         \
+  auto operator()(this Self &&self, Args &&...args)                                                                                                  \
+    requires(nda::clef::is_any_lazy<Args...>)                                                                                                        \
+  {                                                                                                                                                  \
+    return make_expr_call(std::forward<Self>(self), std::forward<Args>(args)...);                                                                    \
+  }
+#else
+/// Macro to make any function call operator lazy, i.e. accept lazy arguments and return a function call expression node.
 #define CLEF_IMPLEMENT_LAZY_CALL(...)                                                                                                                \
   template <typename... Args>                                                                                                                        \
   auto operator()(Args &&...args) const &                                                                                                            \
@@ -135,7 +131,7 @@ namespace nda::clef {
   {                                                                                                                                                  \
     return make_expr_call(std::move(*this), std::forward<Args>(args)...);                                                                            \
   }
-
+#endif
   /** @} */
 
 } // namespace nda::clef

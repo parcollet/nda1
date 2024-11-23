@@ -33,6 +33,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <iostream>
 
 namespace nda::clef {
 
@@ -63,17 +64,21 @@ namespace nda::clef {
       // auto & pair_N = pairs...[N_position];
       // the pair is a temporary constructed for the time of the eval call
       // if it holds a reference, we return it, else we move the rhs object out of the pair
-      if constexpr (std::is_lvalue_reference_v<decltype(pair_N.rhs)>)
+      if constexpr (std::is_lvalue_reference_v<decltype(pair_N.rhs)>) {
         return pair_N.rhs;
-      else
-        return std::move(pair_N.rhs);
+      } else {
+        std::cout << " MAKE?Ing COPY\n";
+        //return std::move(pair_N.rhs);
+        return auto{pair_N.rhs}; // make a copy
+        //return (pair_N.rhs); // make a copy
+      }
     }
   }
 
   // ---------- expr -------------
 
   template <typename Tag, typename... Childs>
-  decltype(auto) eval_impl(expr<Tag, Childs...> const &ex, auto &...pairs) {
+  FORCEINLINE decltype(auto) eval_impl(expr<Tag, Childs...> const &ex, auto &...pairs) {
 
     return [&]<size_t... Is>(std::index_sequence<Is...>)
     // For some mysterious reason clang and gcc want the mutable and attribute in different order ?
@@ -144,5 +149,32 @@ namespace nda::clef {
       return std::forward<T>(x);
   }
   /** @} */
+
+  /*
+
+ - expr_with_context : expr + tuple of objects.
+ - eval :
+     - r = eval(...) : put into  dangling_ref<n_pair, T> -> cast into a T&
+
+     - Compute the list [pair_pos] for all the dangling_ref
+
+     - list [ (pair_idx, new_idx)] from [0/1] for each pair, order on pair_idx
+     - a consteval function get_new_idx(pair_idx) -> new_idx: search
+     - [n_pair of dangling ref] + [0/1] ---> [new index for each pair] -> consteval fun
+     - rebuild the expression replacing the dangling_ref<I, T> -> std::get< get_new_idx(I)>(context);
+     - MUST PASS the context to the evaluator !!!   eval(x, context, pairs ...)
+        - in general : pass empty tuple. ---> why not the empty tuple in all expression ? 
+
+
+    1- dangling_ref<I,T>
+    2- [0/1] for each pair
+    2- [new_idx for each pair pos] : from [0/1] -> accumulate
+    3- Context = get the temporaries and move them
+    4- eval : ph when pair_pos is 1, use a dangling_ref <new_idx>
+    2- change the eval_impl to accept a context.
+    3- Add eval dangling_ref<I, T> -> using the context
+    4- One pass only. Now if we want to minimize the Context tuple, we need another pass.
+
+*/
 
 } // namespace nda::clef

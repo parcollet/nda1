@@ -64,26 +64,6 @@ namespace nda::clef {
     return sout << wrapper.get();
   }
 
-  // Overload of nda::clef::variadic_print for the case of an empty list of arguments.
-  inline std::ostream &variadic_print(std::ostream &sout) { return sout; }
-
-  /**
-   * @brief Print a variadic list of arguments to std::ostream.
-   *
-   * @tparam T0 Type of the first argument.
-   * @tparam Ts Types of the remaining arguments.
-   * @param sout std::ostream object to print to.
-   * @param t0 First argument to print.
-   * @param ts Remaining arguments to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename T0, typename... Ts>
-  std::ostream &variadic_print(std::ostream &sout, T0 &&t0, Ts &&...ts) {
-    sout << std::forward<T0>(t0) << (sizeof...(Ts) > 0 ? ", " : "");
-    variadic_print(sout, std::forward<Ts>(ts)...);
-    return sout;
-  }
-
   /**
    * @brief Print a std::tuple to std::ostream.
    *
@@ -226,10 +206,10 @@ namespace nda::clef {
    * @param f nda::clef::function object to print.
    * @return Reference to the std::ostream.
    */
-  template <typename Expr, int... Is>
-  std::ostream &operator<<(std::ostream &sout, function<Expr, Is...> const &f) {
-    sout << "lazy function : (";
-    variadic_print(sout, placeholder<Is>()...);
+  template <typename Expr, int I0, int... Is>
+  std::ostream &operator<<(std::ostream &sout, function<Expr, I0, Is...> const &f) {
+    sout << "lazy function : (" << placeholder<I0>{};
+    (void(sout << ", " << placeholder<Is>{}), ...);
     return sout << ") --> " << f.ex;
   }
 

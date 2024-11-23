@@ -40,7 +40,7 @@ namespace nda::clef {
    *
    * @details Given a lazy expression, this class adapts it as a function of its placeholder.
    *           Its arguments are the values of placeholders used in evaluating the expression,
-   *              in the order given by PlaceholderIndex.
+   *           in the order given by PlaceholderIndex.
    *
    * The following example shows how to turn a binary lazy expression `ex` into a callable object `f` that takes two
    * arguments:
@@ -85,6 +85,10 @@ namespace nda::clef {
       return eval(ex, pair<PlaceholderIndex, Args>{std::forward<Args>(args)}...);
     }
   };
+
+  // Backward compat : FIXME : REMOVE IT
+  template <typename Expr, int... PlaceholderIndex>
+  using make_fun_impl = function<Expr, PlaceholderIndex...>;
 
   /// CTAD for function
   template <typename Expr, auto... Is>

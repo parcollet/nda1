@@ -22,9 +22,6 @@
 #pragma once
 
 #include "./utils.hpp"
-#include <cstdint>
-#include <tuple>
-#include <utility>
 
 namespace nda::clef {
 
@@ -47,10 +44,10 @@ namespace nda::clef {
     /// Tag for conditional expressions.
     struct if_else {};
 
-    /// Tag for unary operator expressions.
+    /// Base tag for unary operator expressions.
     struct unary_op {};
 
-    /// Tag for binary operator expressions.
+    /// Base tag for binary operator expressions.
     struct binary_op {};
 
     /** @} */
@@ -103,13 +100,10 @@ namespace nda::clef {
 
     /// Children nodes of the current expression node.
     std::tuple<Childs...> childs; // FIXME in english the plural of child is ... children ?
+                                  // NB : the node are stored by values, the & are stored in a std::reference_wrapper
 
-    expr(expr const &)            = default;
-    expr(expr &&)                 = default;
-    expr &operator=(expr const &) = delete;
-    expr &operator=(expr &&)      = default;
-
-    /// Construct from the tag and children nodes. Tag is useful here (for CTAD e.g.)
+    // Construct from the tag and children nodes. Tag is useful here (for CTAD e.g.)
+    // Internal use. User will construct with CTAD.
     template <typename... Child>
     expr(Tag, Child &&...child) : childs{std::forward<Child>(child)...} {}
 
@@ -158,6 +152,7 @@ namespace nda::clef {
       return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function{}, std::forward<Self>(self), std::forward<Args>(args)...};
     }
 #else
+    // workaround for c++23 compiler without the "deducing this" implemented
     template <typename... Args>
     auto operator()(Args &&...args) const & {
       return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), *this, std::forward<Args>(args)...};

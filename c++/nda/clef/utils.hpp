@@ -21,9 +21,15 @@
  */
 
 #pragma once
-
+#include <cstdint>
 #include <type_traits>
+#include <array>
+#include <algorithm>
 
+// Clang >=18 actually has deducing this, but the macro is not set
+#if defined(__clang__) and (__clang_major__ >= 18) and not defined(__cpp_explicit_this_parameter)
+#define __cpp_explicit_this_parameter X
+#endif
 namespace nda::clef {
 
   /**
@@ -33,19 +39,13 @@ namespace nda::clef {
 
   namespace detail {
 
-    /// Bitset storage of a the list of the placeholders used in T.
+    /// Bitset storage of a the list of the placeholders used in T (max # placeholder is 64)
     template <typename T>
     constexpr uint64_t ph_set = 0;
 
-    // Helper variable to determine if a type `T` is lazy.
+    // Specialize to true if T is lazy (cf expression, placeholder).
     template <typename T>
     constexpr bool is_lazy_impl = false;
-
-    // Specialization of is_lazy_impl for cvref types.
-    template <typename T>
-      requires(!std::is_same_v<T, std::remove_cvref_t<T>>)
-    constexpr bool is_lazy_impl<T> = is_lazy_impl<std::remove_cvref_t<T>>;
-    //constexpr bool is_lazy_impl<T &> = is_lazy_impl<T>;
 
     // An erroneous diagnostics in gcc: i0 is indeed used. We silence it.
 #if defined(__GNUC__) and not defined(__clang__)
@@ -53,9 +53,11 @@ namespace nda::clef {
 #endif
 
     // Check if all given integers are different.
-    template <typename... Is>
-    constexpr bool all_different(int i0, Is... is) {
-      return (((is - i0) * ... * 1) != 0);
+    consteval bool all_different(auto... is) {
+      auto arr = std::array{is...};
+      std::sort(std::begin(arr), std::end(arr));
+      auto pos = std::adjacent_find(std::begin(arr), std::end(arr));
+      return (pos == std::end(arr));
     }
 
 #if defined(__GNUC__) and not defined(__clang__)
@@ -66,7 +68,7 @@ namespace nda::clef {
 
   /// true iif T is a lazy type.
   template <typename T>
-  constexpr bool is_lazy = detail::is_lazy_impl<T>;
+  constexpr bool is_lazy = detail::is_lazy_impl<std::remove_cvref_t<T>>;
 
   /// true iff at least one of the Ts is lazy
   template <typename... Ts>

@@ -20,12 +20,12 @@
  */
 
 #pragma once
-
-#include "./expression.hpp"
-#include "./utils.hpp"
-
 #include <cstdint>
 #include <utility>
+
+#include "../macros.hpp"
+#include "./expression.hpp"
+#include "./utils.hpp"
 
 namespace nda::clef {
 
@@ -53,10 +53,13 @@ namespace nda::clef {
     static constexpr int p = N;
   };
 
+  //-------------------------------------------------------------------
+
   /**
-   * @brief A placeholder. It is an empty struct, labelled by an index (int).
+   * @brief A placeholder, i.e. terminal of the expression
    *
    * @details It is the basic building block of lazy expressions. For example:
+   *          It is an empty struct labelled by an index (int).
    *
    * @code{.cpp}
    * nda::clef::placeholder<0> i_;
@@ -74,7 +77,7 @@ namespace nda::clef {
   struct placeholder {
     static_assert(N >= 0 && N < 64, "Placeholder index must be in {0, 1, ..., 63}");
 
-    /// Index
+    /// Index of the placeholder
     static constexpr int index = N;
 
     /**
@@ -85,7 +88,7 @@ namespace nda::clef {
      * @return An nda::clef::pair object. It basically tags the value with the placeholder index.
      */
     template <typename RHS>
-    pair<N, RHS> operator=(RHS &&rhs) const { // NOLINT (we want to return a pair)
+    FORCEINLINE pair<N, RHS> operator=(RHS &&rhs) const { // NOLINT (we want to return a pair)
       return {std::forward<RHS>(rhs)};
     }
 
@@ -134,7 +137,7 @@ namespace nda::clef {
     template <int N>
     constexpr uint64_t ph_set<placeholder<N>> = 1ull << N;
 
-    // Specialization of is_lazy_impl for nda::clef::placeholder types.
+    // placeholder are lazy expression.
     template <int N>
     constexpr bool is_lazy_impl<placeholder<N>> = true;
 

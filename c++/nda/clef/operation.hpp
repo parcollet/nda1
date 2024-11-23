@@ -29,7 +29,8 @@
 namespace nda::clef {
   namespace detail {
 
-    // Generic operation like std::plus<void> etc....
+    // Generic operation like std::plus<void>
+    // We need more than is in the std, and we want to enforce always_inline
     template <typename Tag>
     struct operation;
 
@@ -42,7 +43,7 @@ namespace nda::clef {
       }
     };
 
-    // function : the function is the first child, the arguments are the next one
+    // function call
     template <>
     struct operation<tags::function> {
       template <typename F, typename... Args>
@@ -56,8 +57,9 @@ namespace nda::clef {
     struct operation<tags::subscript> {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
-        // directly calling [args...] breaks clang
         return std::forward<F>(f)[std::forward<Args>(args)...];
+        // should be obsolete by now
+        // directly calling [args...] breaks clang
         //return std::forward<F>(f).operator[](std::forward<Args>(args)...);
       }
     };
