@@ -48,7 +48,11 @@ namespace nda::clef {
     struct operation<tags::function> {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
-        return std::forward<F>(f)(std::forward<Args>(args)...);
+        // If the F does not have an lazy able (), we make the expression
+        if constexpr ((is_lazy<Args> or ...))
+          return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
+        else
+          return std::forward<F>(f)(std::forward<Args>(args)...);
       }
     };
 
@@ -57,7 +61,11 @@ namespace nda::clef {
     struct operation<tags::subscript> {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
-        return std::forward<F>(f)[std::forward<Args>(args)...];
+        // If the F does not have an lazy able [], we make the expression
+        if constexpr ((is_lazy<Args> or ...))
+          return expr{tags::subscript{}, std::forward<F>(f), std::forward<Args>(args)...};
+        else
+          return std::forward<F>(f)[std::forward<Args>(args)...];
         // should be obsolete by now
         // directly calling [args...] breaks clang
         //return std::forward<F>(f).operator[](std::forward<Args>(args)...);

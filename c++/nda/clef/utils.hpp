@@ -30,6 +30,13 @@
 #if defined(__clang__) and (__clang_major__ >= 18) and not defined(__cpp_explicit_this_parameter)
 #define __cpp_explicit_this_parameter X
 #endif
+
+// // For some mysterious reason clang and gcc want the mutable and attribute in different order ?
+// #if defined(__GNUC__) and not defined(__clang__)
+// #define ALWAYS_INLINE_AND_MUTABLE mutable __attribute__((always_inline))
+// #else
+// #define ALWAYS_INLINE_AND_MUTABLE __attribute__((always_inline)) mutable
+// #endif
 namespace nda::clef {
 
   /**
@@ -69,6 +76,9 @@ namespace nda::clef {
   /// true iif T is a lazy type.
   template <typename T>
   constexpr bool is_lazy = detail::is_lazy_impl<std::remove_cvref_t<T>>;
+
+  template <typename T>
+  concept Lazy = is_lazy<T>;
 
   /// true iff at least one of the Ts is lazy
   template <typename... Ts>

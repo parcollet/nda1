@@ -22,11 +22,14 @@
 #pragma once
 
 #include "./utils.hpp"
+#include <type_traits>
 
 namespace nda::clef {
 
+  enum Kind { Leaf, Add, Sub, Mul, Div, Leq, Geq, Less, Greater, Call, Subscript, IfElse, Loginot, UnaryPlus, Negate };
   namespace tags {
 
+    // FIXME : why not enum ? ?
     /**
      * @addtogroup clef_expr
      * @{
@@ -55,6 +58,14 @@ namespace nda::clef {
   } // namespace tags
   namespace detail {
 
+    // template <typename T>
+    // auto store(T &&x) {
+    //   if constexpr (std::is_reference_v<T>)
+    //     return std::ref(x);
+    //   else
+    //     return std::forward<T>(x);
+    // }
+
     // Helper struct to determine how a type should be stored in an expression tree.
     template <typename T>
     struct expr_storage_impl : std::decay<T> {};
@@ -68,7 +79,7 @@ namespace nda::clef {
 
   } // namespace detail
 
-  /**
+  /*
    * @brief Trait to determine how a type should be stored in an expression tree, i.e. either by reference or by value?
    *
    * @details Rvalue references are copied/moved into the expression tree.
@@ -97,6 +108,7 @@ namespace nda::clef {
    */
   template <typename Tag, typename... Childs>
   struct expr {
+    static_assert(not(std::is_reference_v<Childs> | ...)); // Reference are in a reference_wrapper
 
     /// Children nodes of the current expression node.
     std::tuple<Childs...> childs; // FIXME in english the plural of child is ... children ?
