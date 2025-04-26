@@ -117,6 +117,53 @@ int lazy_f2(int x, int y) { return x * y; }
 double lazy_f2(double x, double y) { return x + y; }
 CLEF_MAKE_FNT_LAZY(lazy_f2)
 
+
+  
+int f1(int x) {
+  std::cout << "Eval f1 " << x << std::endl;
+  return 100 * x;
+}
+CLEF_MAKE_FNT_LAZY(f1);
+
+struct _f3 {
+  auto operator()(auto x, auto y) const {
+    if constexpr (nda::clef::is_lazy<decltype(x)>) {
+      if constexpr (nda::clef::is_lazy<decltype(y)>) {
+        return make_expr_call(*this, x, y);
+      } else {
+        std::cout << "Eval f3 ONE LAZY " << x << " " << y << std::endl;
+        return f1(x) + auto{y};
+      }
+    } else {
+      std::cout << "Eval f3 " << x << " " << y << std::endl;
+      return 10 * x + y;
+    }
+  }
+};
+static constexpr _f3 f3{};
+std::ostream & operator <<(std::ostream & out, _f3 ) { return out << "f3";}
+
+
+TEST_F(CLEF, DeepEvalFntCall) {
+
+
+nda::clef::placeholder<0> x_;
+  nda::clef::placeholder<1> y_;
+
+  //auto res = inte(f(x_, 2), x_);
+  // std::cout << "res = " << res << std::endl;
+
+  auto ex = x_ + f3(x_, y_);
+  auto ev = eval(ex, y_ = 20) ;
+ // ev.lll;
+  EXPECT_EQ( eval(ev, x_= 1), 1 + f1(1) + 20);
+  //std::cout << "ex eval = " << eval(ex, y_ = 20) << std::endl;
+}
+
+
+
+
+
 TEST_F(CLEF, PlaceholderValuePair) {
   // check correct storage of types
   auto p1 = (x0_ = 10);
@@ -525,7 +572,7 @@ TEST_F(CLEF, MoveIssue) {
 // uncomment only to test errors
 // make 2>&1 nda_clef| sed 's/nda::clef:://g' |sed 's/tags:://g'
 //
-TEST_F(CLEF, CompileErrors) {
-  auto ex = 1 / (x0_ + 3 + x0_ / (1 + x2_) - lazy_f1(x1_));
-  auto r  = eval(ex, x1_ = foo(1));
-}
+//TEST_F(CLEF, CompileErrors) {
+//  auto ex = 1 / (x0_ + 3 + x0_ / (1 + x2_) - lazy_f1(x1_));
+//  auto r  = eval(ex, x1_ = foo(1));
+//}

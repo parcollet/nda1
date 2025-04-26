@@ -49,10 +49,17 @@ namespace nda::clef {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
         // If the F does not have an lazy able (), we make the expression
-        if constexpr ((is_lazy<Args> or ...))
+#if 0
+ if constexpr ((is_lazy<Args> or ...))
           return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
         else
           return std::forward<F>(f)(std::forward<Args>(args)...);
+#else
+        // if constexpr (requires { std::forward<F>(f)(std::forward<Args>(args)...); })
+        return std::forward<F>(f)(std::forward<Args>(args)...);
+        // else
+        //  return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
+#endif
       }
     };
 
