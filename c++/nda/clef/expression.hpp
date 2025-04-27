@@ -26,7 +26,6 @@
 
 namespace nda::clef {
 
-  enum Kind { Leaf, Add, Sub, Mul, Div, Leq, Geq, Less, Greater, Call, Subscript, IfElse, Loginot, UnaryPlus, Negate };
   namespace tags {
 
     // FIXME : why not enum ? ?

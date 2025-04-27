@@ -44,6 +44,7 @@ namespace nda::clef {
    * @tparam N Placeholder index.
    * @tparam T Value type.
    */
+
   template <int N, typename T>
   struct pair {
     /// Value assigned to the placeholder (can be an lvalue reference).
@@ -75,6 +76,9 @@ namespace nda::clef {
    */
   template <int N>
   struct placeholder {
+    // not fundamental but reasonnable.
+    // We rely on it as we use 64bits uint in some operations at compile time.
+    // but it could be generalized.
     static_assert(N >= 0 && N < 64, "Placeholder index must be in {0, 1, ..., 63}");
 
     /// Index of the placeholder

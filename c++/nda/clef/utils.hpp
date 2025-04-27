@@ -54,10 +54,10 @@ namespace nda::clef {
     template <typename T>
     constexpr bool is_lazy_impl = false;
 
-    // An erroneous diagnostics in gcc: i0 is indeed used. We silence it.
-#if defined(__GNUC__) and not defined(__clang__)
-#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
-#endif
+    //     // An erroneous diagnostics in gcc: i0 is indeed used. We silence it.
+    // #if defined(__GNUC__) and not defined(__clang__)
+    // #pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+    // #endif
 
     // Check if all given integers are different.
     consteval bool all_different(auto... is) {
@@ -67,24 +67,28 @@ namespace nda::clef {
       return (pos == std::end(arr));
     }
 
-#if defined(__GNUC__) and not defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
+    // #if defined(__GNUC__) and not defined(__clang__)
+    // #pragma GCC diagnostic pop
+    // #endif
 
   } // namespace detail
 
   /// true iif T is a lazy type.
   template <typename T>
+  //[[deprecated("is_lazy is deprecated. Use Lazy concept instead.")]]
   constexpr bool is_lazy = detail::is_lazy_impl<std::remove_cvref_t<T>>;
 
+  // FIXME : MOVE IN TRAITS .hpp
+  // KEEP ONLY THE CONCEPT ?
   template <typename T>
   concept Lazy = is_lazy<T>;
 
   /// true iff at least one of the Ts is lazy
+  // FIXME: REMOVE AND REPLACE ...
   template <typename... Ts>
   constexpr bool is_any_lazy = (is_lazy<Ts> or ...);
 
-  // FIXME : remove ?
+  // FIXME : remove ? DEPRECATED
   /// Alias template for nda::clef::is_any_lazy.
   template <typename... Ts>
   constexpr bool is_clef_expression = is_any_lazy<Ts...>;
