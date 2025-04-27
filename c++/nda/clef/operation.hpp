@@ -49,8 +49,8 @@ namespace nda::clef {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
         // If the F does not have an lazy able (), we make the expression
-#if 0
- if constexpr ((is_lazy<Args> or ...))
+#if 1
+        if constexpr ((is_lazy<Args> or ...))
           return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
         else
           return std::forward<F>(f)(std::forward<Args>(args)...);
@@ -71,11 +71,19 @@ namespace nda::clef {
         // If the F does not have an lazy able [], we make the expression
         if constexpr ((is_lazy<Args> or ...))
           return expr{tags::subscript{}, std::forward<F>(f), std::forward<Args>(args)...};
-        else
-          return std::forward<F>(f)[std::forward<Args>(args)...];
-        // should be obsolete by now
-        // directly calling [args...] breaks clang
-        //return std::forward<F>(f).operator[](std::forward<Args>(args)...);
+        else {
+          // We call the [] operator.
+          // BUT we add a protection. In the case where F is an rvalue ref,
+          // and f[...] returns a reference, it is highly suspicious,
+          // like a vector v[0] would return a dangling reference.
+          // So we return a COPY of the value, not a reference.
+          // FIXME : this behavious could be overriden by a trait in the future
+          if constexpr (std::is_rvalue_reference_v<F &&> && std::is_reference_v<decltype(std::forward<F>(f)[std::forward<Args>(args)...])>) {
+            return auto{std::forward<F>(f)[std::forward<Args>(args)...]};
+          } else {
+            return std::forward<F>(f)[std::forward<Args>(args)...];
+          }
+        }
       }
     };
   } // namespace detail

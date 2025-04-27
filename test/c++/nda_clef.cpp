@@ -109,7 +109,7 @@ struct bar {
 int lazy_f1(int x) { return x * x; }
 double lazy_f1(double x) { return x + x; }
 auto lazy_f1(clef::Lazy auto x) {
-  return clef::make_expr_call([](auto &&x) { return lazy_f1(x); }, x);
+  return clef::make_expr_call([](auto &&x) { return lazy_f1(x); }, std::move(x));
 }
 //CLEF_MAKE_FNT_LAZY(lazy_f1)
 
@@ -117,8 +117,6 @@ int lazy_f2(int x, int y) { return x * y; }
 double lazy_f2(double x, double y) { return x + y; }
 CLEF_MAKE_FNT_LAZY(lazy_f2)
 
-
-  
 int f1(int x) {
   std::cout << "Eval f1 " << x << std::endl;
   return 100 * x;
@@ -141,28 +139,22 @@ struct _f3 {
   }
 };
 static constexpr _f3 f3{};
-std::ostream & operator <<(std::ostream & out, _f3 ) { return out << "f3";}
-
+std::ostream &operator<<(std::ostream &out, _f3) { return out << "f3"; }
 
 TEST_F(CLEF, DeepEvalFntCall) {
 
-
-nda::clef::placeholder<0> x_;
+  nda::clef::placeholder<0> x_;
   nda::clef::placeholder<1> y_;
 
   //auto res = inte(f(x_, 2), x_);
   // std::cout << "res = " << res << std::endl;
 
   auto ex = x_ + f3(x_, y_);
-  auto ev = eval(ex, y_ = 20) ;
- // ev.lll;
-  EXPECT_EQ( eval(ev, x_= 1), 1 + f1(1) + 20);
+  auto ev = eval(ex, y_ = 20);
+  // ev.lll;
+  EXPECT_EQ(eval(ev, x_ = 1), 1 + f1(1) + 20);
   //std::cout << "ex eval = " << eval(ex, y_ = 20) << std::endl;
 }
-
-
-
-
 
 TEST_F(CLEF, PlaceholderValuePair) {
   // check correct storage of types
@@ -230,6 +222,7 @@ TEST_F(CLEF, LazyFunctionsAndExpressions) {
   EXPECT_EQ(clef::eval(lazy_f1(x0_), x0_ = 3), 9);
   EXPECT_EQ(clef::eval(lazy_f1(x0_), x0_ = 3.0), 6.0);
   EXPECT_EQ(clef::eval(clef::eval(lazy_f1(2 * x0_), x0_ = 3)), 36);
+  EXPECT_EQ(clef::eval(lazy_f1(2 * x0_), x0_ = 3), 36);
   EXPECT_EQ(clef::eval(clef::eval(lazy_f1(2.0 * x0_), x0_ = 3)), 12);
   EXPECT_EQ(clef::eval(lazy_f1(x0_ + x1_), x0_ = 3, x1_ = 3), 36);
   EXPECT_EQ(clef::eval(clef::eval(lazy_f1(x0_ + x1_), x0_ = 3), x1_ = 3), 36);
@@ -378,31 +371,31 @@ TEST_F(CLEF, IfElseExpressions) {
   std::cout << clef::if_else(x0_ * x3_ - x4_, x1_, x2_) << std::endl;
 }
 
-// TEST_F(CLEF, LogicalExpressions) {
-//   auto ex1 = x0_ < x1_;
-//   EXPECT_EQ(clef::eval(ex1, x0_ = 1, x1_ = 2), true);
+TEST_F(CLEF, LogicalExpressions) {
+  auto ex1 = x0_ < x1_;
+  EXPECT_EQ(clef::eval(ex1, x0_ = 1, x1_ = 2), true);
 
-//   auto ex2 = x0_ > x1_;
-//   EXPECT_EQ(clef::eval(ex2, x0_ = 1, x1_ = 2), false);
+  auto ex2 = x0_ > x1_;
+  EXPECT_EQ(clef::eval(ex2, x0_ = 1, x1_ = 2), false);
 
-//   auto ex3 = x0_ + x1_ <= x2_;
-//   EXPECT_EQ(clef::eval(ex3, x0_ = 1, x1_ = 2, x2_ = 3), true);
-//   // partial evaluation
-//   auto ex3_p1_p2 = clef::eval(ex3, x1_ = 2, x2_ = 3);
-//   EXPECT_EQ(clef::eval(ex3_p1_p2, x0_ = 1), true);
+  auto ex3 = x0_ + x1_ <= x2_;
+  EXPECT_EQ(clef::eval(ex3, x0_ = 1, x1_ = 2, x2_ = 3), true);
+  // partial evaluation
+  auto ex3_p1_p2 = clef::eval(ex3, x1_ = 2, x2_ = 3);
+  EXPECT_EQ(clef::eval(ex3_p1_p2, x0_ = 1), true);
 
-//   auto ex4 = x0_ >= x1_ - x2_;
-//   EXPECT_EQ(clef::eval(ex4, x0_ = 1, x1_ = 2, x2_ = 3), true);
+  auto ex4 = x0_ >= x1_ - x2_;
+  EXPECT_EQ(clef::eval(ex4, x0_ = 1, x1_ = 2, x2_ = 3), true);
 
-//   auto ex5 = x0_[x1_] == x2_(x3_);
-//   EXPECT_EQ(clef::eval(ex5, x0_ = std::vector{1, 2, 3}, x1_ = 1, x2_ = foo(1), x3_ = 1), true);
+  auto ex5 = x0_[x1_] == x2_(x3_);
+  EXPECT_EQ(clef::eval(ex5, x0_ = std::vector{1, 2, 3}, x1_ = 1, x2_ = foo(1), x3_ = 1), true);
 
-//   auto ex6 = !(x0_[x1_] == x2_(x3_));
-//   EXPECT_EQ(clef::eval(ex6, x0_ = std::vector{1, 2, 3}, x1_ = 1, x2_ = foo(1), x3_ = 1), false);
+  auto ex6 = !(x0_[x1_] == x2_(x3_));
+  EXPECT_EQ(clef::eval(ex6, x0_ = std::vector{1, 2, 3}, x1_ = 1, x2_ = foo(1), x3_ = 1), false);
 
-//   // print to stdout
-//   std::cout << ex4 << std::endl;
-// }
+  // print to stdout
+  std::cout << ex4 << std::endl;
+}
 
 TEST_F(CLEF, MakeFunction) {
   auto ex1 = x0_ - x1_;

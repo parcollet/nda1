@@ -74,9 +74,17 @@ namespace nda::clef {
    */
   template <typename Tuple>
   std::ostream &print_tuple(std::ostream &sout, Tuple const &t) {
-    [&]<size_t... Is>(std::index_sequence<Is...>) {
-      (void(sout << (Is == 0 ? "" : ", ") << std::get<Is>(t)), ...);
-    }(std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+    auto print = [i = 0, &sout](auto const &x) mutable -> void {
+      sout << (i++ == 0 ? "" : ", ");
+      if constexpr (requires { sout << x; })
+        sout << x;
+      else
+        sout << "[??]";
+    };
+    // FIXME C++26. Simply say
+    // auto &[... x] = t;
+    // (print(x),...);
+    [&]<size_t... Is>(std::index_sequence<Is...>) { (print(std::get<Is>(t)), ...); }(std::make_index_sequence<std::tuple_size_v<Tuple>>{});
     return sout;
   }
 
