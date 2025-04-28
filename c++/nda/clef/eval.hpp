@@ -20,80 +20,75 @@
  */
 
 #pragma once
+#include <tuple>
 
 #include "./expression.hpp"
 #include "./operation.hpp"
 #include "./placeholder.hpp"
 #include "./function.hpp"
-#include "./utils.hpp"
-#include "../macros.hpp"
-
-#include <cstdint>
-#include <functional>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <iostream>
 
 namespace nda::clef {
 
-  // explicitly list the types for which eval is not trivial
+  // This is to write a simpler eval function, in order to
+  // minimize the call stack depth in error messages.
+  //
+  // eveything which is lazy needs to be evaluated, the rest is passed through during an eval.
+  /// Explicitly list the types for which eval is not trivial
   template <typename T>
-  constexpr bool eval_pass_through = not is_lazy<T>; // true;
-  // template <int N>
-  // constexpr bool eval_pass_through<placeholder<N>> = false;
-  // template <typename... U>
-  // constexpr bool eval_pass_through<expr<U...>> = false;
+  constexpr bool eval_pass_through = not is_lazy<T>;
+
+  // the reference wrapper is a special case, we need to eval it to unwrap it
   template <typename T>
   constexpr bool eval_pass_through<std::reference_wrapper<T>> = false;
-  // template <typename T, auto... Is>
-  // constexpr bool eval_pass_through<function<T, Is...>> = false;
 
   /**
    * @addtogroup clef_eval
    * @{
    */
-  // ----------   eval  : forward decl  -------------
+
+  // FIXME : shall we put the doxgen doc here in a ifdef for doxygen only ?
+  // eval function is of the form
+  // with x is anything, and pair is pack of ph_value_pair
+  // FORCEINLINE decltype(auto) eval(auto &&x, auto const &...pairs);
+
+  // ----------  Default case : do nothing, pass through -------------
 
   template <typename T>
-  FORCEINLINE decltype(auto) eval1(T &&x, auto const &...pairs);
-
-  template <typename T>
-  FORCEINLINE decltype(auto) eval(T &&x, auto const &...)
-    requires(eval_pass_through<std::decay_t<T>>)
-  {
+    requires(eval_pass_through<std::decay_t<T>>) // beware of the decay...
+  FORCEINLINE decltype(auto) eval(T &&x, auto const &...) {
     return std::forward<T>(x);
   }
-  // --------- placeholder --------------
+  // --------- eval a placeholder --------------
 
   template <int N, typename... Pairs>
   FORCEINLINE decltype(auto) eval(placeholder<N>, Pairs const &...pairs) {
 
     // Position of the pair which contains N or -1
-    constexpr int N_position = []<size_t... Ps>(std::index_sequence<Ps...>) {
-      return ((Pairs::p == N ? int(Ps) + 1 : 0) + ...) - 1;
-    }(std::make_index_sequence<sizeof...(Pairs)>{});
+    constexpr int N_position = []() { // a compile time computation !
+      int pos = 0;
+      for (auto i : {Pairs::idx...}) {
+        if (i == N) return pos;
+        ++pos;
+      }
+      return -1;
+    }();
 
     if constexpr (N_position == -1) { // N is not one of the Is
-      return placeholder<N>{};
-    } else { // N is one of the Is
-      auto &pair_N = std::get<N_position>(std::tie(pairs...));
-      // FIXME in C++26
-      // auto & pair_N = pairs...[N_position];
+      return placeholder<N>{};        // do nothing, just pass through the placeholder.
+    } else {                          // N is one of the Is
+      // auto & pair_N = pairs...[N_position];  // C++26
+      auto &pair_N = std::get<N_position>(std::tie(pairs...)); // C++23
       // the pair is a temporary constructed for the time of the eval call
-      // if it holds a reference, we return it, else we move the rhs object out of the pair
-      if constexpr (std::is_lvalue_reference_v<decltype(pair_N.rhs)>) {
-        return pair_N.rhs;
-      } else {
-        //std::cout << " MAKE?Ing COPY\n";
-        //return std::move(pair_N.rhs);
-        return auto{pair_N.rhs}; // make a copy
-        //return (pair_N.rhs); // make a copy
-      }
+      // if it holds a reference, we return it, else we COPY its value.
+      // WE CAN NOT MOVE IT out as there maybe several identical placeholder in the tree.
+      if constexpr (std::is_lvalue_reference_v<decltype(pair_N.value)>)
+        return pair_N.value;
+      else
+        return auto{pair_N.value}; // make a copy
     }
   }
 
-  // -----------------------
+  // ----------- reference_wrapper ------------
 
   template <typename T>
   FORCEINLINE decltype(auto) eval(std::reference_wrapper<T> const &wrapper, auto const &...pairs) {
@@ -101,51 +96,47 @@ namespace nda::clef {
   }
   // ---------- expr -------------
 
-  template <typename Tag, typename... Childs>
-  FORCEINLINE decltype(auto) eval(expr<Tag, Childs...> const &ex, auto const &...pairs) {
-
-    // can make the + with multiple arguments now !
-    //return (+ eval(childs, pairs...) ...);
-
-    //if constexpr (Kind == Addition)
-    //     return eval(ex.childs...[0], pairs...) + eval(ex.childs...[1], pairs...);
-    if constexpr (std::is_same_v<Tag, tags::plus>)
+  template <NodeKind K, typename... Childs>
+  FORCEINLINE decltype(auto) eval(expr<K, Childs...> const &ex, auto const &...pairs) {
+    if constexpr (K == Add)
+      // return eval(ex.childs...[0], pairs...) + eval(ex.childs...[1], pairs...); // C++26
       return eval(std::get<0>(ex.childs), pairs...) + eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::minus>)
+    else if constexpr (K == Sub)
       return eval(std::get<0>(ex.childs), pairs...) - eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::multiplies>)
+    else if constexpr (K == Mul)
       return eval(std::get<0>(ex.childs), pairs...) * eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::divides>)
+    else if constexpr (K == Div)
       return eval(std::get<0>(ex.childs), pairs...) / eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::eq>)
+    else if constexpr (K == Eq)
       return eval(std::get<0>(ex.childs), pairs...) == eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::leq>)
+    else if constexpr (K == Leq)
       return eval(std::get<0>(ex.childs), pairs...) <= eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::less>)
+    else if constexpr (K == Less)
       return eval(std::get<0>(ex.childs), pairs...) < eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::greater>)
+    else if constexpr (K == Greater)
       return eval(std::get<0>(ex.childs), pairs...) > eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::geq>)
+    else if constexpr (K == Geq)
       return eval(std::get<0>(ex.childs), pairs...) >= eval(std::get<1>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::unaryplus>)
+    else if constexpr (K == UnaryPlus)
       return +eval(std::get<0>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::negate>)
+    else if constexpr (K == Negate)
       return -eval(std::get<0>(ex.childs), pairs...);
-    else if constexpr (std::is_same_v<Tag, tags::loginot>)
+    else if constexpr (K == Loginot)
       return !eval(std::get<0>(ex.childs), pairs...);
-    else
-      // if_else, function, subscript require some more logic
-      // C++26
-      // auto &&[F, ...args] = ex.childs;
-      // if contexpr ((Lazy<decltype(eval(args, pairs...)> or ...))
-      //   return expr{tags::function{}, F, args...};
-      // else return F(eval(args, pairs...)...);
-      // 
-      // return detail::operation<Tag>::invoke(eval(child, pairs...)...);
-      return [&]<size_t... Is>(std::index_sequence<Is...>) __attribute__((always_inline))->decltype(auto) { // invoke call/subscript
-        return detail::operation<Tag>::invoke(eval(std::get<Is>(ex.childs), pairs...)...);
-      }
-    (std::make_index_sequence<sizeof...(Childs)>{});
+    else if constexpr (K == Leaf)
+      return eval(std::get<0>(ex.childs), pairs...);
+    else if constexpr (K == IfElse) {
+      return eval(std::get<0>(ex.childs), pairs...) ? eval(std::get<1>(ex.childs), pairs...) : eval(std::get<2>(ex.childs), pairs...);
+    } //
+    else if constexpr ((K == Call) || (K == Subscript)) {
+      // auto &&[...ch] = ex.childs; // C++26
+      // return detail::operation<K>::invoke(eval(ch, pairs...)...); // C++26
+      // Or replace the operation
+      return [&]<auto... Is>(std::index_sequence<Is...>) __attribute__((always_inline)) -> decltype(auto) { // invoke call/subscript
+        return detail::operation<K>::invoke(eval(std::get<Is>(ex.childs), pairs...)...);
+      }(std::make_index_sequence<sizeof...(Childs)>{});
+    } else
+      static_assert(false, "Unknown expression kind in eval !");
   }
 
   // ---------- function -------------
@@ -155,7 +146,7 @@ namespace nda::clef {
   FORCEINLINE decltype(auto) eval(function<T, Is...> const &f, Pairs const &...pairs) {
     // makes no sense if some of the Pairs placeholders are included in the Is.
     constexpr uint64_t I = ((1ull << Is) + ...);
-    constexpr uint64_t J = ((1ull << Pairs::p) + ...);
+    constexpr uint64_t J = ((1ull << Pairs::idx) + ...);
     static_assert((I & J) == 0, "Impossible evaluation. You can not evaluate a function on the placeholders used to define the function");
     return make_function(eval(f.ex, pairs...), placeholder<Is>{}...);
   }
@@ -170,7 +161,7 @@ namespace nda::clef {
    * nda::clef::placeholder<0> i_;
    * nda::clef::placeholder<1> j_;
    * auto ex = i_ + j_;
-   * auto res = nda::clef::eval(ex, i_ = 1, j_ = 2); // int res = 3;
+   * auto res = eval(ex, i_ = 1, j_ = 2); // int res = 3;
    * @endcode
    *
    * If x is 
@@ -187,13 +178,6 @@ namespace nda::clef {
    * @param pairs of (placeholder, value) 
    * @return Cf below.
    */
-  template <typename T>
-  FORCEINLINE decltype(auto) eval1(T &&x, auto const &...pairs) {
-    if constexpr (requires { eval_impl(std::forward<T>(x), pairs...); })
-      return eval_impl(std::forward<T>(x), pairs...);
-    else
-      return std::forward<T>(x);
-  }
   /** @} */
 
   /*

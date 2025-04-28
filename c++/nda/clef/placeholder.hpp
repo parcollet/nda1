@@ -37,46 +37,37 @@ namespace nda::clef {
   /**
    * @brief A pair consisting of a placeholder index and its assigned value.
    *
-   * @details The user does not explicitly create or handle pair objects. 
-   *          Use placeholder = x syntax, cf placeholder.
-   *          (see nda::clef::placeholder for an example).
+   * @details Only created with the syntax placeholder = x. 
    *
    * @tparam N Placeholder index.
    * @tparam T Value type.
    */
 
   template <int N, typename T>
-  struct pair {
+  struct ph_value_pair {
     /// Value assigned to the placeholder (can be an lvalue reference).
-    T rhs;
+    T value;
 
     /// Integer label of the placeholder.
-    static constexpr int p = N;
+    static constexpr int idx = N;
   };
 
   //-------------------------------------------------------------------
 
   /**
-   * @brief A placeholder, i.e. terminal of the expression
-   *
-   * @details It is the basic building block of lazy expressions. For example:
-   *          It is an empty struct labelled by an index (int).
+   * @brief A placeholder for lazy expressions.
    *
    * @code{.cpp}
    * nda::clef::placeholder<0> i_;
    * nda::clef::placeholder<1> j_;
    * auto expr = i_ + j_;
-   * auto res = nda::clef::eval(expr, i_ = 1.0, j_ = 2.0); // double res = 3.0;
+   * auto res = eval(expr, i_ = 1.0, j_ = 2.0); // ---> double res = 3.0;
    * @endcode
-   *
-   * Here `expr` is a lazy binary nda::clef::expr with the nda::clef::tags::plus tag, which can be evaluated later on
-   * with the nda::clef::eval function and by assigning values to the placeholders (see nda::clef::pair).
    *
    * @tparam N Index (must be < 64).
    */
   template <int N>
   struct placeholder {
-    // not fundamental but reasonnable.
     // We rely on it as we use 64bits uint in some operations at compile time.
     // but it could be generalized.
     static_assert(N >= 0 && N < 64, "Placeholder index must be in {0, 1, ..., 63}");
@@ -85,15 +76,15 @@ namespace nda::clef {
     static constexpr int index = N;
 
     /**
-     * @brief Build a (placeholder, value) pair
      *
-     * @tparam RHS Type of the right-hand side.
-     * @param rhs Right-hand side of the assignment.
-     * @return An nda::clef::pair object. It basically tags the value with the placeholder index.
+     *
+     * @tparam T Type of the value
+     * @param x The value
+     * @return A ph_value_pair object containing x
      */
-    template <typename RHS>
-    FORCEINLINE pair<N, RHS> operator=(RHS &&rhs) const { // NOLINT (we want to return a pair)
-      return {std::forward<RHS>(rhs)};
+    template <typename T>
+    FORCEINLINE ph_value_pair<N, T> operator=(T &&x) const { // NOLINT (we want to return a pair)
+      return {std::forward<T>(x)};
     }
 
     /**
@@ -101,11 +92,11 @@ namespace nda::clef {
      *
      * @tparam Args Arguments types.
      * @param args Arguments
-     * @return An expression node (nda::clef::expr) represending a function call of this with the given arguments.
+     * @return A node (of type expr) represending this(args)
      */
     template <typename... Args>
     auto operator()(Args &&...args) const {
-      return expr{tags::function{}, auto{*this}, std::forward<Args>(args)...}; // auto{} we copy the ph anyway
+      return expr{node_kind<Call>, auto{*this}, std::forward<Args>(args)...}; // auto{} : we copy the ph anyway
     }
 
     /**
@@ -113,11 +104,11 @@ namespace nda::clef {
      *
      * @tparam Args Arguments types.
      * @param args Subscript arguments
-     * @return An expression node (nda::clef::expr) represending a [] call of this with the given arguments.
+     * @return A node (of type expr) represending this[args]
      */
     template <typename... Args>
     auto operator[](Args &&...args) const {
-      return expr{tags::subscript{}, auto{*this}, std::forward<Args>(args)...};
+      return expr{node_kind<Subscript>, auto{*this}, std::forward<Args>(args)...};
     }
   };
 
@@ -125,7 +116,7 @@ namespace nda::clef {
 
   namespace detail {
     // placeholder are always copied. They are empty anyway, but it greatly
-    // simplify pattern recognition in the auto_assign
+    // simplify pattern recognition in the auto_assign later.
     // We specialize expr_storage for this type.
     template <int N>
     struct expr_storage_impl<placeholder<N> &> {
@@ -137,11 +128,11 @@ namespace nda::clef {
       using type = placeholder<N>;
     };
 
-    // Specialization of ph_set for nda::clef::placeholder types.
+    // For a placeholder, the ph_set contains just N.
     template <int N>
     constexpr uint64_t ph_set<placeholder<N>> = 1ull << N;
 
-    // placeholder are lazy expression.
+    // placeholder are lazy objects.
     template <int N>
     constexpr bool is_lazy_impl<placeholder<N>> = true;
 

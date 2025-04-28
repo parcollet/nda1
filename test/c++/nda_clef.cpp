@@ -159,17 +159,17 @@ TEST_F(CLEF, DeepEvalFntCall) {
 TEST_F(CLEF, PlaceholderValuePair) {
   // check correct storage of types
   auto p1 = (x0_ = 10);
-  static_assert(std::is_same_v<decltype(p1.rhs), int>);
+  static_assert(std::is_same_v<decltype(p1.value), int>);
 
   auto p2 = (x1_ = std::array<int, 3>{1, 2, 3});
-  static_assert(std::is_same_v<decltype(p2.rhs), std::array<int, 3>>);
+  static_assert(std::is_same_v<decltype(p2.value), std::array<int, 3>>);
 
   auto p3 = (x2_ = x0_ / 1);
-  static_assert(std::is_same_v<decltype(p3.rhs), decltype(x0_ / 1)>);
+  static_assert(std::is_same_v<decltype(p3.value), decltype(x0_ / 1)>);
 
   auto vec = std::vector{1, 2, 3};
   auto p4  = (x0_ = vec);
-  static_assert(std::is_same_v<decltype(p4.rhs), std::vector<int> &>);
+  static_assert(std::is_same_v<decltype(p4.value), std::vector<int> &>);
 
   // check lazyness
   using namespace clef::literals;

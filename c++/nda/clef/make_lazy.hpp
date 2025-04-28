@@ -20,11 +20,8 @@
  */
 
 #pragma once
-
-#include "./expression.hpp"
-#include "./utils.hpp"
-
 #include <utility>
+#include "./expression.hpp"
 
 namespace nda::clef {
 
@@ -43,9 +40,11 @@ namespace nda::clef {
    */
   template <typename T>
   auto make_expr(T &&t) {
-    return expr{tags::terminal(), std::forward<T>(t)};
+    return expr{node_kind<Leaf>, std::forward<T>(t)};
   }
 
+  // FIXME : DO we really need this function ???
+  // user -->  expr{node_kind<Leaf>, whatever};
   /**
    * @brief Create a function call expression from a callable object and a list of arguments.
    *
@@ -60,7 +59,7 @@ namespace nda::clef {
   auto make_expr_call(F &&f, Args &&...args)
     requires(is_lazy<F> || (is_lazy<Args> || ...))
   {
-    return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
+    return expr{node_kind<Call>, std::forward<F>(f), std::forward<Args>(args)...};
   }
 
   /**
@@ -75,9 +74,9 @@ namespace nda::clef {
    */
   template <typename T, typename... Args>
   auto make_expr_subscript(T &&t, Args &&...args)
-    requires(is_lazy<T> || (is_lazy<Args> || ...))
+  // requires(is_lazy<T> || (is_lazy<Args> || ...))
   {
-    return expr{tags::subscript{}, std::forward<T>(t), std::forward<Args>(args)...};
+    return expr{node_kind<Subscript>, std::forward<T>(t), std::forward<Args>(args)...};
   }
 
   /// Macro to make any function lazy, i.e. accept lazy arguments and return a function call expression node.
@@ -104,7 +103,7 @@ namespace nda::clef {
 #define CLEF_IMPLEMENT_LAZY_CALL(...)                                                                                                                \
   template <typename Self, typename... Args>                                                                                                         \
   auto operator()(this Self &&self, Args &&...args)                                                                                                  \
-    requires(nda::clef::is_any_lazy<Args...>)                                                                                                        \
+    requires((nda::clef::is_lazy<Args> or ...))                                                                                                      \
   {                                                                                                                                                  \
     return make_expr_call(std::forward<Self>(self), std::forward<Args>(args)...);                                                                    \
   }
@@ -126,11 +125,8 @@ namespace nda::clef {
   }                                                                                                                                                  \
                                                                                                                                                      \
   template <typename... Args>                                                                                                                        \
-  auto operator()(Args &&...args) &&                                                                                                                 \
-    requires(nda::clef::is_any_lazy<Args...>)                                                                                                        \
-  {                                                                                                                                                  \
-    return make_expr_call(std::move(*this), std::forward<Args>(args)...);                                                                            \
-  }
+     auto operator()(Args &&...args)                                                                                                                 \
+     && requires(nda::clef::is_any_lazy<Args...>) { return make_expr_call(std::move(*this), std::forward<Args>(args)...); }
 #endif
   /** @} */
 

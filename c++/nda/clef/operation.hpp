@@ -31,27 +31,17 @@ namespace nda::clef {
 
     // Generic operation like std::plus<void>
     // We need more than is in the std, and we want to enforce always_inline
-    template <typename Tag>
+    template <NodeKind K>
     struct operation;
 
-    // terminal = pass through.
     template <>
-    struct operation<tags::terminal> {
-      template <typename L>
-      FORCEINLINE static decltype(auto) invoke(L &&l) {
-        return std::forward<L>(l);
-      }
-    };
-
-    // function call
-    template <>
-    struct operation<tags::function> {
+    struct operation<NodeKind::Call> {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
         // If the F does not have an lazy able (), we make the expression
 #if 1
         if constexpr ((is_lazy<Args> or ...))
-          return expr{tags::function{}, std::forward<F>(f), std::forward<Args>(args)...};
+          return expr{node_kind<Call>, std::forward<F>(f), std::forward<Args>(args)...};
         else
           return std::forward<F>(f)(std::forward<Args>(args)...);
 #else
@@ -65,12 +55,12 @@ namespace nda::clef {
 
     // [] operator, similar to function
     template <>
-    struct operation<tags::subscript> {
+    struct operation<NodeKind::Subscript> {
       template <typename F, typename... Args>
       FORCEINLINE static decltype(auto) invoke(F &&f, Args &&...args) {
         // If the F does not have an lazy able [], we make the expression
         if constexpr ((is_lazy<Args> or ...))
-          return expr{tags::subscript{}, std::forward<F>(f), std::forward<Args>(args)...};
+          return expr{node_kind<Subscript>, std::forward<F>(f), std::forward<Args>(args)...};
         else {
           // We call the [] operator.
           // BUT we add a protection. In the case where F is an rvalue ref,
@@ -91,90 +81,40 @@ namespace nda::clef {
   // ------------------------ arithmetic operations --------------------------
 
 // Define and implement all lazy binary operations.
-#define CLEF_OPERATION(TAG, OP)                                                                                                                      \
-  namespace tags {                                                                                                                                   \
-    struct TAG : binary_op {                                                                                                                         \
-      /** String representation of the operation.  */                                                                                                \
-      static const char *name() { return AS_STRING(OP); }                                                                                            \
-    };                                                                                                                                               \
-  }                                                                                                                                                  \
-  /** @brief Implementation of the lazy binary `OP` operation. */                                                                                    \
+#define DEFINE_CLEF_OPERATION(TAG, OP)                                                                                                               \
+  /** @brief The `OP` operation for lazy object. Returns a clef::expr */                                                                             \
   template <typename L, typename R>                                                                                                                  \
-  FORCEINLINE auto operator OP(L &&l, R &&r)                                                                                                         \
     requires(is_lazy<L> or is_lazy<R>)                                                                                                               \
-  {                                                                                                                                                  \
-    return expr{tags::TAG{}, std::forward<L>(l), std::forward<R>(r)};                                                                                \
-  }                                                                                                                                                  \
-  /*  Specialization of nda::clef::operation for nda::clef::tags::TAG. */                                                                            \
-  namespace detail {                                                                                                                                 \
-    template <>                                                                                                                                      \
-    struct operation<tags::TAG> {                                                                                                                    \
-      /** @brief Function call operator to perform the actual binary `OP` operation. */                                                              \
-      template <typename L, typename R>                                                                                                              \
-      FORCEINLINE static decltype(auto) invoke(L &&l, R &&r) {                                                                                       \
-        return std::forward<L>(l) OP std::forward<R>(r);                                                                                             \
-      }                                                                                                                                              \
-    };                                                                                                                                               \
+  FORCEINLINE auto operator OP(L &&l, R &&r) {                                                                                                       \
+    return expr{node_kind<TAG>, std::forward<L>(l), std::forward<R>(r)};                                                                             \
   }
 
   // clang-format off
-  CLEF_OPERATION(plus, +);
-  CLEF_OPERATION(minus, -);
-  CLEF_OPERATION(multiplies, *);
-  CLEF_OPERATION(divides, /);
-  CLEF_OPERATION(greater, >);
-  CLEF_OPERATION(less, <);
-  CLEF_OPERATION(leq, <=);
-  CLEF_OPERATION(geq, >=);
-  CLEF_OPERATION(eq, ==);
+  DEFINE_CLEF_OPERATION(NodeKind::Add, +);
+  DEFINE_CLEF_OPERATION(NodeKind::Sub, -);
+  DEFINE_CLEF_OPERATION(NodeKind::Mul, *);
+  DEFINE_CLEF_OPERATION(NodeKind::Div, /);
+  DEFINE_CLEF_OPERATION(NodeKind::Greater, >);
+  DEFINE_CLEF_OPERATION(NodeKind::Less, <);
+  DEFINE_CLEF_OPERATION(NodeKind::Leq, <=);
+  DEFINE_CLEF_OPERATION(NodeKind::Geq, >=);
+  DEFINE_CLEF_OPERATION(NodeKind::Eq, ==);
 // clang-format on
-#undef CLEF_OPERATION
+#undef DEFINE_CLEF_OPERATION
 
 // Define and implement all lazy unary operations.
-#define CLEF_OPERATION(TAG, OP)                                                                                                                      \
-  namespace tags {                                                                                                                                   \
-    /** @brief Tag for unary `OP` expressions. */                                                                                                    \
-    struct TAG : unary_op {                                                                                                                          \
-      /** @brief String representation of the operation. */                                                                                          \
-      static const char *name() { return AS_STRING(OP); }                                                                                            \
-    };                                                                                                                                               \
-  }                                                                                                                                                  \
+#define DEFINE_CLEF_OPERATION(TAG, OP)                                                                                                               \
   /** @brief Implementation of the lazy unary `OP` operation. */                                                                                     \
   template <typename L>                                                                                                                              \
-  FORCEINLINE auto operator OP(L &&l)                                                                                                                \
     requires(is_lazy<L>)                                                                                                                             \
-  {                                                                                                                                                  \
-    return expr{tags::TAG{}, std::forward<L>(l)};                                                                                                    \
-  }                                                                                                                                                  \
-  /* Specialization of nda::clef::operation for nda::clef::tags::TAG. */                                                                             \
-  namespace detail {                                                                                                                                 \
-    template <>                                                                                                                                      \
-    struct operation<tags::TAG> {                                                                                                                    \
-      /** @brief Function call operator to perform the actual unary `OP` operation. */                                                               \
-      template <typename L>                                                                                                                          \
-      FORCEINLINE static decltype(auto) invoke(L &&l) {                                                                                              \
-        return OP std::forward<L>(l);                                                                                                                \
-      }                                                                                                                                              \
-    };                                                                                                                                               \
+  FORCEINLINE auto operator OP(L &&l) {                                                                                                              \
+    return expr{node_kind<TAG>, std::forward<L>(l)};                                                                                                 \
   }
 
-  CLEF_OPERATION(unaryplus, +);
-  CLEF_OPERATION(negate, -);
-  CLEF_OPERATION(loginot, !);
-#undef CLEF_OPERATION
-
-  // ------------------------ if_else node --------------------------
-  namespace detail {
-
-    /// Specialization of nda::clef::operation for nda::clef::tags::if_else.
-    template <>
-    struct operation<tags::if_else> {
-      template <typename C, typename A, typename B>
-      FORCEINLINE static A invoke(C const &c, A &&a, B &&b) {
-        return c ? std::forward<A>(a) : std::forward<B>(b);
-      }
-    };
-  } // namespace detail
+  DEFINE_CLEF_OPERATION(UnaryPlus, +);
+  DEFINE_CLEF_OPERATION(Negate, -);
+  DEFINE_CLEF_OPERATION(Loginot, !);
+#undef DEFINE_CLEF_OPERATION
 
   /**
    * @brief Create a lazy ternary (if-else) expression.
@@ -190,7 +130,7 @@ namespace nda::clef {
    */
   template <typename C, typename A, typename B>
   FORCEINLINE auto if_else(C &&c, A &&a, B &&b) {
-    return expr{tags::if_else(), std::forward<C>(c), std::forward<A>(a), std::forward<B>(b)};
+    return expr{node_kind<IfElse>, std::forward<C>(c), std::forward<A>(a), std::forward<B>(b)};
   }
 
 } // namespace nda::clef

@@ -82,7 +82,7 @@ namespace nda::clef {
     template <typename... Args>
       requires(sizeof...(Args) == sizeof...(PlaceholderIndex))
     FORCEINLINE decltype(auto) operator()(Args &&...args) const {
-      return eval(ex, pair<PlaceholderIndex, Args>{std::forward<Args>(args)}...);
+      return eval(ex, ph_value_pair<PlaceholderIndex, Args>{std::forward<Args>(args)}...);
     }
   };
 

@@ -73,11 +73,11 @@ namespace nda::clef {
    * @return Either the result of the summation or a new lazy expression.
    */
   template <typename Expr, int N, typename D>
-  decltype(auto) sum(Expr const &ex, clef::pair<N, D> d) {
+  decltype(auto) sum(Expr const &ex, clef::ph_value_pair<N, D> d) {
     if constexpr (std::is_lvalue_reference_v<D>) {
-      return detail::sum_f_domain_impl(make_function(ex, clef::placeholder<N>()), d.rhs);
+      return detail::sum_f_domain_impl(make_function(ex, clef::placeholder<N>()), d.value);
     } else {
-      return detail::sum_f_domain_impl(make_function(ex, clef::placeholder<N>()), std::move(d.rhs));
+      return detail::sum_f_domain_impl(make_function(ex, clef::placeholder<N>()), std::move(d.value));
     }
   }
 

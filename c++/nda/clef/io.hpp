@@ -20,14 +20,8 @@
  */
 
 #pragma once
-
-#include <functional>
 #include <iostream>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-
-#include "./operation.hpp"
+#include <fmt/core.h>
 #include "./placeholder.hpp"
 #include "./expression.hpp"
 #include "./function.hpp"
@@ -40,11 +34,14 @@ namespace nda::clef {
    */
 
   /**
-   * @brief Print an nda::clef::placeholder to a std::ostream.
+   * @brief Overloads the stream insertion operator (<<) for nda::clef::placeholder.
    *
-   * @tparam N Integer label of the placeholder.
-   * @param sout std::ostream object to print to.
-   * @return Reference to the std::ostream.
+   * This function allows an nda::clef::placeholder object to be directly inserted into an
+   * output stream. It formats the placeholder as "_N", where N is its integer label.
+   *
+   * @tparam N The integer label of the placeholder.
+   * @param sout The output stream to which the placeholder will be inserted.
+   * @return std::ostream& A reference to the output stream after insertion.
    */
   template <int N>
   std::ostream &operator<<(std::ostream &sout, placeholder<N>) {
@@ -52,12 +49,15 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print the value contained in a std::reference_wrapper to std::ostream.
-   *
-   * @tparam T Value type of the std::reference_wrapper.
-   * @param sout std::ostream object to print to.
-   * @param wrapper std::reference_wrapper object to print.
-   * @return Reference to the std::ostream.
+   * @brief Overloads the stream insertion operator (<<) for std::reference_wrapper.
+   * 
+   * This function allows a std::reference_wrapper<T> to be directly inserted into an
+   * output stream. It inserts its underlying reference  into the stream.
+   * 
+   * @tparam T The type of the object wrapped by std::reference_wrapper.
+   * @param sout The output stream to which the wrapped object will be inserted.
+   * @param wrapper The std::reference_wrapper containing the object to be inserted.
+   * @return std::ostream& A reference to the output stream after insertion.
    */
   template <typename T>
   std::ostream &operator<<(std::ostream &sout, std::reference_wrapper<T> const &wrapper) {
@@ -65,160 +65,87 @@ namespace nda::clef {
   }
 
   /**
-   * @brief Print a std::tuple to std::ostream.
+   * Overloads the stream insertion operator (<<) to provide a formatted
+   * string representation of an `expr` object based on its type and structure.
    *
-   * @tparam Tuple Type of the std::tuple to print.
-   * @param sout std::ostream object to print to.
-   * @param t std::tuple object to print.
-   * @return Reference to the std::ostream.
+   * @param sout The output stream to write to.
+   * @param ex The expression object to be formatted and written to the stream.
+   * @return A reference to the output stream after writing the formatted expression.
    */
-  template <typename Tuple>
-  std::ostream &print_tuple(std::ostream &sout, Tuple const &t) {
-    auto print = [i = 0, &sout](auto const &x) mutable -> void {
-      sout << (i++ == 0 ? "" : ", ");
-      if constexpr (requires { sout << x; })
-        sout << x;
-      else
-        sout << "[??]";
+  template <NodeKind K, typename... T>
+  std::ostream &operator<<(std::ostream &sout, expr<K, T...> const &ex) {
+
+    auto call_printer = [&](char opener, char closer) -> decltype(auto) {
+      auto print = [i = 0, &sout, opener](auto const &x) mutable -> void {
+        if (i == 1) sout << opener;
+        if (i > 1) sout << ", ";
+        ++i;
+        if constexpr (requires { sout << x; })
+          sout << x;
+        else
+          sout << "[??]";
+      };
+      // FIXME C++26. Simply say
+      // auto &[... x] = t;
+      // (print(x),...);
+      [&]<size_t... Is>(std::index_sequence<Is...>) { (print(std::get<Is>(ex.childs)), ...); }(std::make_index_sequence<sizeof...(T)>{});
+      return sout << closer;
     };
-    // FIXME C++26. Simply say
-    // auto &[... x] = t;
-    // (print(x),...);
-    [&]<size_t... Is>(std::index_sequence<Is...>) { (print(std::get<Is>(t)), ...); }(std::make_index_sequence<std::tuple_size_v<Tuple>>{});
-    return sout;
-  }
 
-  /**
-   * @brief Print an nda::clef::tags::unary_op expression to std::ostream.
-   *
-   * @tparam Tag Type of the unary operation.
-   * @tparam L Type of the child expression.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename Tag, typename L>
-    requires std::is_base_of_v<tags::unary_op, Tag>
-  std::ostream &operator<<(std::ostream &sout, expr<Tag, L> const &ex) {
-    return sout << "(" << Tag::name() << " " << std::get<0>(ex.childs) << ")";
-  }
-
-  /**
-   * @brief Print an nda::clef::tags::binary_op expression to std::ostream.
-   *
-   * @tparam Tag Type of the binary operation.
-   * @tparam L Type of the child expression #1.
-   * @tparam R Type of the child expression #2.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename Tag, typename L, typename R>
-    requires std::is_base_of_v<tags::binary_op, Tag>
-  std::ostream &operator<<(std::ostream &sout, expr<Tag, L, R> const &ex) {
-    return sout << "(" << std::get<0>(ex.childs) << " " << Tag::name() << " " << std::get<1>(ex.childs) << ")";
-  }
-
-  /**
-   * @brief Print an nda::clef::tags::if_else expression to std::ostream.
-   *
-   * @tparam C Type of the condition expression.
-   * @tparam A Type of the return type when the condition is true.
-   * @tparam B Type of the return type when the condition is false.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename C, typename A, typename B>
-  std::ostream &operator<<(std::ostream &sout, expr<tags::if_else, C, A, B> const &ex) {
-    return sout << "(" << std::get<0>(ex.childs) << " ? " << std::get<1>(ex.childs) << " : " << std::get<2>(ex.childs) << ")";
-  }
-
-  /**
-   * @brief Print an nda::clef::tags::function expression to std::ostream.
-   *
-   * @tparam Ts Types of the arguments of the function.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename... Ts>
-  std::ostream &operator<<(std::ostream &sout, expr<tags::function, Ts...> const &ex) {
-    sout << "lambda"
-         << "(";
-    print_tuple(sout, ex.childs);
-    return sout << ")";
-  }
-
-  /**
-   * @brief Print a general nda::clef::tags::subscript expression to std::ostream.
-   *
-   * @tparam Ts Types of the subscript arguments.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename... Ts>
-  std::ostream &operator<<(std::ostream &sout, expr<tags::subscript, Ts...> const &ex) {
-    sout << "lambda"
-         << "[";
-    print_tuple(sout, ex.childs);
-    return sout << "]";
-  }
-
-  /**
-   * @brief Print an nda::clef::tags::terminal expression to std::ostream.
-   *
-   * @tparam T Type of the terminal child node.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename T>
-  std::ostream &operator<<(std::ostream &sout, expr<tags::terminal, T> const &ex) {
-    return sout << std::get<0>(ex.childs);
-  }
-
-  /**
-   * @brief Print an nda::clef::tags::subscript expression to std::ostream.
-   *
-   * @tparam T Type of the child node.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename T>
-  std::ostream &operator<<(std::ostream &sout, expr<tags::subscript, T> const &ex) {
-    return sout << std::get<0>(ex.childs) << "[" << std::get<1>(ex.childs) << "]";
-  }
-
-  /**
-   * @brief Print an nda::clef::tags::negate expression to std::ostream.
-   *
-   * @tparam T Type of the child node.
-   * @param sout std::ostream object to print to.
-   * @param ex nda::clef::expr object to print.
-   * @return Reference to the std::ostream.
-   */
-  template <typename T>
-  std::ostream &operator<<(std::ostream &sout, expr<tags::negate, T> const &ex) {
-    return sout << "-(" << std::get<0>(ex.childs) << ")";
+    if constexpr (K == Call) {
+      return call_printer('(', ')');
+    } //
+    else if constexpr (K == Subscript) {
+      return call_printer('[', ']');
+    } //
+    else if constexpr (sizeof...(T) == 1) {
+      auto &[arg0] = ex.childs;
+      if constexpr ((K == Leaf) || (K == UnaryPlus))
+        return sout << fmt::format("({})", arg0);
+      else if constexpr (K == Negate)
+        return sout << fmt::format("(- {})", arg0);
+      else
+        static_assert(false, "Unknown unary operation");
+    } //
+    else if constexpr (sizeof...(T) == 2) {
+      auto &[arg0, arg1] = ex.childs;
+      auto pr            = [&](const char *op) -> decltype(auto) { return sout << arg0 << " " << op << " " << arg1; };
+      if constexpr (K == Add)
+        return pr("+");
+      else if constexpr (K == Sub)
+        return pr("-");
+      else if constexpr (K == Mul)
+        return pr("*");
+      else if constexpr (K == Div)
+        return pr("/");
+      else if constexpr (K == Eq)
+        return pr("==");
+      else if constexpr (K == Less)
+        return pr("<");
+      else if constexpr (K == Greater)
+        return pr(">");
+      else if constexpr (K == Leq)
+        return pr("<=");
+      else if constexpr (K == Geq)
+        return pr(">=");
+      else
+        static_assert(0, "Unknown binary operation");
+    } //
+    else if constexpr (sizeof...(T) == 3) {
+      auto &[arg0, op, arg1] = ex.childs;
+      return sout << arg0 << " ? " << op << " : " << arg1;
+    } else
+      static_assert(false, "Unknown expression type");
   }
 
   /**
    * @brief Print an nda::clef::function object to std::ostream.
-   *
-   * @tparam Expr Type of the expression.
-   * @tparam Is Integer labels of the placeholders in the expression.
-   * @param sout std::ostream object to print to.
-   * @param f nda::clef::function object to print.
-   * @return Reference to the std::ostream.
    */
   template <typename Expr, int I0, int... Is>
   std::ostream &operator<<(std::ostream &sout, function<Expr, I0, Is...> const &f) {
-    sout << "lazy function : (" << placeholder<I0>{};
+    sout << "[(" << placeholder<I0>{};
     (void(sout << ", " << placeholder<Is>{}), ...);
-    return sout << ") --> " << f.ex;
+    return sout << ") --> " << f.ex << ']';
   }
 
   /** @} */

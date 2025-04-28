@@ -54,11 +54,6 @@ namespace nda::clef {
     template <typename T>
     constexpr bool is_lazy_impl = false;
 
-    //     // An erroneous diagnostics in gcc: i0 is indeed used. We silence it.
-    // #if defined(__GNUC__) and not defined(__clang__)
-    // #pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
-    // #endif
-
     // Check if all given integers are different.
     consteval bool all_different(auto... is) {
       auto arr = std::array{is...};
@@ -66,10 +61,6 @@ namespace nda::clef {
       auto pos = std::adjacent_find(std::begin(arr), std::end(arr));
       return (pos == std::end(arr));
     }
-
-    // #if defined(__GNUC__) and not defined(__clang__)
-    // #pragma GCC diagnostic pop
-    // #endif
 
   } // namespace detail
 

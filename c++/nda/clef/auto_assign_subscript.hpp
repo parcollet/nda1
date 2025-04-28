@@ -67,7 +67,7 @@ namespace nda::clef {
    * @param rhs Right-hand side object.
    */
   template <typename T, typename RHS>
-  FORCEINLINE void clef_auto_assign_subscript(expr<tags::terminal, T> const &ex, RHS &&rhs) {
+  FORCEINLINE void clef_auto_assign_subscript(expr<Leaf, T> const &ex, RHS &&rhs) {
     clef_auto_assign_subscript(std::get<0>(ex.childs), std::forward<RHS>(rhs));
   }
 
@@ -82,14 +82,14 @@ namespace nda::clef {
    * @param ex nda::clef::expr object.
    * @param rhs Right-hand side object.
    */
-  template <typename Tag, typename... Childs, typename RHS>
-  FORCEINLINE void clef_auto_assign_subscript(expr<Tag, Childs...> const &ex, RHS const &rhs) {
+  template <NodeKind K, typename... Childs, typename RHS>
+  FORCEINLINE void clef_auto_assign_subscript(expr<K, Childs...> const &ex, RHS const &rhs) {
     ex << rhs;
   }
 
   // Overload of `clef_auto_assign_subscript` for rvalue references of generic expressions.
-  template <typename Tag, typename... Childs, typename RHS>
-  FORCEINLINE void clef_auto_assign_subscript(expr<Tag, Childs...> &&ex, RHS const &rhs) { // NOLINT (is the rvalue reference overload needed?)
+  template <NodeKind K, typename... Childs, typename RHS>
+  FORCEINLINE void clef_auto_assign_subscript(expr<K, Childs...> &&ex, RHS const &rhs) { // NOLINT (is the rvalue reference overload needed?)
     ex << rhs;
   }
 
@@ -102,36 +102,37 @@ namespace nda::clef {
    * @tparam T Type of the subscripted object in the subscript expression.
    * @tparam RHS Type of the right-hand side.
    * @tparam Is Integer labels of the placeholders in the subscript expression.
-   * @param ex nda::clef::expr object with the nda::clef::tags::subscript tag.
+   * @param ex nda::clef::expr object with the nda::clef::node_kind<Subscript> tag.
    * @param rhs Right-hand side object.
    */
   template <typename T, typename RHS, int... Is>
-  FORCEINLINE void operator<<(expr<tags::subscript, T, placeholder<Is>...> const &ex, RHS &&rhs) {
+  FORCEINLINE void operator<<(expr<node_kind<Subscript>, T, placeholder<Is>...> const &ex, RHS &&rhs) {
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
     clef_auto_assign_subscript(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
   }
 
   // Overload of nda::clef::operator<< for rvalue reference expressions.
   template <typename F, typename RHS, int... Is>
-  FORCEINLINE void operator<<(expr<tags::subscript, F, placeholder<Is>...> &&ex, RHS &&rhs) { // NOLINT (is the rvalue reference overload needed?)
+  FORCEINLINE void operator<<(expr<node_kind<Subscript>, F, placeholder<Is>...> &&ex,
+                              RHS &&rhs) { // NOLINT (is the rvalue reference overload needed?)
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
     clef_auto_assign_subscript(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
   }
 
   // Overload of nda::clef::operator<< for lvalue reference expressions.
   template <typename F, typename RHS, int... Is>
-  FORCEINLINE void operator<<(expr<tags::subscript, F, placeholder<Is>...> &ex, RHS &&rhs) {
+  FORCEINLINE void operator<<(expr<node_kind<Subscript>, F, placeholder<Is>...> &ex, RHS &&rhs) {
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
     clef_auto_assign_subscript(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
   }
 
   // Delete functions to avoid nonsensical cases, e.g. f[x_ + y_] = RHS.
   template <typename F, typename RHS, typename... T>
-  void operator<<(expr<tags::subscript, F, T...> &&ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
+  void operator<<(expr<node_kind<Subscript>, F, T...> &&ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
   template <typename F, typename RHS, typename... T>
-  void operator<<(expr<tags::subscript, F, T...> &ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
+  void operator<<(expr<node_kind<Subscript>, F, T...> &ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
   template <typename F, typename RHS, typename... T>
-  void operator<<(expr<tags::subscript, F, T...> const &ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
+  void operator<<(expr<node_kind<Subscript>, F, T...> const &ex, RHS &&rhs) = delete; // NOLINT (no forwarding required here)
 
   /** @} */
 

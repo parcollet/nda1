@@ -26,65 +26,32 @@
 
 namespace nda::clef {
 
-  namespace tags {
+  // Kind of node in the expression tree.
+  enum NodeKind { Leaf, Add, Sub, Mul, Div, Eq, Leq, Geq, Less, Greater, Call, Subscript, IfElse, Loginot, UnaryPlus, Negate };
 
-    // FIXME : why not enum ? ?
-    /**
-     * @addtogroup clef_expr
-     * @{
-     */
+  /// Internal To dispatch the expr constructor.
+  template <NodeKind K>
+  inline constexpr auto node_kind = std::integral_constant<NodeKind, K>{};
 
-    /// Tag for function call expressions.
-    struct function {};
-
-    /// Tag for subscript expressions.
-    struct subscript {};
-
-    /// Tag to indicate a terminal node in the expression tree.
-    struct terminal {};
-
-    /// Tag for conditional expressions.
-    struct if_else {};
-
-    /// Base tag for unary operator expressions.
-    struct unary_op {};
-
-    /// Base tag for binary operator expressions.
-    struct binary_op {};
-
-    /** @} */
-
-  } // namespace tags
   namespace detail {
 
-    // template <typename T>
-    // auto store(T &&x) {
-    //   if constexpr (std::is_reference_v<T>)
-    //     return std::ref(x);
-    //   else
-    //     return std::forward<T>(x);
-    // }
-
-    // Helper struct to determine how a type should be stored in an expression tree.
     template <typename T>
     struct expr_storage_impl : std::decay<T> {};
 
-    // Specialization of expr_storage_impl for lvalue references.
     template <typename T>
     struct expr_storage_impl<T &> {
       using type = std::reference_wrapper<T>;
     };
-    // NB : placeholder will also be specialized to make a copy, cf placeholder.
 
   } // namespace detail
 
   /*
-   * @brief Trait to determine how a type should be stored in an expression tree, i.e. either by reference or by value?
+   * @brief Determines how a type T is stored in an expression tree.
    *
-   * @details Rvalue references are copied/moved into the expression tree.
+   * @details Rvalue references are moved
    *          Lvalue references are stored as a std::reference_wrapper.
    *          placeholders are an exception and always copied (cf placeholders for specialization).
-   * @note Should never be used by user directly.
+   * @note INTERNAL Never be used by user directly.
    * @tparam T Type to be stored.
    */
   template <typename T>
@@ -98,53 +65,50 @@ namespace nda::clef {
   /**
    * @brief Node of the expression tree.
    *
-   * @details An expression node contains a tag that determines the type of expression and a tuple of child nodes which
-   * are usually either other expression nodes, nda::clef::placeholder objects or other objects (e.g. int, double)
+   * @details A recursive type, with a Kind tag and a list of child nodes.
    *
-   * @note expr are not build by the user directly, but by combination, starting from placeholder.
+   * @note Not build by the user directly, but by combination, starting from elementary objects like placeholders.
+   *       Any object can be used in the expression tree, as long as it is copyable or movable.
    * @tparam Tag   Type of the expression node (addition, function call, etc...)
    * @tparam Childs Types of the children nodes.
    */
-  template <typename Tag, typename... Childs>
+  template <NodeKind K, typename... Childs>
   struct expr {
+    static_assert(sizeof...(Childs) > 0);                  // At least one child
     static_assert(not(std::is_reference_v<Childs> | ...)); // Reference are in a reference_wrapper
 
     /// Children nodes of the current expression node.
     std::tuple<Childs...> childs; // FIXME in english the plural of child is ... children ?
-                                  // NB : the node are stored by values, the & are stored in a std::reference_wrapper
 
-    // Construct from the tag and children nodes. Tag is useful here (for CTAD e.g.)
-    // Internal use. User will construct with CTAD.
     template <typename... Child>
-    expr(Tag, Child &&...child) : childs{std::forward<Child>(child)...} {}
+    expr(std::integral_constant<NodeKind, K>, Child &&...child) : childs{std::forward<Child>(child)...} {}
 
     /**
      * @brief Subscript operator.
      *
      * @tparam Args Types of the subscript arguments.
      * @param args Subscript arguments.
-     * @return An nda::clef::expr object with the nda::clef::tags::subscript tag containing the current expression node
-     * as the first child node and the other arguments as the remaining child nodes.
+     * @return A new node expr of Kind Subscript with children : (this, args) 
      */
 #ifdef __cpp_explicit_this_parameter
     template <typename Self, typename... Args>
     auto operator[](this Self &&self, Args &&...args) {
       // NB : can not use CTAD here, as expr is the class itself...
-      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript{}, std::forward<Self>(self), std::forward<Args>(args)...};
+      return expr<Subscript, expr, expr_storage_t<Args>...>{node_kind<Subscript>, std::forward<Self>(self), std::forward<Args>(args)...};
     }
 #else
     // workaround for c++23 compiler without the "deducing this" implemented
     template <typename... Args>
     auto operator[](Args &&...args) const & {
-      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), *this, std::forward<Args>(args)...};
+      return expr<Subscript, expr, expr_storage_t<Args>...>{node_kind<Subscript>, *this, std::forward<Args>(args)...};
     }
     template <typename... Args>
     auto operator[](Args &&...args) & {
-      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), *this, std::forward<Args>(args)...};
+      return expr<Subscript, expr, expr_storage_t<Args>...>{node_kind<Subscript>, *this, std::forward<Args>(args)...};
     }
     template <typename... Args>
     auto operator[](Args &&...args) && {
-      return expr<tags::subscript, expr, expr_storage_t<Args>...>{tags::subscript(), std::move(*this), std::forward<Args>(args)...};
+      return expr<Subscript, expr, expr_storage_t<Args>...>{node_kind<Subscript>, std::move(*this), std::forward<Args>(args)...};
     }
 #endif
 
@@ -160,38 +124,41 @@ namespace nda::clef {
     template <typename Self, typename... Args>
     auto operator()(this Self &&self, Args &&...args) {
       // NB : can not use CTAD here, as expr is the class itself...
-      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function{}, std::forward<Self>(self), std::forward<Args>(args)...};
+      return expr<Call, expr, expr_storage_t<Args>...>{node_kind<Call>, std::forward<Self>(self), std::forward<Args>(args)...};
     }
 #else
     // workaround for c++23 compiler without the "deducing this" implemented
     template <typename... Args>
     auto operator()(Args &&...args) const & {
-      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), *this, std::forward<Args>(args)...};
+      return expr<Call, expr, expr_storage_t<Args>...>{node_kind<Call>, *this, std::forward<Args>(args)...};
     }
     template <typename... Args>
     auto operator()(Args &&...args) & {
-      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), *this, std::forward<Args>(args)...};
+      return expr<Call, expr, expr_storage_t<Args>...>{node_kind<Call>, *this, std::forward<Args>(args)...};
     }
     template <typename... Args>
     auto operator()(Args &&...args) && {
-      return expr<tags::function, expr, expr_storage_t<Args>...>{tags::function(), std::move(*this), std::forward<Args>(args)...};
+      return expr<Call, expr, expr_storage_t<Args>...>{node_kind<Call>, std::move(*this), std::forward<Args>(args)...};
     }
 #endif
   };
 
   /// CTAD for expr
-  template <typename Tag, typename... Args>
-  expr(Tag, Args &&...) -> expr<Tag, expr_storage_t<Args>...>;
+  //template <typename NodeTag, typename... Args>
+  //expr(NodeTag, Args &&...) -> expr<NodeTag::value, expr_storage_t<Args>...>;
+
+  template <NodeKind K, typename... Args>
+  expr(std::integral_constant<NodeKind, K>, Args &&...) -> expr<K, expr_storage_t<Args>...>;
 
   namespace detail {
 
     // ph_set of an expr is the union of the ph_set of the children
-    template <typename Tag, typename... Ts>
-    constexpr uint64_t ph_set<expr<Tag, Ts...>> = (ph_set<Ts> | ...);
+    template <NodeKind K, typename... Ts>
+    constexpr uint64_t ph_set<expr<K, Ts...>> = (ph_set<Ts> | ...);
 
-    // Specialization of is_lazy_impl for nda::clef::expr types (always true).
-    template <typename Tag, typename... Ts>
-    constexpr bool is_lazy_impl<expr<Tag, Ts...>> = true;
+    // An expr is lazy.
+    template <NodeKind K, typename... Ts>
+    constexpr bool is_lazy_impl<expr<K, Ts...>> = true;
 
   } // namespace detail
 
