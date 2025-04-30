@@ -104,21 +104,21 @@ namespace nda::clef {
   template <typename F, typename RHS, int... Is>
   FORCEINLINE void operator<<(expr<node_kind<Call>, F, placeholder<Is>...> const &ex, RHS &&rhs) {
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
-    clef_auto_assign(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
+    clef_auto_assign(std::get<0>(ex.childs), function{std::forward<RHS>(rhs), placeholder<Is>()...});
   }
 
   // Overload of nda::clef::operator<< for rvalue reference expressions.
   template <typename F, typename RHS, int... Is>
   FORCEINLINE void operator<<(expr<node_kind<Call>, F, placeholder<Is>...> &&ex, RHS &&rhs) { // NOLINT (is the rvalue reference overload needed?)
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
-    clef_auto_assign(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
+    clef_auto_assign(std::get<0>(ex.childs), function{std::forward<RHS>(rhs), placeholder<Is>()...});
   }
 
   // Overload of nda::clef::operator<< for lvalue reference expressions.
   template <typename F, typename RHS, int... Is>
   FORCEINLINE void operator<<(expr<node_kind<Call>, F, placeholder<Is>...> &ex, RHS &&rhs) {
     static_assert(detail::all_different(Is...), "Error in clef operator<<: Two of the placeholders on the LHS are the same");
-    clef_auto_assign(std::get<0>(ex.childs), make_function(std::forward<RHS>(rhs), placeholder<Is>()...));
+    clef_auto_assign(std::get<0>(ex.childs), function{std::forward<RHS>(rhs), placeholder<Is>()...});
   }
 
   // Delete functions to avoid nonsensical cases, e.g. f(x_ + y_) << RHS.

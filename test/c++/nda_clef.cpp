@@ -401,32 +401,33 @@ TEST_F(CLEF, MakeFunction) {
   auto ex1 = x0_ - x1_;
 
   // standard case
-  auto f1 = clef::make_function(ex1, x0_, x1_);
+  auto f1 = clef::function{ex1, x0_, x1_};
   EXPECT_EQ(f1(3, 2), 1);
-  EXPECT_EQ(clef::make_function(ex1, x0_, x1_)(2, 3), -1);
+  auto res1 = clef::function{ex1, x0_, x1_}(2, 3);
+  EXPECT_EQ(res1, -1);
 
   // switch arugment positions
-  auto f1_sw = clef::make_function(ex1, x1_, x0_);
+  auto f1_sw = clef::function{ex1, x1_, x0_};
   EXPECT_EQ(f1_sw(3, 2), -1);
 
   // partial case with temporary arguments
-  auto f1_p0     = clef::make_function(ex1, x0_);
-  auto f1_p0_tmp = clef::make_function(f1_p0(3), x1_);
+  auto f1_p0     = clef::function{ex1, x0_};
+  auto f1_p0_tmp = clef::function{f1_p0(3), x1_};
   EXPECT_EQ(f1_p0_tmp(2), 1);
-  EXPECT_EQ(clef::eval(clef::make_function(ex1, x0_), x1_ = 2)(3), 1);
+  EXPECT_EQ(clef::eval(clef::function{ex1, x0_}, x1_ = 2)(3), 1);
 
   // partial case with reference arguments
   auto x0        = 3;
   auto x1        = 2;
-  auto f1_p1     = clef::make_function(ex1, x1_);
-  auto f1_p1_tmp = clef::make_function(f1_p1(x1), x0_);
+  auto f1_p1     = clef::function{ex1, x1_};
+  auto f1_p1_tmp = clef::function{f1_p1(x1), x0_};
   EXPECT_EQ(f1_p1_tmp(x0), 1);
 
   // given placeholder not in expression
   auto ex2     = x0_ + 3;
-  auto f2_lazy = clef::make_function(ex2, x1_);
+  auto f2_lazy = clef::function{ex2, x1_};
   static_assert(clef::is_lazy<decltype(f2_lazy)>);
-  auto f2 = clef::make_function(ex2, x0_);
+  auto f2 = clef::function{ex2, x0_};
   static_assert(!clef::is_lazy<decltype(f2)>);
   EXPECT_EQ(f2(2), 5);
 
@@ -434,7 +435,7 @@ TEST_F(CLEF, MakeFunction) {
   std::cout << f1 << std::endl;
 
   // Should not compile
-  //auto ferr  = clef::make_function(x0_ + x1_, x0_);
+  //auto ferr  = clef::function{x0_ + x1_, x0_};
   //auto ferr2 = eval(ferr, x0_ = 10);
   //EXPECT_EQ(ferr2(2), 12);
 }
@@ -450,7 +451,7 @@ TEST_F(CLEF, Literals) {
   EXPECT_EQ(clef::eval(ex1, i_ = std::vector{1, 2, 3}, j_ = 1, k_ = foo(1), l_ = 1), false);
 
   // make function from expression
-  auto f1 = clef::make_function(i_ + j_, i_, j_);
+  auto f1 = clef::function{i_ + j_, i_, j_};
   EXPECT_EQ(f1(3, 2), 5);
   static_assert(!clef::is_lazy<decltype(f1)>);
 }

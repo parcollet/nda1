@@ -119,12 +119,12 @@ namespace nda::clef {
     // simplify pattern recognition in the auto_assign later.
     // We specialize expr_storage for this type.
     template <int N>
-    struct expr_storage_impl<placeholder<N> &> {
+    struct expr_storage<placeholder<N> &> {
       using type = placeholder<N>;
     };
 
     template <int N>
-    struct expr_storage_impl<placeholder<N> const &> {
+    struct expr_storage<placeholder<N> const &> {
       using type = placeholder<N>;
     };
 

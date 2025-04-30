@@ -59,7 +59,7 @@ namespace nda::clef {
    *
    * @note Construction is done by CTAD, cf example above. Just pass the expression and placeholders.
    *
-   * @tparam Expr Type of the expression, typically an expr<Tag, ...>, but it can be anything evaluable. 
+   * @tparam Expr Type of the expression, typically an expr<Kind, ...>, but it can be anything evaluable. 
    * @tparam PlaceholderIndex Indices of the placeholders
    */
   template <typename Expr, int... PlaceholderIndex>
@@ -80,22 +80,23 @@ namespace nda::clef {
      * @return Result of the evaluation of the underlying expression.
      */
     template <typename... Args>
-      requires(sizeof...(Args) == sizeof...(PlaceholderIndex))
     FORCEINLINE decltype(auto) operator()(Args &&...args) const {
+      static_assert(sizeof...(Args) == sizeof...(PlaceholderIndex), "Incorrect number of arguments"); // trap
       return eval(ex, ph_value_pair<PlaceholderIndex, Args>{std::forward<Args>(args)}...);
     }
   };
-
-  // Backward compat : FIXME : REMOVE IT
-  template <typename Expr, int... PlaceholderIndex>
-  using make_fun_impl = function<Expr, PlaceholderIndex...>;
 
   /// CTAD for function
   template <typename Expr, auto... Is>
   function(Expr &&ex, placeholder<Is>...) -> function<std::decay_t<Expr>, placeholder<Is>::index...>;
 
+  // Backward compat : FIXME : REMOVE IT
+  template <typename Expr, int... PlaceholderIndex>
+  using make_fun_impl = function<Expr, PlaceholderIndex...>;
+
   /// [deprecated] Backward compatibility maker for function. Prefer function{} instead.
   template <typename Expr, auto... Is>
+  [[deprecated("make_function is deprecated. Use function{} instead.")]]
   FORCEINLINE auto make_function(Expr &&ex, placeholder<Is>... p) {
     return function{std::forward<Expr>(ex), p...};
   }

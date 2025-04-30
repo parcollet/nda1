@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include "./placeholder.hpp"
 #include "./make_lazy.hpp"
+#include "./function.hpp"
 
 namespace nda::clef {
 
@@ -75,9 +76,9 @@ namespace nda::clef {
   template <typename Expr, int N, typename D>
   decltype(auto) sum(Expr const &ex, clef::ph_value_pair<N, D> d) {
     if constexpr (std::is_lvalue_reference_v<D>) {
-      return detail::sum_f_domain_impl(make_function(ex, clef::placeholder<N>()), d.value);
+      return detail::sum_f_domain_impl(function{ex, clef::placeholder<N>()}, d.value);
     } else {
-      return detail::sum_f_domain_impl(make_function(ex, clef::placeholder<N>()), std::move(d.value));
+      return detail::sum_f_domain_impl(function{ex, clef::placeholder<N>()}, std::move(d.value));
     }
   }
 

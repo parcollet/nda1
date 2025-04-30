@@ -16,7 +16,7 @@
 
 /**
  * @file
- * @brief Provides a basic lazy expression type for the clef library.
+ * @brief Main expression tree class for the clef library.
  */
 
 #pragma once
@@ -36,10 +36,10 @@ namespace nda::clef {
   namespace detail {
 
     template <typename T>
-    struct expr_storage_impl : std::decay<T> {};
+    struct expr_storage : std::decay<T> {};
 
     template <typename T>
-    struct expr_storage_impl<T &> {
+    struct expr_storage<T &> {
       using type = std::reference_wrapper<T>;
     };
 
@@ -55,7 +55,7 @@ namespace nda::clef {
    * @tparam T Type to be stored.
    */
   template <typename T>
-  using expr_storage_t = typename detail::expr_storage_impl<T>::type;
+  using expr_storage_t = typename detail::expr_storage<T>::type;
 
   /**
    * @addtogroup clef_expr

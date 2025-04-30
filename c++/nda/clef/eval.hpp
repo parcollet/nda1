@@ -148,7 +148,7 @@ namespace nda::clef {
     constexpr uint64_t I = ((1ull << Is) + ...);
     constexpr uint64_t J = ((1ull << Pairs::idx) + ...);
     static_assert((I & J) == 0, "Impossible evaluation. You can not evaluate a function on the placeholders used to define the function");
-    return make_function(eval(f.ex, pairs...), placeholder<Is>{}...);
+    return function{eval(f.ex, pairs...), placeholder<Is>{}...};
   }
 
   // -----------  eval ------------
